@@ -1,10 +1,14 @@
+import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:one_bullet/components/aim_indicator.dart';
+import 'package:one_bullet/components/bullet.dart';
+import 'package:one_bullet/one_bullet_game.dart';
 
 /// The Player component - a circle that the user controls.
-class Player extends CircleComponent with KeyboardHandler {
+class Player extends CircleComponent
+    with KeyboardHandler, CollisionCallbacks {
   Player({required super.position, Color? color})
     : super(
         anchor: Anchor.center,
@@ -55,9 +59,26 @@ class Player extends CircleComponent with KeyboardHandler {
   Future<void> onLoad() async {
     await super.onLoad();
 
+    // Add circular hitbox for collision detection
+    add(CircleHitbox());
+
     // Add the aim indicator as a child (rotates around player)
     aimIndicator = AimIndicator(orbitRadius: 45);
     add(aimIndicator);
+  }
+
+  @override
+  void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
+    super.onCollision(intersectionPoints, other);
+
+    // Check if collided with bullet
+    if (other is Bullet) {
+      // Notify the game that player died
+      final game = findGame();
+      if (game is OneBulletGame) {
+        game.onPlayerDeath();
+      }
+    }
   }
 
   @override
@@ -73,19 +94,16 @@ class Player extends CircleComponent with KeyboardHandler {
     _clampToGameBounds();
   }
 
-  /// Keeps the player within the visible game area.
+  /// Keeps the player within the arena bounds.
   void _clampToGameBounds() {
-    final gameSize = findGame()?.size;
-    if (gameSize == null) return;
+    final game = findGame();
+    if (game is! OneBulletGame || game.arenaBoundary == null) return;
 
-    // Account for the player's radius when clamping
-    final minX = -gameSize.x / 2 + radius;
-    final maxX = gameSize.x / 2 - radius;
-    final minY = -gameSize.y / 2 + radius;
-    final maxY = gameSize.y / 2 - radius;
+    // Get arena bounds with player radius inset
+    final bounds = game.arenaBoundary!.getBoundsWithInset(radius);
 
-    position.x = position.x.clamp(minX, maxX);
-    position.y = position.y.clamp(minY, maxY);
+    position.x = position.x.clamp(bounds.left, bounds.right);
+    position.y = position.y.clamp(bounds.top, bounds.bottom);
   }
 
   @override
