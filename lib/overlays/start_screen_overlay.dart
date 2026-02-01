@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
+import 'package:one_bullet/services/score_service.dart';
 
 /// Start screen overlay displayed when the game begins.
 /// Responsive design for both mobile and desktop screens.
@@ -57,7 +58,7 @@ class StartScreenOverlay extends StatelessWidget {
 
                     // Tagline
                     Text(
-                      'Avoid your own mistake',
+                      'Avoid the bullet that YOU fired!',
                       style: TextStyle(
                         fontSize: subtitleFontSize,
                         fontWeight: FontWeight.w300,
@@ -67,7 +68,60 @@ class StartScreenOverlay extends StatelessWidget {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    SizedBox(height: isSmallScreen ? 48 : 64),
+                    const SizedBox(height: 24),
+
+                    // High score display
+                    ValueListenableBuilder<Duration>(
+                      valueListenable: ScoreService.highScore,
+                      builder: (context, highScore, _) {
+                        // Show encouragement message if no high score yet
+                        if (highScore == Duration.zero) {
+                          return Text(
+                            'Start playing to set a high score!',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white.withValues(alpha: 0.5),
+                              fontStyle: FontStyle.italic,
+                            ),
+                          );
+                        }
+                        // Show high score badge
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Colors.amber.withValues(alpha: 0.5),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.emoji_events,
+                                color: Colors.amber,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'BEST: ${ScoreService.formatDuration(highScore)}',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.amber,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                    SizedBox(height: isSmallScreen ? 32 : 48),
 
                     // Start button
                     MouseRegion(

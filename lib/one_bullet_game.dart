@@ -8,6 +8,7 @@ import 'package:one_bullet/components/bullet.dart';
 import 'package:one_bullet/components/mobile_joystick.dart';
 import 'package:one_bullet/components/player.dart';
 import 'package:one_bullet/components/player_death_effect.dart';
+import 'package:one_bullet/services/score_service.dart';
 
 /// The main game class for One Bullet.
 ///
@@ -54,6 +55,9 @@ class OneBulletGame extends FlameGame
   /// Whether the game is currently paused by the user.
   bool _isPaused = false;
 
+  /// Whether the latest game resulted in a new high score.
+  bool isNewHighScore = false;
+
   /// Tracks the survival time (notifier for UI updates).
   final ValueNotifier<Duration> survivalTime = ValueNotifier(Duration.zero);
 
@@ -82,6 +86,7 @@ class OneBulletGame extends FlameGame
     _isGameOver = false;
     _hasStarted = false;
     _isPaused = false;
+    isNewHighScore = false;
     _elapsedSeconds = 0;
     survivalTime.value = Duration.zero;
 
@@ -157,6 +162,9 @@ class OneBulletGame extends FlameGame
     if (_isGameOver) return; // Prevent multiple triggers
 
     _isGameOver = true;
+
+    // Check and save high score
+    isNewHighScore = ScoreService.checkAndSaveHighScore(survivalTime.value);
 
     // Store player position and color before removing
     final playerPosition = player!.position.clone();

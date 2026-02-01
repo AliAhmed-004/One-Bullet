@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
+import 'package:one_bullet/services/score_service.dart';
 
 /// Overlay displayed when the player dies.
-/// Shows "You Died!" text and a restart button.
+/// Shows "You Died!" text, final score, high score status, and a restart button.
 class GameOverOverlay extends StatelessWidget {
   const GameOverOverlay({
     required this.game,
@@ -13,6 +14,10 @@ class GameOverOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Get the final survival time
+    final finalTime = game.survivalTime.value;
+    final isNewRecord = game.isNewHighScore;
+
     return Material(
       color: Colors.black54,
       child: Center(
@@ -22,9 +27,18 @@ class GameOverOverlay extends StatelessWidget {
             color: Colors.black87,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: Colors.red,
+              color: isNewRecord ? Colors.amber : Colors.red,
               width: 3,
             ),
+            boxShadow: isNewRecord
+                ? [
+                    BoxShadow(
+                      color: Colors.amber.withValues(alpha: 0.5),
+                      blurRadius: 30,
+                      spreadRadius: 5,
+                    ),
+                  ]
+                : null,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -44,6 +58,68 @@ class GameOverOverlay extends StatelessWidget {
                   ],
                 ),
               ),
+              const SizedBox(height: 24),
+
+              // Final score display
+              Text(
+                'Time Survived',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.white.withValues(alpha: 0.7),
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                ScoreService.formatDuration(finalTime),
+                style: const TextStyle(
+                  fontSize: 36,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  fontFamily: 'monospace',
+                  letterSpacing: 2,
+                ),
+              ),
+
+              // New high score indicator
+              if (isNewRecord) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Colors.amber, Colors.orange],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.emoji_events,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'NEW HIGH SCORE!',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
               const SizedBox(height: 32),
 
               // Restart button

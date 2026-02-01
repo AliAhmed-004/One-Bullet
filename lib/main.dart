@@ -6,9 +6,13 @@ import 'package:one_bullet/overlays/game_hud_overlay.dart';
 import 'package:one_bullet/overlays/game_over_overlay.dart';
 import 'package:one_bullet/overlays/pause_overlay.dart';
 import 'package:one_bullet/overlays/start_screen_overlay.dart';
+import 'package:one_bullet/services/score_service.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Hive for high score storage
+  await ScoreService.init();
 
   Flame.device.fullScreen();
   Flame.device.setPortrait();
