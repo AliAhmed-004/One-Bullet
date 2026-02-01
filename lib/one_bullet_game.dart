@@ -2,10 +2,12 @@ import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:one_bullet/components/arena_boundary.dart';
 import 'package:one_bullet/components/bullet.dart';
 import 'package:one_bullet/components/mobile_joystick.dart';
 import 'package:one_bullet/components/player.dart';
+import 'package:one_bullet/components/player_death_effect.dart';
 
 /// The main game class for One Bullet.
 ///
@@ -156,12 +158,33 @@ class OneBulletGame extends FlameGame
 
     _isGameOver = true;
 
-    // Pause the game
-    pauseEngine();
+    // Store player position and color before removing
+    final playerPosition = player!.position.clone();
+    const playerColor = Colors.blue;
 
-    // Hide HUD and show game over overlay
-    overlays.remove(gameHudOverlayId);
-    overlays.add(gameOverOverlayId);
+    // Remove the player immediately
+    player!.removeFromParent();
+
+    // Spawn death fragments
+    final fragments = PlayerDeathEffect.createFragments(
+      position: playerPosition,
+      color: playerColor,
+      fragmentCount: 14,
+      baseSpeed: 300.0,
+    );
+
+    // Add all fragments to the world
+    world.addAll(fragments);
+
+    // Delay showing game over to let fragments animate
+    Future.delayed(const Duration(milliseconds: 800), () {
+      // Pause the game
+      pauseEngine();
+
+      // Hide HUD and show game over overlay
+      overlays.remove(gameHudOverlayId);
+      overlays.add(gameOverOverlayId);
+    });
   }
 
   /// Pauses the game (from HUD pause button).

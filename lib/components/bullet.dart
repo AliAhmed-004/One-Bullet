@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +13,7 @@ class Bullet extends CircleComponent with CollisionCallbacks {
     required Vector2 direction,
     this.speed = 400.0,
     this.color = Colors.orange,
+    this.trailLength = 12,
   }) : _velocity = direction.normalized() * speed,
        super(
          position: position,
@@ -25,8 +28,14 @@ class Bullet extends CircleComponent with CollisionCallbacks {
   /// Color of the bullet.
   final Color color;
 
+  /// Number of trail segments to keep.
+  final int trailLength;
+
   /// Current velocity of the bullet.
   final Vector2 _velocity;
+
+  /// Stores recent positions for the trail effect.
+  final Queue<Vector2> _trailPositions = Queue<Vector2>();
 
   /// Getter for velocity (useful for debugging or effects).
   Vector2 get velocity => _velocity;
@@ -41,6 +50,9 @@ class Bullet extends CircleComponent with CollisionCallbacks {
 
   @override
   void render(Canvas canvas) {
+    // Draw the trail first (behind the bullet)
+    _renderTrail(canvas);
+
     // Draw the main circle (fill)
     canvas.drawCircle(Offset(radius, radius), radius, paint);
 
@@ -53,9 +65,42 @@ class Bullet extends CircleComponent with CollisionCallbacks {
     canvas.drawCircle(Offset(radius, radius), radius, glowPaint);
   }
 
+  /// Renders the fading trail behind the bullet.
+  void _renderTrail(Canvas canvas) {
+    if (_trailPositions.isEmpty) return;
+
+    final trailList = _trailPositions.toList();
+    final count = trailList.length;
+
+    for (int i = 0; i < count; i++) {
+      // Calculate opacity: older positions are more transparent
+      final opacity = (i + 1) / count * 0.6; // Max 0.6 opacity for trail
+      final trailRadius = radius * (0.3 + 0.5 * (i + 1) / count); // Shrinking trail
+
+      final trailPaint = Paint()
+        ..color = color.withValues(alpha: opacity)
+        ..style = PaintingStyle.fill;
+
+      // Convert world position to local coordinates
+      final worldPos = trailList[i];
+      final localX = worldPos.x - position.x + radius;
+      final localY = worldPos.y - position.y + radius;
+
+      canvas.drawCircle(Offset(localX, localY), trailRadius, trailPaint);
+    }
+  }
+
   @override
   void update(double dt) {
     super.update(dt);
+
+    // Store current position for trail (before moving)
+    _trailPositions.addLast(position.clone());
+
+    // Keep only the last N positions
+    while (_trailPositions.length > trailLength) {
+      _trailPositions.removeFirst();
+    }
 
     // Move the bullet
     position += _velocity * dt;
