@@ -1,6 +1,7 @@
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:one_bullet/components/aim_indicator.dart';
 
 /// The Player component - a circle that the user controls.
 class Player extends CircleComponent with KeyboardHandler {
@@ -15,6 +16,24 @@ class Player extends CircleComponent with KeyboardHandler {
 
   /// Movement speed in pixels per second.
   static const double speed = 300.0;
+
+  /// The aim indicator that rotates around the player.
+  late final AimIndicator aimIndicator;
+
+  /// Whether the bullet has been fired.
+  bool _hasFired = false;
+
+  /// Getter to check if bullet has been fired.
+  bool get hasFired => _hasFired;
+
+  /// Mark that the bullet has been fired.
+  void markAsFired() {
+    _hasFired = true;
+    aimIndicator.removeFromParent(); // Remove aim indicator after firing
+  }
+
+  /// Returns the current aim direction from the indicator.
+  Vector2 get aimDirection => aimIndicator.aimDirection;
 
   /// Current movement direction (normalized or zero).
   /// This can be set by keyboard input OR joystick input.
@@ -31,6 +50,15 @@ class Player extends CircleComponent with KeyboardHandler {
 
   // Track which keys are currently pressed
   final Set<LogicalKeyboardKey> _keysPressed = {};
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+
+    // Add the aim indicator as a child (rotates around player)
+    aimIndicator = AimIndicator(orbitRadius: 45);
+    add(aimIndicator);
+  }
 
   @override
   void update(double dt) {
