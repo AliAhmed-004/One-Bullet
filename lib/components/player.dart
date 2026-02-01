@@ -1,8 +1,10 @@
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-class Player extends CircleComponent {
-  Player({required Vector2 position, Color? color})
+/// The Player component - a circle that the user controls.
+class Player extends CircleComponent with KeyboardHandler {
+  Player({required super.position, Color? color})
     : super(
         anchor: Anchor.center,
         radius: 20,
@@ -10,4 +12,94 @@ class Player extends CircleComponent {
           ..color = color ?? Colors.blue
           ..style = PaintingStyle.fill,
       );
+
+  /// Movement speed in pixels per second.
+  static const double speed = 300.0;
+
+  /// Current movement direction (normalized or zero).
+  /// This can be set by keyboard input OR joystick input.
+  Vector2 _movementDirection = Vector2.zero();
+
+  /// Getter for movement direction (useful for external joystick control).
+  Vector2 get movementDirection => _movementDirection;
+
+  /// Set movement direction externally (e.g., from a joystick).
+  /// The vector should be normalized or have magnitude <= 1.
+  void setMovementDirection(Vector2 direction) {
+    _movementDirection = direction;
+  }
+
+  // Track which keys are currently pressed
+  final Set<LogicalKeyboardKey> _keysPressed = {};
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+
+    // Calculate movement based on direction and speed
+    if (_movementDirection != Vector2.zero()) {
+      position += _movementDirection * speed * dt;
+    }
+
+    // Clamp player position to stay within game bounds
+    _clampToGameBounds();
+  }
+
+  /// Keeps the player within the visible game area.
+  void _clampToGameBounds() {
+    final gameSize = findGame()?.size;
+    if (gameSize == null) return;
+
+    // Account for the player's radius when clamping
+    final minX = -gameSize.x / 2 + radius;
+    final maxX = gameSize.x / 2 - radius;
+    final minY = -gameSize.y / 2 + radius;
+    final maxY = gameSize.y / 2 - radius;
+
+    position.x = position.x.clamp(minX, maxX);
+    position.y = position.y.clamp(minY, maxY);
+  }
+
+  @override
+  bool onKeyEvent(KeyEvent event, Set<LogicalKeyboardKey> keysPressed) {
+    _keysPressed.clear();
+    _keysPressed.addAll(keysPressed);
+
+    // Update movement direction based on pressed keys
+    _updateMovementFromKeyboard();
+
+    return false; // Allow other components to also handle the event
+  }
+
+  /// Updates the movement direction based on currently pressed keys.
+  void _updateMovementFromKeyboard() {
+    // Reset direction
+    _movementDirection = Vector2.zero();
+
+    // Check for horizontal movement (A/D or Left/Right arrows)
+    if (_keysPressed.contains(LogicalKeyboardKey.keyA) ||
+        _keysPressed.contains(LogicalKeyboardKey.arrowLeft)) {
+      _movementDirection.x -= 1;
+    }
+    if (_keysPressed.contains(LogicalKeyboardKey.keyD) ||
+        _keysPressed.contains(LogicalKeyboardKey.arrowRight)) {
+      _movementDirection.x += 1;
+    }
+
+    // Check for vertical movement (W/S or Up/Down arrows)
+    if (_keysPressed.contains(LogicalKeyboardKey.keyW) ||
+        _keysPressed.contains(LogicalKeyboardKey.arrowUp)) {
+      _movementDirection.y -= 1;
+    }
+    if (_keysPressed.contains(LogicalKeyboardKey.keyS) ||
+        _keysPressed.contains(LogicalKeyboardKey.arrowDown)) {
+      _movementDirection.y += 1;
+    }
+
+    // Normalize diagonal movement so it's not faster
+    if (_movementDirection.length > 0) {
+      _movementDirection.normalize();
+    }
+  }
 }
+
