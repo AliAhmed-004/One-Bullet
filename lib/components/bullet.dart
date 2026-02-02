@@ -16,6 +16,7 @@ class Bullet extends CircleComponent with CollisionCallbacks {
     this.color = Colors.orange,
     this.trailLength = 12,
   }) : _velocity = _applyLaunchImperfection(direction.normalized() * speed),
+       _currentSpeed = speed,
        super(
          position: position,
          radius: 8,
@@ -43,8 +44,11 @@ class Bullet extends CircleComponent with CollisionCallbacks {
     );
   }
 
-  /// Speed of the bullet in pixels per second.
+  /// Speed of the bullet in pixels per second (initial value).
   final double speed;
+
+  /// Current speed of the bullet (can change with waves).
+  double _currentSpeed;
 
   /// Color of the bullet.
   final Color color;
@@ -69,6 +73,21 @@ class Bullet extends CircleComponent with CollisionCallbacks {
 
   /// Getter for velocity (useful for debugging or effects).
   Vector2 get velocity => _velocity;
+
+  /// Getter for current speed.
+  double get currentSpeed => _currentSpeed;
+
+  /// Updates the bullet speed (called by WaveManager).
+  /// Smoothly adjusts velocity magnitude while preserving direction.
+  void setSpeed(double newSpeed) {
+    if (newSpeed == _currentSpeed) return;
+    
+    _currentSpeed = newSpeed;
+    
+    // Preserve direction, update magnitude
+    _velocity.normalize();
+    _velocity.scale(_currentSpeed);
+  }
 
   @override
   Future<void> onLoad() async {
@@ -188,14 +207,14 @@ class Bullet extends CircleComponent with CollisionCallbacks {
 
     // Deterministic bias using sine wave with golden ratio multiplier
     // Creates non-repeating but predictable pattern
-    final bias = math.sin(_bounceCount * 1.618) * _perpBiasStrength * speed;
+    final bias = math.sin(_bounceCount * 1.618) * _perpBiasStrength * _currentSpeed;
 
     // Apply perpendicular bias to velocity
     _velocity.add(perp * bias);
 
     // Normalize and reapply speed to maintain constant velocity
     _velocity.normalize();
-    _velocity.scale(speed);
+    _velocity.scale(_currentSpeed);
 
     // Ensure velocity never aligns perfectly with axes
     _breakAxisAlignment();
@@ -204,8 +223,8 @@ class Bullet extends CircleComponent with CollisionCallbacks {
   /// Ensures the bullet velocity is never perfectly horizontal or vertical.
   /// Nudges the velocity slightly if either component is below epsilon threshold.
   void _breakAxisAlignment() {
-    final vxAbs = _velocity.x.abs() / speed;
-    final vyAbs = _velocity.y.abs() / speed;
+    final vxAbs = _velocity.x.abs() / _currentSpeed;
+    final vyAbs = _velocity.y.abs() / _currentSpeed;
 
     bool needsRenormalize = false;
 
@@ -213,21 +232,21 @@ class Bullet extends CircleComponent with CollisionCallbacks {
     if (vyAbs < _axisEpsilon) {
       // Nudge in direction based on bounce count for determinism
       final sign = (_bounceCount % 2 == 0) ? 1.0 : -1.0;
-      _velocity.y = _axisEpsilon * speed * sign;
+      _velocity.y = _axisEpsilon * _currentSpeed * sign;
       needsRenormalize = true;
     }
 
     // If nearly vertical, nudge horizontal component
     if (vxAbs < _axisEpsilon) {
       final sign = (_bounceCount % 2 == 0) ? 1.0 : -1.0;
-      _velocity.x = _axisEpsilon * speed * sign;
+      _velocity.x = _axisEpsilon * _currentSpeed * sign;
       needsRenormalize = true;
     }
 
     // Re-normalize to maintain constant speed
     if (needsRenormalize) {
       _velocity.normalize();
-      _velocity.scale(speed);
+      _velocity.scale(_currentSpeed);
     }
   }
 }

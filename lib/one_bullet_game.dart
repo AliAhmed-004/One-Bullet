@@ -6,6 +6,8 @@ import 'package:one_bullet/components/bullet.dart';
 import 'package:one_bullet/components/mobile_joystick.dart';
 import 'package:one_bullet/components/player.dart';
 import 'package:one_bullet/components/player_death_effect.dart';
+import 'package:one_bullet/components/wave_indicator.dart';
+import 'package:one_bullet/components/wave_manager.dart';
 import 'package:one_bullet/services/score_service.dart';
 
 /// The main game class for One Bullet.
@@ -43,6 +45,12 @@ class OneBulletGame extends FlameGame
 
   /// Reference to the bullet (only one exists).
   Bullet? bullet;
+
+  /// Reference to the wave manager.
+  WaveManager? waveManager;
+
+  /// Reference to the wave indicator UI.
+  WaveIndicator? waveIndicator;
 
   /// Whether the player is dead.
   bool _isGameOver = false;
@@ -97,6 +105,17 @@ class OneBulletGame extends FlameGame
     // Add the mobile joystick (renders in screen space, not world space)
     joystick = MobileJoystick(player: player!);
     camera.viewport.add(joystick!);
+
+    // Create wave manager
+    waveManager = WaveManager(
+      onWaveChange: _onWaveChange,
+      onSpeedChange: _onSpeedChange,
+    );
+    add(waveManager!);
+
+    // Create wave indicator (positioned in world space, above arena)
+    waveIndicator = WaveIndicator(topPadding: hudHeight/2);
+    world.add(waveIndicator!);
   }
 
   /// Called when player taps "Start" on the start screen.
@@ -144,15 +163,29 @@ class OneBulletGame extends FlameGame
     final spawnOffset = aimDirection * (player!.radius + 15);
     final spawnPosition = player!.position + spawnOffset;
 
-    // Create and add the bullet
+    // Create and add the bullet with initial wave speed
     bullet = Bullet(
       position: spawnPosition,
       direction: aimDirection,
+      speed: WaveManager.waves[0].startSpeed,
     );
     world.add(bullet!);
 
     // Mark player as having fired
     player!.markAsFired();
+
+    // Start the wave system
+    waveManager?.start();
+  }
+
+  /// Called when the wave number changes.
+  void _onWaveChange(int newWave, bool isWarning) {
+    waveIndicator?.setWave(newWave, flash: isWarning);
+  }
+
+  /// Called when the bullet speed should change.
+  void _onSpeedChange(double newSpeed) {
+    bullet?.setSpeed(newSpeed);
   }
 
   /// Called when the player is hit by the bullet.
@@ -227,10 +260,15 @@ class OneBulletGame extends FlameGame
       camera.viewport.children.whereType<MobileJoystick>(),
     );
 
+    // Remove wave manager
+    waveManager?.removeFromParent();
+
     // Reset references
     player = null;
     joystick = null;
     bullet = null;
+    waveManager = null;
+    waveIndicator = null;
 
     // Initialize fresh game components (paused)
     _initializeGame();
@@ -253,10 +291,15 @@ class OneBulletGame extends FlameGame
       camera.viewport.children.whereType<MobileJoystick>(),
     );
 
+    // Remove wave manager
+    waveManager?.removeFromParent();
+
     // Reset references
     player = null;
     joystick = null;
     bullet = null;
+    waveManager = null;
+    waveIndicator = null;
 
     // Initialize fresh game components
     _initializeGame();
@@ -267,4 +310,3 @@ class OneBulletGame extends FlameGame
     resumeEngine();
   }
 }
-
