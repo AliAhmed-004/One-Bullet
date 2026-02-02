@@ -11,7 +11,6 @@ import 'package:one_bullet/components/player.dart';
 import 'package:one_bullet/components/player_death_effect.dart';
 import 'package:one_bullet/components/wave_indicator.dart';
 import 'package:one_bullet/components/wave_manager.dart';
-import 'package:one_bullet/services/ad_service.dart';
 import 'package:one_bullet/services/score_service.dart';
 
 /// The main game class for One Bullet.
@@ -81,8 +80,9 @@ class OneBulletGame extends FlameGame
   /// Whether the latest game resulted in a new high score.
   bool isNewHighScore = false;
 
-  /// Whether a continue is available (rewarded ad ready and not yet used).
-  bool get canContinue => !_hasUsedContinue && AdService.isRewardedAdReady;
+  /// Whether a continue is available.
+  /// TODO: Re-enable when ads are implemented after Play Store publication.
+  bool get canContinue => false;
 
   /// Tracks the survival time (notifier for UI updates).
   final ValueNotifier<Duration> survivalTime = ValueNotifier(Duration.zero);
@@ -267,9 +267,8 @@ class OneBulletGame extends FlameGame
     // Add all fragments to the world
     world.addAll(fragments);
 
-    // Check if we should show an ad (every 3 deaths or after a good run)
-    final survivalSeconds = survivalTime.value.inSeconds;
-    AdService.onPlayerDeath(survivalSeconds);
+    // TODO: Re-enable ad showing after Play Store publication
+    // AdService.onPlayerDeath(survivalTime.value.inSeconds);
 
     // Delay showing game over to let fragments animate
     Future.delayed(const Duration(milliseconds: 800), () {
@@ -304,8 +303,8 @@ class OneBulletGame extends FlameGame
   void returnToMenu() {
     _isPaused = false;
 
-    // Reset ad death counter when going back to menu
-    AdService.resetDeathCount();
+    // TODO: Re-enable ad reset after Play Store publication
+    // AdService.resetDeathCount();
 
     // Remove all overlays
     overlays.remove(pauseOverlayId);

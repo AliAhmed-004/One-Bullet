@@ -6,7 +6,6 @@ import 'package:one_bullet/overlays/game_hud_overlay.dart';
 import 'package:one_bullet/overlays/game_over_overlay.dart';
 import 'package:one_bullet/overlays/pause_overlay.dart';
 import 'package:one_bullet/overlays/start_screen_overlay.dart';
-import 'package:one_bullet/services/ad_service.dart';
 import 'package:one_bullet/services/score_service.dart';
 
 void main() async {
@@ -14,9 +13,6 @@ void main() async {
 
   // Initialize Hive for high score storage
   await ScoreService.init();
-
-  // Initialize AdMob
-  await AdService.init();
 
   Flame.device.fullScreen();
   Flame.device.setPortrait();
