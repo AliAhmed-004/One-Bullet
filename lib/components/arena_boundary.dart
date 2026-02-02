@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 /// Visual boundary/arena that shows the playable area.
 /// This component draws a border around the play area.
-class ArenaBoundary extends PositionComponent with HasGameRef {
+class ArenaBoundary extends PositionComponent with HasGameReference {
   ArenaBoundary({
     required this.topPadding,
     this.bottomPadding = 8,
@@ -43,7 +43,7 @@ class ArenaBoundary extends PositionComponent with HasGameRef {
   /// Ensures bounds are calculated (fallback if onGameResize hasn't been called).
   void _ensureBoundsInitialized() {
     if (!_boundsInitialized && isMounted) {
-      _updateBounds(gameRef.size);
+      _updateBounds(game.size);
     }
   }
 
@@ -62,7 +62,7 @@ class ArenaBoundary extends PositionComponent with HasGameRef {
   Future<void> onLoad() async {
     await super.onLoad();
     // Initialize bounds immediately when mounted
-    _updateBounds(gameRef.size);
+    _updateBounds(game.size);
   }
 
   @override
