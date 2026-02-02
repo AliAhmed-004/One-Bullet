@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:math' as math;
 
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
@@ -14,13 +15,33 @@ class Bullet extends CircleComponent with CollisionCallbacks {
     this.speed = 400.0,
     this.color = Colors.orange,
     this.trailLength = 12,
-  }) : _velocity = direction.normalized() * speed,
+  }) : _velocity = _applyLaunchImperfection(direction.normalized() * speed),
        super(
          position: position,
          radius: 8,
          anchor: Anchor.center,
          paint: Paint()..color = color,
        );
+
+  /// Applies a one-time small random angular offset at launch (±2-3 degrees).
+  /// This is the ONLY source of randomness in the bullet's behavior.
+  static Vector2 _applyLaunchImperfection(Vector2 velocity) {
+    // Random number generator seeded once at launch
+    final rng = math.Random();
+    
+    // Random offset between -3 and +3 degrees (in radians)
+    final maxOffset = 3 * math.pi / 180; // 3 degrees in radians
+    final offset = (rng.nextDouble() * 2 - 1) * maxOffset;
+    
+    // Rotate velocity by the offset
+    final cosA = math.cos(offset);
+    final sinA = math.sin(offset);
+    
+    return Vector2(
+      velocity.x * cosA - velocity.y * sinA,
+      velocity.x * sinA + velocity.y * cosA,
+    );
+  }
 
   /// Speed of the bullet in pixels per second.
   final double speed;
@@ -36,6 +57,15 @@ class Bullet extends CircleComponent with CollisionCallbacks {
 
   /// Stores recent positions for the trail effect.
   final Queue<Vector2> _trailPositions = Queue<Vector2>();
+
+  /// Bounce counter for deterministic deviation calculation.
+  int _bounceCount = 0;
+
+  /// Perpendicular bias strength as a fraction of speed (~2-3% deviation).
+  static const double _perpBiasStrength = 0.025;
+  
+  /// Epsilon threshold for axis-alignment breaking (~0.85 degrees).
+  static const double _axisEpsilon = 0.015;
 
   /// Getter for velocity (useful for debugging or effects).
   Vector2 get velocity => _velocity;
@@ -75,7 +105,8 @@ class Bullet extends CircleComponent with CollisionCallbacks {
     for (int i = 0; i < count; i++) {
       // Calculate opacity: older positions are more transparent
       final opacity = (i + 1) / count * 0.6; // Max 0.6 opacity for trail
-      final trailRadius = radius * (0.3 + 0.5 * (i + 1) / count); // Shrinking trail
+      final trailRadius =
+          radius * (0.3 + 0.5 * (i + 1) / count); // Shrinking trail
 
       final trailPaint = Paint()
         ..color = color.withValues(alpha: opacity)
@@ -117,22 +148,86 @@ class Bullet extends CircleComponent with CollisionCallbacks {
     // Get arena bounds with bullet radius inset
     final bounds = game.arenaBoundary!.getBoundsWithInset(radius);
 
+    bool bounced = false;
+
     // Bounce off left/right walls
     if (position.x <= bounds.left) {
       position.x = bounds.left;
       _velocity.x = _velocity.x.abs(); // Ensure moving right
+      bounced = true;
     } else if (position.x >= bounds.right) {
       position.x = bounds.right;
       _velocity.x = -_velocity.x.abs(); // Ensure moving left
+      bounced = true;
     }
 
     // Bounce off top/bottom walls
     if (position.y <= bounds.top) {
       position.y = bounds.top;
       _velocity.y = _velocity.y.abs(); // Ensure moving down
+      bounced = true;
     } else if (position.y >= bounds.bottom) {
       position.y = bounds.bottom;
       _velocity.y = -_velocity.y.abs(); // Ensure moving up
+      bounced = true;
+    }
+
+    // Apply subtle deviation on bounce
+    if (bounced) {
+      _applyBounceDeviation();
+    }
+  }
+
+  /// Applies a subtle, deterministic deviation to the velocity after a bounce.
+  /// Uses perpendicular vector bias based on bounce count for predictable deflections.
+  void _applyBounceDeviation() {
+    _bounceCount++;
+
+    // Calculate perpendicular vector to current velocity
+    final perp = Vector2(-_velocity.y, _velocity.x)..normalize();
+
+    // Deterministic bias using sine wave with golden ratio multiplier
+    // Creates non-repeating but predictable pattern
+    final bias = math.sin(_bounceCount * 1.618) * _perpBiasStrength * speed;
+
+    // Apply perpendicular bias to velocity
+    _velocity.add(perp * bias);
+
+    // Normalize and reapply speed to maintain constant velocity
+    _velocity.normalize();
+    _velocity.scale(speed);
+
+    // Ensure velocity never aligns perfectly with axes
+    _breakAxisAlignment();
+  }
+
+  /// Ensures the bullet velocity is never perfectly horizontal or vertical.
+  /// Nudges the velocity slightly if either component is below epsilon threshold.
+  void _breakAxisAlignment() {
+    final vxAbs = _velocity.x.abs() / speed;
+    final vyAbs = _velocity.y.abs() / speed;
+
+    bool needsRenormalize = false;
+
+    // If nearly horizontal, nudge vertical component
+    if (vyAbs < _axisEpsilon) {
+      // Nudge in direction based on bounce count for determinism
+      final sign = (_bounceCount % 2 == 0) ? 1.0 : -1.0;
+      _velocity.y = _axisEpsilon * speed * sign;
+      needsRenormalize = true;
+    }
+
+    // If nearly vertical, nudge horizontal component
+    if (vxAbs < _axisEpsilon) {
+      final sign = (_bounceCount % 2 == 0) ? 1.0 : -1.0;
+      _velocity.x = _axisEpsilon * speed * sign;
+      needsRenormalize = true;
+    }
+
+    // Re-normalize to maintain constant speed
+    if (needsRenormalize) {
+      _velocity.normalize();
+      _velocity.scale(speed);
     }
   }
 }
