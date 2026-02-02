@@ -89,6 +89,17 @@ class Bullet extends CircleComponent with CollisionCallbacks {
     _velocity.scale(_currentSpeed);
   }
 
+  /// Reflects the bullet off a deflector with the given reflection vector.
+  /// 1. Applies the reflection
+  /// 2. Then applies perpendicular deviation
+  void reflectOffDeflector(Vector2 reflectedVelocity) {
+    // Set the new velocity direction from the reflection
+    _velocity.setFrom(reflectedVelocity.normalized() * _currentSpeed);
+    
+    // Apply the standard perpendicular deviation
+    _applyBounceDeviation();
+  }
+
   @override
   Future<void> onLoad() async {
     await super.onLoad();

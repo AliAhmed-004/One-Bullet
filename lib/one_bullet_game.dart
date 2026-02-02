@@ -1,8 +1,11 @@
+import 'dart:math' as math;
+
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:one_bullet/components/arena_boundary.dart';
 import 'package:one_bullet/components/bullet.dart';
+import 'package:one_bullet/components/deflector.dart';
 import 'package:one_bullet/components/mobile_joystick.dart';
 import 'package:one_bullet/components/player.dart';
 import 'package:one_bullet/components/player_death_effect.dart';
@@ -16,7 +19,11 @@ import 'package:one_bullet/services/score_service.dart';
 /// Uses TapCallbacks to handle tap-to-fire mechanic.
 /// Uses HasCollisionDetection for bullet-player collision.
 class OneBulletGame extends FlameGame
-    with HasKeyboardHandlerComponents, DragCallbacks, TapCallbacks, HasCollisionDetection {
+    with
+        HasKeyboardHandlerComponents,
+        DragCallbacks,
+        TapCallbacks,
+        HasCollisionDetection {
   OneBulletGame({super.children});
 
   /// Overlay ID for the start screen.
@@ -51,6 +58,12 @@ class OneBulletGame extends FlameGame
 
   /// Reference to the wave indicator UI.
   WaveIndicator? waveIndicator;
+
+  /// List of active deflectors in the arena.
+  final List<Deflector> _deflectors = [];
+
+  /// Random number generator for deflector placement.
+  final math.Random _rng = math.Random();
 
   /// Whether the player is dead.
   bool _isGameOver = false;
@@ -110,11 +123,12 @@ class OneBulletGame extends FlameGame
     waveManager = WaveManager(
       onWaveChange: _onWaveChange,
       onSpeedChange: _onSpeedChange,
+      onSpawnDeflectors: _onSpawnDeflectors,
     );
     add(waveManager!);
 
     // Create wave indicator (positioned in world space, above arena)
-    waveIndicator = WaveIndicator(topPadding: hudHeight/2);
+    waveIndicator = WaveIndicator(topPadding: hudHeight / 2);
     world.add(waveIndicator!);
   }
 
@@ -133,7 +147,9 @@ class OneBulletGame extends FlameGame
     // Update survival timer only after the bullet has been fired
     if (_hasStarted && !_isGameOver && !_isPaused && player?.hasFired == true) {
       _elapsedSeconds += dt;
-      survivalTime.value = Duration(milliseconds: (_elapsedSeconds * 1000).toInt());
+      survivalTime.value = Duration(
+        milliseconds: (_elapsedSeconds * 1000).toInt(),
+      );
     }
   }
 
@@ -142,7 +158,8 @@ class OneBulletGame extends FlameGame
     super.onTapDown(event);
 
     // Don't fire if game not started, game over, already fired, or tapping in joystick zone
-    if (!_hasStarted || _isGameOver || player == null || player!.hasFired) return;
+    if (!_hasStarted || _isGameOver || player == null || player!.hasFired)
+      return;
 
     // Check if tap is in the joystick activation zone (bottom quarter)
     // If so, don't fire - let the joystick handle it
@@ -186,6 +203,32 @@ class OneBulletGame extends FlameGame
   /// Called when the bullet speed should change.
   void _onSpeedChange(double newSpeed) {
     bullet?.setSpeed(newSpeed);
+  }
+
+  /// Called when deflectors should spawn at the start of a wave.
+  void _onSpawnDeflectors(int count) {
+    if (arenaBoundary == null) return;
+
+    final bounds = arenaBoundary!.bounds;
+    // Margin from arena edges to ensure deflectors don't touch walls
+    const margin = 60.0;
+
+    for (int i = 0; i < count; i++) {
+      // Generate random position and angle
+      final position = Deflector.randomPositionInArena(bounds, _rng, margin);
+      final angle = Deflector.randomAngle(_rng);
+
+      // Create and add the deflector
+      final deflector = Deflector(position: position, angle: angle);
+
+      _deflectors.add(deflector);
+      world.add(deflector);
+    }
+  }
+
+  /// Removes a deflector from tracking (called when destroyed).
+  void removeDeflector(Deflector deflector) {
+    _deflectors.remove(deflector);
   }
 
   /// Called when the player is hit by the bullet.
@@ -253,9 +296,7 @@ class OneBulletGame extends FlameGame
     overlays.remove(gameHudOverlayId);
 
     // Remove game components except arena boundary
-    world.removeAll(
-      world.children.where((c) => c is! ArenaBoundary),
-    );
+    world.removeAll(world.children.where((c) => c is! ArenaBoundary));
     camera.viewport.removeAll(
       camera.viewport.children.whereType<MobileJoystick>(),
     );
@@ -269,6 +310,7 @@ class OneBulletGame extends FlameGame
     bullet = null;
     waveManager = null;
     waveIndicator = null;
+    _deflectors.clear();
 
     // Initialize fresh game components (paused)
     _initializeGame();
@@ -284,9 +326,7 @@ class OneBulletGame extends FlameGame
     overlays.remove(gameOverOverlayId);
 
     // Remove game components except arena boundary
-    world.removeAll(
-      world.children.where((c) => c is! ArenaBoundary),
-    );
+    world.removeAll(world.children.where((c) => c is! ArenaBoundary));
     camera.viewport.removeAll(
       camera.viewport.children.whereType<MobileJoystick>(),
     );
@@ -300,6 +340,7 @@ class OneBulletGame extends FlameGame
     bullet = null;
     waveManager = null;
     waveIndicator = null;
+    _deflectors.clear();
 
     // Initialize fresh game components
     _initializeGame();
