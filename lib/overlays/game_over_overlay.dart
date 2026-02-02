@@ -1,22 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
+import 'package:one_bullet/services/ad_service.dart';
 import 'package:one_bullet/services/score_service.dart';
 
 /// Overlay displayed when the player dies.
-/// Shows "You Died!" text, final score, high score status, and a restart button.
-class GameOverOverlay extends StatelessWidget {
-  const GameOverOverlay({
-    required this.game,
-    super.key,
-  });
+/// Shows "You Died!" text, final score, high score status, and action buttons.
+class GameOverOverlay extends StatefulWidget {
+  const GameOverOverlay({required this.game, super.key});
 
   final OneBulletGame game;
 
   @override
+  State<GameOverOverlay> createState() => _GameOverOverlayState();
+}
+
+class _GameOverOverlayState extends State<GameOverOverlay> {
+  /// Whether the rewarded ad is currently loading/showing.
+  bool _isLoadingAd = false;
+
+  @override
   Widget build(BuildContext context) {
     // Get the final survival time
-    final finalTime = game.survivalTime.value;
-    final isNewRecord = game.isNewHighScore;
+    final finalTime = widget.game.survivalTime.value;
+    final isNewRecord = widget.game.isNewHighScore;
+    final canContinue = widget.game.canContinue;
 
     return Material(
       color: Colors.black54,
@@ -50,12 +57,7 @@ class GameOverOverlay extends StatelessWidget {
                   fontSize: 48,
                   fontWeight: FontWeight.bold,
                   color: Colors.red,
-                  shadows: [
-                    Shadow(
-                      color: Colors.redAccent,
-                      blurRadius: 20,
-                    ),
-                  ],
+                  shadows: [Shadow(color: Colors.redAccent, blurRadius: 20)],
                 ),
               ),
               const SizedBox(height: 24),
@@ -100,11 +102,7 @@ class GameOverOverlay extends StatelessWidget {
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.emoji_events,
-                        color: Colors.white,
-                        size: 20,
-                      ),
+                      Icon(Icons.emoji_events, color: Colors.white, size: 20),
                       SizedBox(width: 8),
                       Text(
                         'NEW HIGH SCORE!',
@@ -122,10 +120,44 @@ class GameOverOverlay extends StatelessWidget {
 
               const SizedBox(height: 32),
 
+              // Continue button (watch ad to revive)
+              if (canContinue) ...[
+                _isLoadingAd
+                    ? const SizedBox(
+                        height: 56,
+                        child: Center(
+                          child: CircularProgressIndicator(color: Colors.green),
+                        ),
+                      )
+                    : ElevatedButton.icon(
+                        onPressed: _onContinuePressed,
+                        icon: const Icon(Icons.play_circle_fill, size: 24),
+                        label: const Text(
+                          'Watch Ad to Continue',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 14,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                const SizedBox(height: 16),
+              ],
+
               // Restart button
               ElevatedButton(
                 onPressed: () {
-                  game.restart();
+                  widget.game.restart();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
@@ -140,16 +172,37 @@ class GameOverOverlay extends StatelessWidget {
                 ),
                 child: const Text(
                   'Restart',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  /// Called when the user taps "Watch Ad to Continue".
+  void _onContinuePressed() {
+    setState(() {
+      _isLoadingAd = true;
+    });
+
+    AdService.showRewardedAd(
+      onRewardEarned: () {
+        // User watched full ad AND ad is now closed - continue the game
+        debugPrint('GameOverOverlay: onRewardEarned callback - calling continueGame()');
+        widget.game.continueGame();
+      },
+      onAdDismissedWithoutReward: () {
+        // User skipped or ad failed - reset loading state
+        debugPrint('GameOverOverlay: onAdDismissedWithoutReward callback');
+        if (mounted) {
+          setState(() {
+            _isLoadingAd = false;
+          });
+        }
+      },
     );
   }
 }

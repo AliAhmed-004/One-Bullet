@@ -6,10 +6,15 @@ import 'package:one_bullet/components/player.dart';
 /// A mobile joystick that appears when the user drags in the bottom
 /// quarter of the screen. Controls the player's movement direction.
 class MobileJoystick extends PositionComponent with DragCallbacks {
-  MobileJoystick({required this.player});
+  MobileJoystick({required Player player}) : _player = player;
 
   /// Reference to the player to control.
-  final Player player;
+  Player _player;
+
+  /// Updates the player reference (used when player respawns after continue).
+  void updatePlayer(Player newPlayer) {
+    _player = newPlayer;
+  }
 
   /// Radius of the joystick base circle.
   static const double baseRadius = 60.0;
@@ -103,9 +108,9 @@ class MobileJoystick extends PositionComponent with DragCallbacks {
     if (distance > 5) {
       // Small deadzone to prevent jitter
       final direction = offset.normalized();
-      player.setMovementDirection(direction);
+      _player.setMovementDirection(direction);
     } else {
-      player.setMovementDirection(Vector2.zero());
+      _player.setMovementDirection(Vector2.zero());
     }
   }
 
@@ -124,7 +129,7 @@ class MobileJoystick extends PositionComponent with DragCallbacks {
   /// Deactivates the joystick and stops player movement.
   void _deactivate() {
     _isActive = false;
-    player.setMovementDirection(Vector2.zero());
+    _player.setMovementDirection(Vector2.zero());
   }
 
   @override

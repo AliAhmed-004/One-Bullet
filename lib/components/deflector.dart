@@ -23,9 +23,11 @@ class Deflector extends PositionComponent with CollisionCallbacks {
        );
 
   /// Width of the deflector.
+  @override
   final double width;
 
   /// Height of the deflector.
+  @override
   final double height;
 
   /// Wood-like brown color.

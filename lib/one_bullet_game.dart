@@ -11,6 +11,7 @@ import 'package:one_bullet/components/player.dart';
 import 'package:one_bullet/components/player_death_effect.dart';
 import 'package:one_bullet/components/wave_indicator.dart';
 import 'package:one_bullet/components/wave_manager.dart';
+import 'package:one_bullet/services/ad_service.dart';
 import 'package:one_bullet/services/score_service.dart';
 
 /// The main game class for One Bullet.
@@ -74,8 +75,14 @@ class OneBulletGame extends FlameGame
   /// Whether the game is currently paused by the user.
   bool _isPaused = false;
 
+  /// Whether the player has used their "continue" for this run.
+  bool _hasUsedContinue = false;
+
   /// Whether the latest game resulted in a new high score.
   bool isNewHighScore = false;
+
+  /// Whether a continue is available (rewarded ad ready and not yet used).
+  bool get canContinue => !_hasUsedContinue && AdService.isRewardedAdReady;
 
   /// Tracks the survival time (notifier for UI updates).
   final ValueNotifier<Duration> survivalTime = ValueNotifier(Duration.zero);
@@ -105,6 +112,7 @@ class OneBulletGame extends FlameGame
     _isGameOver = false;
     _hasStarted = false;
     _isPaused = false;
+    _hasUsedContinue = false;
     isNewHighScore = false;
     _elapsedSeconds = 0;
     survivalTime.value = Duration.zero;
@@ -158,8 +166,9 @@ class OneBulletGame extends FlameGame
     super.onTapDown(event);
 
     // Don't fire if game not started, game over, already fired, or tapping in joystick zone
-    if (!_hasStarted || _isGameOver || player == null || player!.hasFired)
+    if (!_hasStarted || _isGameOver || player == null || player!.hasFired) {
       return;
+    }
 
     // Check if tap is in the joystick activation zone (bottom quarter)
     // If so, don't fire - let the joystick handle it
@@ -258,6 +267,10 @@ class OneBulletGame extends FlameGame
     // Add all fragments to the world
     world.addAll(fragments);
 
+    // Check if we should show an ad (every 3 deaths or after a good run)
+    final survivalSeconds = survivalTime.value.inSeconds;
+    AdService.onPlayerDeath(survivalSeconds);
+
     // Delay showing game over to let fragments animate
     Future.delayed(const Duration(milliseconds: 800), () {
       // Pause the game
@@ -290,6 +303,9 @@ class OneBulletGame extends FlameGame
   /// Returns to the main menu (from pause menu).
   void returnToMenu() {
     _isPaused = false;
+
+    // Reset ad death counter when going back to menu
+    AdService.resetDeathCount();
 
     // Remove all overlays
     overlays.remove(pauseOverlayId);
@@ -349,5 +365,41 @@ class OneBulletGame extends FlameGame
     overlays.add(gameHudOverlayId);
     _hasStarted = true;
     resumeEngine();
+  }
+
+  /// Continues the game after watching a rewarded ad.
+  /// Player respawns at center, bullet continues, timer preserved.
+  void continueGame() {
+    debugPrint('OneBulletGame: continueGame() called, _hasUsedContinue=$_hasUsedContinue');
+    
+    if (_hasUsedContinue) {
+      debugPrint('OneBulletGame: Already used continue, returning');
+      return; // Only one continue per run
+    }
+
+    _hasUsedContinue = true;
+    _isGameOver = false;
+
+    // Hide game over overlay
+    overlays.remove(gameOverOverlayId);
+    debugPrint('OneBulletGame: Removed game over overlay');
+
+    // Respawn the player at the center of the arena (skip aim indicator since bullet is in play)
+    final playerStartY = hudHeight / 2;
+    player = Player(position: Vector2(0, playerStartY), skipAimIndicator: true);
+    world.add(player!);
+    debugPrint('OneBulletGame: Added new player');
+
+    // Update joystick reference to new player
+    joystick?.updatePlayer(player!);
+
+    // Show HUD
+    overlays.add(gameHudOverlayId);
+    debugPrint('OneBulletGame: Added HUD overlay');
+
+    // Resume engine (make sure it's running)
+    _isPaused = false;
+    resumeEngine();
+    debugPrint('OneBulletGame: Engine resumed, paused=${paused}');
   }
 }

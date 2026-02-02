@@ -7,9 +7,8 @@ import 'package:one_bullet/components/bullet.dart';
 import 'package:one_bullet/one_bullet_game.dart';
 
 /// The Player component - a circle that the user controls.
-class Player extends CircleComponent
-    with KeyboardHandler, CollisionCallbacks {
-  Player({required super.position, Color? color})
+class Player extends CircleComponent with KeyboardHandler, CollisionCallbacks {
+  Player({required super.position, Color? color, this.skipAimIndicator = false})
     : super(
         anchor: Anchor.center,
         radius: 20,
@@ -18,26 +17,30 @@ class Player extends CircleComponent
           ..style = PaintingStyle.fill,
       );
 
+  /// If true, don't create the aim indicator (used for respawning after continue).
+  final bool skipAimIndicator;
+
   /// Movement speed in pixels per second.
   static const double speed = 300.0;
 
-  /// The aim indicator that rotates around the player.
-  late final AimIndicator aimIndicator;
+  /// The aim indicator that rotates around the player (null if skipped).
+  AimIndicator? aimIndicator;
 
   /// Whether the bullet has been fired.
   bool _hasFired = false;
 
   /// Getter to check if bullet has been fired.
-  bool get hasFired => _hasFired;
+  bool get hasFired => _hasFired || skipAimIndicator;
 
   /// Mark that the bullet has been fired.
   void markAsFired() {
     _hasFired = true;
-    aimIndicator.removeFromParent(); // Remove aim indicator after firing
+    // Only remove if it exists
+    aimIndicator?.removeFromParent();
   }
 
   /// Returns the current aim direction from the indicator.
-  Vector2 get aimDirection => aimIndicator.aimDirection;
+  Vector2 get aimDirection => aimIndicator?.aimDirection ?? Vector2(0, -1);
 
   /// Current movement direction (normalized or zero).
   /// This can be set by keyboard input OR joystick input.
@@ -63,8 +66,11 @@ class Player extends CircleComponent
     add(CircleHitbox());
 
     // Add the aim indicator as a child (rotates around player)
-    aimIndicator = AimIndicator(orbitRadius: 45);
-    add(aimIndicator);
+    // Skip for respawned players (bullet already fired)
+    if (!skipAimIndicator) {
+      aimIndicator = AimIndicator(orbitRadius: 45);
+      add(aimIndicator!);
+    }
   }
 
   @override
@@ -148,4 +154,3 @@ class Player extends CircleComponent
     }
   }
 }
-
