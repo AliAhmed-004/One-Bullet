@@ -1,4 +1,3 @@
-import 'dart:collection';
 import 'dart:math' as math;
 
 import 'package:flame/collisions.dart';
@@ -59,8 +58,23 @@ class Bullet extends CircleComponent with CollisionCallbacks {
   /// Current velocity of the bullet.
   final Vector2 _velocity;
 
-  /// Stores recent positions for the trail effect.
-  final Queue<Vector2> _trailPositions = Queue<Vector2>();
+  /// Circular buffer for trail positions (more efficient than Queue).
+  late final List<Vector2> _trailPositions;
+  
+  /// Current write index for circular buffer.
+  int _trailIndex = 0;
+  
+  /// Number of valid positions in the trail buffer.
+  int _trailCount = 0;
+
+  /// Cached Paint for glow effect (avoid recreation each frame).
+  late final Paint _glowPaint;
+  
+  /// Cached Paint for trail rendering (reused with color updates).
+  late final Paint _trailPaint;
+  
+  /// Cached reference to the game (avoid findGame() each frame).
+  OneBulletGame? _gameRef;
 
   /// Bounce counter for deterministic deviation calculation.
   int _bounceCount = 0;
@@ -106,6 +120,25 @@ class Bullet extends CircleComponent with CollisionCallbacks {
 
     // Add circular hitbox for collision detection
     add(CircleHitbox());
+    
+    // Initialize circular buffer for trail positions
+    _trailPositions = List.generate(trailLength, (_) => Vector2.zero());
+    
+    // Initialize cached paints
+    _glowPaint = Paint()
+      ..color = Colors.yellow.withValues(alpha: 0.5)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3;
+    
+    _trailPaint = Paint()
+      ..style = PaintingStyle.fill;
+  }
+  
+  @override
+  void onMount() {
+    super.onMount();
+    // Cache game reference to avoid findGame() calls each frame
+    _gameRef = findGame() as OneBulletGame?;
   }
 
   @override
@@ -116,38 +149,31 @@ class Bullet extends CircleComponent with CollisionCallbacks {
     // Draw the main circle (fill)
     canvas.drawCircle(Offset(radius, radius), radius, paint);
 
-    // Add a glowing effect / border
-    final glowPaint = Paint()
-      ..color = Colors.yellow.withValues(alpha: 0.5)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3;
-
-    canvas.drawCircle(Offset(radius, radius), radius, glowPaint);
+    // Add a glowing effect / border (using cached paint)
+    canvas.drawCircle(Offset(radius, radius), radius, _glowPaint);
   }
 
   /// Renders the fading trail behind the bullet.
   void _renderTrail(Canvas canvas) {
-    if (_trailPositions.isEmpty) return;
+    if (_trailCount == 0) return;
 
-    final trailList = _trailPositions.toList();
-    final count = trailList.length;
-
-    for (int i = 0; i < count; i++) {
+    for (int i = 0; i < _trailCount; i++) {
+      // Calculate the actual index in circular buffer (oldest first)
+      final bufferIndex = (_trailIndex - _trailCount + i + trailLength) % trailLength;
+      
       // Calculate opacity: older positions are more transparent
-      final opacity = (i + 1) / count * 0.6; // Max 0.6 opacity for trail
-      final trailRadius =
-          radius * (0.3 + 0.5 * (i + 1) / count); // Shrinking trail
+      final opacity = (i + 1) / _trailCount * 0.6; // Max 0.6 opacity for trail
+      final trailRadius = radius * (0.3 + 0.5 * (i + 1) / _trailCount); // Shrinking trail
 
-      final trailPaint = Paint()
-        ..color = color.withValues(alpha: opacity)
-        ..style = PaintingStyle.fill;
+      // Reuse cached paint, just update color
+      _trailPaint.color = color.withValues(alpha: opacity);
 
       // Convert world position to local coordinates
-      final worldPos = trailList[i];
+      final worldPos = _trailPositions[bufferIndex];
       final localX = worldPos.x - position.x + radius;
       final localY = worldPos.y - position.y + radius;
 
-      canvas.drawCircle(Offset(localX, localY), trailRadius, trailPaint);
+      canvas.drawCircle(Offset(localX, localY), trailRadius, _trailPaint);
     }
   }
 
@@ -155,13 +181,10 @@ class Bullet extends CircleComponent with CollisionCallbacks {
   void update(double dt) {
     super.update(dt);
 
-    // Store current position for trail (before moving)
-    _trailPositions.addLast(position.clone());
-
-    // Keep only the last N positions
-    while (_trailPositions.length > trailLength) {
-      _trailPositions.removeFirst();
-    }
+    // Store current position in circular buffer (before moving)
+    _trailPositions[_trailIndex].setFrom(position);
+    _trailIndex = (_trailIndex + 1) % trailLength;
+    if (_trailCount < trailLength) _trailCount++;
 
     // Move the bullet
     position += _velocity * dt;
@@ -172,11 +195,10 @@ class Bullet extends CircleComponent with CollisionCallbacks {
 
   /// Handles bouncing off the arena boundaries.
   void _handleWallBounce() {
-    final game = findGame();
-    if (game is! OneBulletGame || game.arenaBoundary == null) return;
+    if (_gameRef == null || _gameRef!.arenaBoundary == null) return;
 
     // Get arena bounds with bullet radius inset
-    final bounds = game.arenaBoundary!.getBoundsWithInset(radius);
+    final bounds = _gameRef!.arenaBoundary!.getBoundsWithInset(radius);
 
     bool bounced = false;
 

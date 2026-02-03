@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flame/events.dart';
@@ -9,7 +10,6 @@ import 'package:one_bullet/components/deflector.dart';
 import 'package:one_bullet/components/mobile_joystick.dart';
 import 'package:one_bullet/components/player.dart';
 import 'package:one_bullet/components/player_death_effect.dart';
-import 'package:one_bullet/components/wave_indicator.dart';
 import 'package:one_bullet/components/wave_manager.dart';
 import 'package:one_bullet/services/score_service.dart';
 
@@ -56,8 +56,8 @@ class OneBulletGame extends FlameGame
   /// Reference to the wave manager.
   WaveManager? waveManager;
 
-  /// Reference to the wave indicator UI (Flame component - to be removed).
-  WaveIndicator? waveIndicator;
+  /// Timer for delayed game over screen (cancellable).
+  Timer? _gameOverTimer;
 
   /// List of active deflectors in the arena.
   final List<Deflector> _deflectors = [];
@@ -272,8 +272,9 @@ class OneBulletGame extends FlameGame
     // TODO: Re-enable ad showing after Play Store publication
     // AdService.onPlayerDeath(survivalTime.value.inSeconds);
 
-    // Delay showing game over to let fragments animate
-    Future.delayed(const Duration(milliseconds: 800), () {
+    // Delay showing game over to let fragments animate (cancellable timer)
+    _gameOverTimer?.cancel();
+    _gameOverTimer = Timer(const Duration(milliseconds: 800), () {
       // Pause the game
       pauseEngine();
 
@@ -304,6 +305,10 @@ class OneBulletGame extends FlameGame
   /// Returns to the main menu (from pause menu).
   void returnToMenu() {
     _isPaused = false;
+
+    // Cancel any pending game over timer
+    _gameOverTimer?.cancel();
+    _gameOverTimer = null;
 
     // TODO: Re-enable ad reset after Play Store publication
     // AdService.resetDeathCount();
@@ -336,8 +341,25 @@ class OneBulletGame extends FlameGame
     // Engine is already paused, no need to pause again
   }
 
+  @override
+  void onRemove() {
+    // Dispose ValueNotifiers to prevent memory leaks
+    survivalTime.dispose();
+    waveState.dispose();
+
+    // Cancel any pending timers
+    _gameOverTimer?.cancel();
+    _gameOverTimer = null;
+
+    super.onRemove();
+  }
+
   /// Restarts the game.
   void restart() {
+    // Cancel any pending game over timer
+    _gameOverTimer?.cancel();
+    _gameOverTimer = null;
+
     // Hide game over overlay
     overlays.remove(gameOverOverlayId);
 

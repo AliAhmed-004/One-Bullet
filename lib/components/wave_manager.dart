@@ -149,6 +149,15 @@ class WaveManager extends Component {
     currentSpeed.value = waves[0].startSpeed;
     isWarningActive.value = false;
   }
+  
+  @override
+  void onRemove() {
+    // Dispose ValueNotifiers to prevent memory leaks
+    currentWave.dispose();
+    currentSpeed.dispose();
+    isWarningActive.dispose();
+    super.onRemove();
+  }
 
   @override
   void update(double dt) {

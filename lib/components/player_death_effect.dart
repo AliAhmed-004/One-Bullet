@@ -50,6 +50,36 @@ class PlayerFragment extends PositionComponent {
 
   /// Friction to slow down fragments.
   static const double friction = 0.98;
+  
+  /// Cached Paint for fill (reused with color updates).
+  late final Paint _fillPaint;
+  
+  /// Cached Paint for border (reused with color updates).
+  late final Paint _borderPaint;
+  
+  /// Cached Path for fragment shape (computed once).
+  late final Path _fragmentPath;
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    
+    // Initialize cached paints
+    _fillPaint = Paint()..style = PaintingStyle.fill;
+    _borderPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    
+    // Pre-compute the fragment path (shape doesn't change)
+    final halfSize = fragmentSize / 2;
+    _fragmentPath = Path()
+      ..moveTo(halfSize * 0.8, 0)
+      ..lineTo(halfSize * 1.5, halfSize * 0.7)
+      ..lineTo(halfSize * 1.2, halfSize * 1.5)
+      ..lineTo(halfSize * 0.3, halfSize * 1.3)
+      ..lineTo(0, halfSize * 0.5)
+      ..close();
+  }
 
   @override
   void update(double dt) {
@@ -86,31 +116,13 @@ class PlayerFragment extends PositionComponent {
   void render(Canvas canvas) {
     super.render(canvas);
 
-    final paint = Paint()
-      ..color = color.withValues(alpha: _opacity)
-      ..style = PaintingStyle.fill;
+    // Update cached paint colors with current opacity
+    _fillPaint.color = color.withValues(alpha: _opacity);
+    _borderPaint.color = Colors.white.withValues(alpha: _opacity * 0.5);
 
-    // Draw fragment as a small irregular polygon (triangle-ish)
-    final path = Path();
-    final halfSize = fragmentSize / 2;
-
-    // Create a slightly irregular shape
-    path.moveTo(halfSize * 0.8, 0);
-    path.lineTo(halfSize * 1.5, halfSize * 0.7);
-    path.lineTo(halfSize * 1.2, halfSize * 1.5);
-    path.lineTo(halfSize * 0.3, halfSize * 1.3);
-    path.lineTo(0, halfSize * 0.5);
-    path.close();
-
-    canvas.drawPath(path, paint);
-
-    // Add a slight border for visibility
-    final borderPaint = Paint()
-      ..color = Colors.white.withValues(alpha: _opacity * 0.5)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-
-    canvas.drawPath(path, borderPaint);
+    // Draw using cached path and paints
+    canvas.drawPath(_fragmentPath, _fillPaint);
+    canvas.drawPath(_fragmentPath, _borderPaint);
   }
 }
 

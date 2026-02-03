@@ -35,6 +35,12 @@ class Deflector extends PositionComponent with CollisionCallbacks {
   static const Color woodDarkColor = Color(0xFF5D2E0C); // Darker brown
   static const Color woodLightColor = Color(0xFFA0522D); // Sienna
 
+  /// Cached Paint objects for rendering (avoid recreation each frame).
+  late final Paint _bodyPaint;
+  late final Paint _grainPaint;
+  late final Paint _highlightPaint;
+  late final Paint _borderPaint;
+
   /// Whether this deflector has been destroyed.
   bool _isDestroyed = false;
 
@@ -44,48 +50,48 @@ class Deflector extends PositionComponent with CollisionCallbacks {
 
     // Add a rectangular hitbox for collision detection
     add(RectangleHitbox());
+    
+    // Initialize cached paints (avoid creating in render loop)
+    _bodyPaint = Paint()
+      ..color = woodColor
+      ..style = PaintingStyle.fill;
+    
+    _grainPaint = Paint()
+      ..color = woodDarkColor.withValues(alpha: 0.4)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    
+    _highlightPaint = Paint()
+      ..color = woodLightColor.withValues(alpha: 0.5)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    
+    _borderPaint = Paint()
+      ..color = woodDarkColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
   }
 
   @override
   void render(Canvas canvas) {
     super.render(canvas);
 
-    // Main wood body
-    final bodyPaint = Paint()
-      ..color = woodColor
-      ..style = PaintingStyle.fill;
-
+    // Main wood body (using cached paint)
     final bodyRect = Rect.fromLTWH(0, 0, width, height);
     final rrect = RRect.fromRectAndRadius(bodyRect, const Radius.circular(2));
-    canvas.drawRRect(rrect, bodyPaint);
+    canvas.drawRRect(rrect, _bodyPaint);
 
-    // Wood grain lines (darker)
-    final grainPaint = Paint()
-      ..color = woodDarkColor.withValues(alpha: 0.4)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-
-    // Draw a few horizontal grain lines
+    // Wood grain lines (using cached paint)
     for (int i = 1; i < 4; i++) {
       final y = height * i / 4;
-      canvas.drawLine(Offset(3, y), Offset(width - 3, y), grainPaint);
+      canvas.drawLine(Offset(3, y), Offset(width - 3, y), _grainPaint);
     }
 
-    // Highlight on top edge
-    final highlightPaint = Paint()
-      ..color = woodLightColor.withValues(alpha: 0.5)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
+    // Highlight on top edge (using cached paint)
+    canvas.drawLine(const Offset(2, 2), Offset(width - 2, 2), _highlightPaint);
 
-    canvas.drawLine(const Offset(2, 2), Offset(width - 2, 2), highlightPaint);
-
-    // Border
-    final borderPaint = Paint()
-      ..color = woodDarkColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-
-    canvas.drawRRect(rrect, borderPaint);
+    // Border (using cached paint)
+    canvas.drawRRect(rrect, _borderPaint);
   }
 
   @override
@@ -231,6 +237,35 @@ class DeflectorFragment extends PositionComponent {
 
   /// Friction to slow down fragments.
   static const double friction = 0.97;
+  
+  /// Cached Paint for fill (reused with color updates).
+  late final Paint _fillPaint;
+  
+  /// Cached Paint for border (reused with color updates).
+  late final Paint _borderPaint;
+  
+  /// Cached Path for fragment shape (computed once).
+  late final Path _fragmentPath;
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    
+    // Initialize cached paints
+    _fillPaint = Paint()..style = PaintingStyle.fill;
+    _borderPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    
+    // Pre-compute the fragment path (shape doesn't change)
+    final halfSize = fragmentSize / 2;
+    _fragmentPath = Path()
+      ..moveTo(halfSize * 0.2, halfSize * 0.1)
+      ..lineTo(halfSize * 1.8, halfSize * 0.3)
+      ..lineTo(halfSize * 1.6, halfSize * 1.7)
+      ..lineTo(halfSize * 0.4, halfSize * 1.5)
+      ..close();
+  }
 
   @override
   void update(double dt) {
@@ -262,29 +297,13 @@ class DeflectorFragment extends PositionComponent {
   void render(Canvas canvas) {
     super.render(canvas);
 
-    final paint = Paint()
-      ..color = Deflector.woodColor.withValues(alpha: _opacity)
-      ..style = PaintingStyle.fill;
+    // Update cached paint colors with current opacity
+    _fillPaint.color = Deflector.woodColor.withValues(alpha: _opacity);
+    _borderPaint.color = Deflector.woodDarkColor.withValues(alpha: _opacity * 0.7);
 
-    // Draw as a small irregular rectangle
-    final path = Path();
-    final halfSize = fragmentSize / 2;
-
-    path.moveTo(halfSize * 0.2, halfSize * 0.1);
-    path.lineTo(halfSize * 1.8, halfSize * 0.3);
-    path.lineTo(halfSize * 1.6, halfSize * 1.7);
-    path.lineTo(halfSize * 0.4, halfSize * 1.5);
-    path.close();
-
-    canvas.drawPath(path, paint);
-
-    // Dark border
-    final borderPaint = Paint()
-      ..color = Deflector.woodDarkColor.withValues(alpha: _opacity * 0.7)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-
-    canvas.drawPath(path, borderPaint);
+    // Draw using cached path and paints
+    canvas.drawPath(_fragmentPath, _fillPaint);
+    canvas.drawPath(_fragmentPath, _borderPaint);
   }
 }
 
