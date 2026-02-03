@@ -56,7 +56,7 @@ class OneBulletGame extends FlameGame
   /// Reference to the wave manager.
   WaveManager? waveManager;
 
-  /// Reference to the wave indicator UI.
+  /// Reference to the wave indicator UI (Flame component - to be removed).
   WaveIndicator? waveIndicator;
 
   /// List of active deflectors in the arena.
@@ -82,10 +82,15 @@ class OneBulletGame extends FlameGame
 
   /// Whether a continue is available.
   /// TODO: Re-enable when ads are implemented after Play Store publication.
+  /// TODO: Remember to configure ads for ages 12+.
   bool get canContinue => false;
 
   /// Tracks the survival time (notifier for UI updates).
   final ValueNotifier<Duration> survivalTime = ValueNotifier(Duration.zero);
+
+  /// Tracks the current wave number and flash state for the HUD.
+  final ValueNotifier<({int waveNumber, bool isFlashing})> waveState =
+      ValueNotifier((waveNumber: 1, isFlashing: false));
 
   /// Accumulated time in seconds for the timer.
   double _elapsedSeconds = 0;
@@ -134,10 +139,6 @@ class OneBulletGame extends FlameGame
       onSpawnDeflectors: _onSpawnDeflectors,
     );
     add(waveManager!);
-
-    // Create wave indicator (positioned in world space, above arena)
-    waveIndicator = WaveIndicator(topPadding: hudHeight / 2);
-    world.add(waveIndicator!);
   }
 
   /// Called when player taps "Start" on the start screen.
@@ -206,7 +207,8 @@ class OneBulletGame extends FlameGame
 
   /// Called when the wave number changes.
   void _onWaveChange(int newWave, bool isWarning) {
-    waveIndicator?.setWave(newWave, flash: isWarning);
+    // Update the wave state for HUD display
+    waveState.value = (waveNumber: newWave, isFlashing: isWarning);
   }
 
   /// Called when the bullet speed should change.
@@ -324,7 +326,6 @@ class OneBulletGame extends FlameGame
     joystick = null;
     bullet = null;
     waveManager = null;
-    waveIndicator = null;
     _deflectors.clear();
 
     // Initialize fresh game components (paused)
@@ -354,7 +355,6 @@ class OneBulletGame extends FlameGame
     joystick = null;
     bullet = null;
     waveManager = null;
-    waveIndicator = null;
     _deflectors.clear();
 
     // Initialize fresh game components
@@ -399,6 +399,6 @@ class OneBulletGame extends FlameGame
     // Resume engine (make sure it's running)
     _isPaused = false;
     resumeEngine();
-    debugPrint('OneBulletGame: Engine resumed, paused=${paused}');
+    debugPrint('OneBulletGame: Engine resumed, paused=$paused');
   }
 }

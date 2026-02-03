@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
+import 'package:one_bullet/overlays/wave_indicator_widget.dart';
 import 'package:one_bullet/services/score_service.dart';
 
 /// HUD overlay displaying score (time survived) and pause button.
@@ -20,20 +21,53 @@ class GameHudOverlay extends StatelessWidget {
         child: Column(
           children: [
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Pause button (top left)
+                // Pause button (left)
                 _buildPauseButton(context),
 
-                // Score/Timer (center)
+                // Timer and Wave (center)
                 Expanded(
                   child: Center(
-                    child: _buildTimerDisplay(),
+                    child: _buildTimerAndWaveDisplay(),
                   ),
                 ),
-
-                // Placeholder for symmetry (same width as pause button)
-                const SizedBox(width: 48),
               ],
+            ),
+
+            // High score (below timer)
+            ValueListenableBuilder<Duration>(
+              valueListenable: ScoreService.highScore,
+              builder: (context, highScore, _) {
+                if (highScore <= Duration.zero) {
+                  return const SizedBox.shrink();
+                }
+
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.emoji_events,
+                        color: Colors.amber,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Best: ${ScoreService.formatDuration(highScore)}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.amber,
+                          fontFamily: 'monospace',
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -64,18 +98,20 @@ class GameHudOverlay extends StatelessWidget {
     );
   }
 
-  Widget _buildTimerDisplay() {
+  Widget _buildTimerAndWaveDisplay() {
     return ValueListenableBuilder<Duration>(
       valueListenable: game.survivalTime,
       builder: (context, duration, child) {
         final minutes = duration.inMinutes.toString().padLeft(2, '0');
         final seconds = (duration.inSeconds % 60).toString().padLeft(2, '0');
 
-        return ValueListenableBuilder<Duration>(
-          valueListenable: ScoreService.highScore,
-          builder: (context, highScore, _) {
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Current timer
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               decoration: BoxDecoration(
                 color: Colors.black54,
                 borderRadius: BorderRadius.circular(12),
@@ -84,50 +120,29 @@ class GameHudOverlay extends StatelessWidget {
                   width: 2,
                 ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Current timer
-                  Text(
-                    '$minutes:$seconds',
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      fontFamily: 'monospace',
-                      letterSpacing: 2,
-                    ),
-                  ),
-                  // High score indicator (only if a high score exists)
-                  if (highScore > Duration.zero) ...[
-                    const SizedBox(width: 16),
-                    Container(
-                      width: 1,
-                      height: 24,
-                      color: Colors.white24,
-                    ),
-                    const SizedBox(width: 12),
-                    const Icon(
-                      Icons.emoji_events,
-                      color: Colors.amber,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      ScoreService.formatDuration(highScore),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.amber,
-                        fontFamily: 'monospace',
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ],
-                ],
+              child: Text(
+                '$minutes:$seconds',
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  fontFamily: 'monospace',
+                  letterSpacing: 2,
+                ),
               ),
-            );
-          },
+            ),
+            const SizedBox(width: 12),
+            // Wave indicator
+            ValueListenableBuilder<({int waveNumber, bool isFlashing})>(
+              valueListenable: game.waveState,
+              builder: (context, state, _) {
+                return WaveIndicatorWidget(
+                  waveNumber: state.waveNumber,
+                  isFlashing: state.isFlashing,
+                );
+              },
+            ),
+          ],
         );
       },
     );
