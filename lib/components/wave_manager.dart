@@ -9,6 +9,7 @@ class WaveConfig {
     required this.startSpeed,
     required this.endSpeed,
     this.deflectorSpawnInterval,
+    this.deflectorsPerSpawn = 1,
   });
 
   /// The wave number (1-indexed).
@@ -25,6 +26,9 @@ class WaveConfig {
 
   /// Interval in seconds between deflector spawns (null = no spawning).
   final double? deflectorSpawnInterval;
+  
+  /// Number of deflectors to spawn per interval.
+  final int deflectorsPerSpawn;
 }
 
 /// Manages wave progression and bullet speed scaling.
@@ -47,48 +51,61 @@ class WaveManager extends Component {
   /// Callback to spawn deflectors at wave start.
   final void Function(int count) onSpawnDeflectors;
 
-  /// Wave configurations (Wave 1-6 for testing).
+  /// Wave configurations - tuned for challenging but fair progression.
   static const List<WaveConfig> waves = [
-    // Wave 1: Warm-up phase, comfortable speed
-    WaveConfig(waveNumber: 1, duration: 15.0, startSpeed: 350, endSpeed: 400),
+    // Wave 1: Brief warm-up, deflectors start immediately
+    WaveConfig(
+      waveNumber: 1,
+      duration: 10.0,
+      startSpeed: 380,
+      endSpeed: 420,
+      deflectorSpawnInterval: 5.0,
+    ),
 
-    // Wave 2: Slight increase
-    WaveConfig(waveNumber: 2, duration: 18.0, startSpeed: 400, endSpeed: 450, deflectorSpawnInterval: 5.0),
+    // Wave 2: Speed ramps up, more deflectors
+    WaveConfig(
+      waveNumber: 2,
+      duration: 12.0,
+      startSpeed: 420,
+      endSpeed: 480,
+      deflectorSpawnInterval: 4.0,
+    ),
 
-    // Wave 3: Getting challenging + deflectors start spawning every 5 seconds
+    // Wave 3: Getting challenging
     WaveConfig(
       waveNumber: 3,
-      duration: 20.0,
-      startSpeed: 450,
-      endSpeed: 500,
-      deflectorSpawnInterval: 8.0,
+      duration: 15.0,
+      startSpeed: 480,
+      endSpeed: 550,
+      deflectorSpawnInterval: 4.0,
     ),
 
-    // Wave 4: Fast 
+    // Wave 4: Fast and chaotic
     WaveConfig(
       waveNumber: 4,
-      duration: 22.0,
-      startSpeed: 500,
-      endSpeed: 550,
-      deflectorSpawnInterval: 5.0,
+      duration: 18.0,
+      startSpeed: 550,
+      endSpeed: 620,
+      deflectorSpawnInterval: 3.5,
     ),
 
-    // Wave 5: Very fast, deflectors every 5 seconds
+    // Wave 5: Very fast, frequent deflectors
     WaveConfig(
       waveNumber: 5,
-      duration: 25.0,
-      startSpeed: 550,
-      endSpeed: 650,
-      deflectorSpawnInterval: 5.0,
+      duration: 20.0,
+      startSpeed: 620,
+      endSpeed: 700,
+      deflectorSpawnInterval: 3.0,
     ),
 
-    // Wave 6: Maximum speed, deflectors every 3 seconds
+    // Wave 6: Endurance mode - max speed, constant pressure, double deflectors
     WaveConfig(
       waveNumber: 6,
       duration: double.infinity,
-      startSpeed: 650,
-      endSpeed: 720,
-      deflectorSpawnInterval: 3.0,
+      startSpeed: 700,
+      endSpeed: 800,
+      deflectorSpawnInterval: 2.5,
+      deflectorsPerSpawn: 2,
     ),
   ];
 
@@ -201,7 +218,7 @@ class WaveManager extends Component {
 
     if (_deflectorSpawnTimer >= interval) {
       _deflectorSpawnTimer -= interval;
-      onSpawnDeflectors(1);
+      onSpawnDeflectors(_currentConfig.deflectorsPerSpawn);
     }
   }
 

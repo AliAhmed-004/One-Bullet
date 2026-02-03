@@ -20,8 +20,8 @@ class Player extends CircleComponent with KeyboardHandler, CollisionCallbacks {
   /// If true, don't create the aim indicator (used for respawning after continue).
   final bool skipAimIndicator;
 
-  /// Movement speed in pixels per second.
-  static const double speed = 300.0;
+  /// Movement speed in pixels per second (tuned for challenging gameplay).
+  static const double speed = 260.0;
 
   /// The aim indicator that rotates around the player (null if skipped).
   AimIndicator? aimIndicator;

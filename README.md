@@ -2,145 +2,177 @@
 
 **A survival game about avoiding your own mistake.**
 
-Fire a bullet. This bullet will **NEVER DESPAWN**. Dodge it, and see how long you can survive.
+---
+
+## 🎯 The Concept
+
+You have **one bullet**. Fire it, and it will **never stop**. It bounces off walls, ricochets off obstacles, and hunts you down relentlessly. Your only goal? **Survive as long as you can.**
+
+One Bullet is a minimalist arcade survival game that turns a simple mechanic into an intense, heart-pounding experience. The longer you survive, the faster and more chaotic the bullet becomes.
 
 ---
 
-## 🎮 Gameplay
+## 🎮 How To Play
 
-### Core Mechanics
-1. **Fire once** — Tap the screen (or anywhere outside the joystick zone) to fire your bullet in the aimed direction
-2. **Ricochet chaos** — The bullet bounces off arena walls forever, with slight angular deviations to prevent predictable patterns
-3. **Survive** — Dodge your own bullet for as long as possible
-4. **Death** — One hit and you're done
+1. **Aim** — A rotating indicator shows your firing direction
+2. **Fire** — Tap the screen to release your bullet
+3. **Dodge** — The bullet bounces forever, getting faster over time
+4. **Survive** — One hit and it's game over
 
-### Controls
-- **Mobile (Touch)**:
-  - Drag anywhere in the bottom quarter of the screen to activate the **virtual joystick**
-  - Tap anywhere else to **fire** (before bullet is launched)
-- **Desktop (Keyboard)**:
-  - `W/A/S/D` or `Arrow Keys` — Move the player
-  - Tap/Click to fire
+The twist? **You create your own chaos.** Every deflector the bullet hits, every wall it bounces off — it all stems from that single shot you fired.
 
-### Wave System
-The game features a progressive wave system that increases difficulty over time:
+---
 
-| Wave | Duration | Bullet Speed | Deflectors |
-|------|----------|--------------|------------|
-| 1    | 15s      | 350 → 400    | None       |
-| 2    | 18s      | 400 → 450    | Every 5s   |
-| 3    | 20s      | 450 → 500    | Every 8s   |
-| 4    | 22s      | 500 → 550    | Every 5s   |
-| 5    | 25s      | 550 → 650    | Every 5s   |
-| 6    | ∞        | 650 → 720    | Every 3s   |
+## ✨ Key Features
+
+### 🔥 One Bullet, Infinite Chaos
+- Fire a single bullet that **never despawns**
+- Watch it ricochet off arena walls with realistic physics
+- Slight angular deviations prevent predictable patterns — every game is unique
+
+### 📈 Progressive Wave System
+The difficulty escalates as you survive longer:
+
+| Wave | Duration | Bullet Speed | Deflector Spawns |
+|------|----------|--------------|------------------|
+| 1    | 10s      | 380 → 420    | Every 5s         |
+| 2    | 12s      | 420 → 480    | Every 4s         |
+| 3    | 15s      | 480 → 550    | Every 4s         |
+| 4    | 18s      | 550 → 620    | Every 3.5s       |
+| 5    | 20s      | 620 → 700    | Every 3s         |
+| 6    | ∞        | 700 → 800    | Every 2.5s       |
+
+Reach Wave 6 and enter **Endurance Mode** — max speed, constant pressure, pure survival.
+
+### 🪵 Destructible Deflectors
+- Wooden obstacles spawn throughout the arena
+- They **redirect the bullet** in unexpected directions
+- They **block your movement** — use them strategically or get trapped
+- They **shatter** when hit, creating satisfying destruction effects
+
+### 🎨 Polished Visual Effects
+- Glowing bullet with a fading trail
+- Particle explosion on player death
+- Wood fragment particles when deflectors break
+- Smooth animations and visual feedback
+
+### 📱 Cross-Platform Controls
+- **Mobile**: Intuitive virtual joystick (bottom quarter of screen) + tap to fire
+- **Desktop**: WASD/Arrow keys for movement + click to fire
+- **Responsive design** that adapts to any screen size
+
+### 🏆 Competitive Features
+- **High score tracking** — Beat your personal best
+- **Survival timer** — Track your time down to the second
+- **Wave indicator** — Know exactly how far you've progressed
+- **New high score celebration** — Special effects when you set a record
+
+### ⏸️ Quality of Life
+- Pause menu with resume and main menu options
+- Clean, distraction-free UI during gameplay
+- Instant restart — get back in the action immediately
+
+---
+
+## 🎯 What Makes One Bullet Unique?
+
+Unlike typical bullet-hell games where enemies attack you, **you are your own enemy**. The bullet you fire becomes your pursuer. This creates a unique psychological tension — every shot you take is a commitment to dodge it forever.
+
+The game rewards:
+- **Spatial awareness** — Track the bullet while navigating obstacles
+- **Quick reflexes** — React to unexpected ricochets
+- **Strategic positioning** — Use deflectors as shields or avoid getting cornered
+- **Endurance** — Stay focused as speed and chaos escalate
+
+---
+
+## 🛠️ Technical Details
+
+### Built With
+- **Flutter** — Google's cross-platform UI framework
+- **Flame** — Lightweight 2D game engine for Flutter
+- **Hive** — Fast, local storage for high scores
+
+### Supported Platforms
+- ✅ Android
+- ✅ iOS
+- ✅ Windows
+- ✅ macOS
+- ✅ Linux
+- ✅ Web
+
+### Performance
+- Optimized rendering with cached graphics objects
+- Efficient circular buffer for bullet trail
+- Smooth 60fps gameplay on mobile devices
+
+---
+
+## 🔒 Privacy & Safety
+
+- **No data collection** — We don't track you
+- **No accounts required** — Play instantly
+- **No ads** (currently) — Uninterrupted gameplay
+- **Offline play** — No internet required
+- **Ages 12+** — Suitable for teens and adults
+
+High scores are stored **locally on your device only** and never transmitted anywhere.
+
+---
+
+## 📸 Game Elements
+
+### The Player
+A blue circle that you control. One hit from the bullet and you're done.
+
+### The Bullet
+An orange glowing projectile with a trailing effect. Bounces off walls forever, getting faster each wave.
+
+### The Arena
+A bordered play area that keeps both you and the bullet contained. No escape — only survival.
 
 ### Deflectors
-Starting from Wave 2, wooden **deflectors** spawn randomly in the arena:
-- They **bounce** the bullet in new directions when hit
-- They **block** player movement
-- They **break apart** after being hit by the bullet
+Wooden rectangular obstacles that spawn periodically. They redirect the bullet and block your path until destroyed.
 
 ---
 
-## 🛠️ Tech Stack
+## 🎮 Game Flow
 
-- **Framework**: [Flutter](https://flutter.dev/) + [Flame](https://flame-engine.org/) game engine
-- **Local Storage**: [Hive](https://pub.dev/packages/hive) for high score persistence
-- **Platforms**: Android, iOS, Linux, macOS, Windows, Web
-
----
-
-## 📁 Project Structure
-
-```
-lib/
-├── main.dart                  # App entry point, overlay setup
-├── one_bullet_game.dart       # Main game class, state management
-├── components/
-│   ├── player.dart            # Player circle with keyboard/joystick input
-│   ├── bullet.dart            # Bouncing bullet with trail effect
-│   ├── deflector.dart         # Wooden obstacles that break on impact
-│   ├── arena_boundary.dart    # Game arena walls
-│   ├── aim_indicator.dart     # Pre-fire aiming UI
-│   ├── mobile_joystick.dart   # Touch-based movement controls
-│   ├── wave_manager.dart      # Wave progression & speed scaling
-│   ├── wave_indicator.dart    # Wave UI component
-│   └── player_death_effect.dart # Death animation fragments
-├── overlays/
-│   ├── start_screen_overlay.dart
-│   ├── game_hud_overlay.dart
-│   ├── pause_overlay.dart
-│   ├── game_over_overlay.dart
-│   └── wave_indicator_widget.dart
-└── services/
-    └── score_service.dart     # High score storage with Hive
-```
+1. **Start Screen** — See your high score, tap to begin
+2. **Aim Phase** — A rotating indicator shows where you'll fire
+3. **Fire** — Tap anywhere to launch the bullet (timer starts)
+4. **Survival** — Dodge, weave, and outlast your own bullet
+5. **Death** — Dramatic particle explosion, see your final time
+6. **Game Over** — Compare to high score, restart instantly
 
 ---
 
-## 🚀 Getting Started
+## 💡 Tips for Survival
 
-### Prerequisites
-- Flutter SDK (^3.10.7)
-- Dart SDK
-
-### Installation
-```bash
-# Clone the repository
-git clone <repo-url>
-cd one_bullet
-
-# Install dependencies
-flutter pub get
-
-# Run the app
-flutter run
-```
+1. **Don't fire immediately** — Wait for the aim indicator to point away from you
+2. **Stay central** — Edges and corners are death traps
+3. **Watch the deflectors** — They can redirect the bullet toward you unexpectedly
+4. **Keep moving** — A stationary target is an easy target
+5. **Learn the speeds** — Each wave has a rhythm; adapt to it
 
 ---
 
-## 📝 Features
+## 🚀 Future Plans
 
-- ✅ Single bullet that never despawns
-- ✅ Deterministic bullet physics with slight launch imperfection
-- ✅ Progressive wave system with speed ramping
-- ✅ Destructible deflector obstacles
-- ✅ Virtual joystick for mobile controls
-- ✅ Keyboard support for desktop
-- ✅ High score persistence
-- ✅ Pause/Resume functionality
-- ✅ Death animation with particle fragments
-- ✅ Cross-platform support
+- Additional game modes
+- Global leaderboards
+- Achievement system
+- Cosmetic unlocks
+- Daily challenges
 
 ---
 
-## � Privacy Policy
+## 📝 Summary
 
-**One Bullet** is committed to protecting your privacy.
+**One Bullet** is a minimalist survival game with a twist — you're dodging the bullet YOU fired. With escalating waves, destructible obstacles, and polished visuals, it delivers intense, pick-up-and-play arcade action. How long can you survive your own mistake?
 
-### Data Collection
-- **No personal data is collected** — We do not collect names, emails, or any personally identifiable information
-- **No account required** — The game can be played without signing up or logging in
-- **No analytics tracking** — We do not track your gameplay behavior or device information
-
-### Local Storage
-- **High scores** are stored locally on your device using Hive
-- This data never leaves your device and is not transmitted to any server
-- You can clear this data by uninstalling the app or clearing app data
-
-### Third-Party Services
-- Currently, **no third-party services** are integrated
-- Future updates may include ads (Google AdMob) for users aged 12+, which will be disclosed in an updated privacy policy
-
-### Children's Privacy
-- This game is suitable for ages **12 and up**
-- We do not knowingly collect any data from children
-
-### Contact
-For any privacy-related questions, please open an issue in this repository.
+**Available on Android, iOS, Windows, macOS, Linux, and Web.**
 
 ---
 
-## �📜 License
-
-This project is private and not published to pub.dev.
+*One Bullet — Fire once. Dodge forever.*

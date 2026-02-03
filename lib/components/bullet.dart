@@ -29,8 +29,9 @@ class Bullet extends CircleComponent with CollisionCallbacks {
     // Random number generator seeded once at launch
     final rng = math.Random();
     
-    // Random offset between -3 and +3 degrees (in radians)
-    final maxOffset = 3 * math.pi / 180; // 3 degrees in radians
+    // Random offset between -5 and +5 degrees (in radians)
+    // Increased for less predictable initial trajectory
+    final maxOffset = 5 * math.pi / 180; // 5 degrees in radians
     final offset = (rng.nextDouble() * 2 - 1) * maxOffset;
     
     // Rotate velocity by the offset
