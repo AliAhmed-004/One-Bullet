@@ -57,6 +57,9 @@ class Player extends CircleComponent with KeyboardHandler, CollisionCallbacks {
 
   // Track which keys are currently pressed
   final Set<LogicalKeyboardKey> _keysPressed = {};
+  
+  /// Cached reference to the game (avoid findGame() each frame).
+  OneBulletGame? _gameRef;
 
   @override
   Future<void> onLoad() async {
@@ -72,6 +75,13 @@ class Player extends CircleComponent with KeyboardHandler, CollisionCallbacks {
       add(aimIndicator!);
     }
   }
+  
+  @override
+  void onMount() {
+    super.onMount();
+    // Cache game reference to avoid findGame() calls each frame
+    _gameRef = findGame() as OneBulletGame?;
+  }
 
   @override
   void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
@@ -79,11 +89,8 @@ class Player extends CircleComponent with KeyboardHandler, CollisionCallbacks {
 
     // Check if collided with bullet
     if (other is Bullet) {
-      // Notify the game that player died
-      final game = findGame();
-      if (game is OneBulletGame) {
-        game.onPlayerDeath();
-      }
+      // Notify the game that player died (use cached reference)
+      _gameRef?.onPlayerDeath();
     }
   }
 
@@ -102,11 +109,10 @@ class Player extends CircleComponent with KeyboardHandler, CollisionCallbacks {
 
   /// Keeps the player within the arena bounds.
   void _clampToGameBounds() {
-    final game = findGame();
-    if (game is! OneBulletGame || game.arenaBoundary == null) return;
+    if (_gameRef == null || _gameRef!.arenaBoundary == null) return;
 
     // Get arena bounds with player radius inset
-    final bounds = game.arenaBoundary!.getBoundsWithInset(radius);
+    final bounds = _gameRef!.arenaBoundary!.getBoundsWithInset(radius);
 
     position.x = position.x.clamp(bounds.left, bounds.right);
     position.y = position.y.clamp(bounds.top, bounds.bottom);
