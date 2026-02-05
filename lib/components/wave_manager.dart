@@ -1,5 +1,6 @@
 import 'package:flame/components.dart';
 import 'package:flutter/foundation.dart';
+import 'package:one_bullet/services/sound_service.dart';
 
 /// Configuration for a single wave.
 class WaveConfig {
@@ -193,6 +194,9 @@ class WaveManager extends Component {
         _warningShown = true;
         isWarningActive.value = true;
         onWaveChange(config.waveNumber, true);
+
+        // Play warning sound
+        SoundService.playWaveWarning();
       }
     }
 

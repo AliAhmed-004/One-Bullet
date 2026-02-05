@@ -8,6 +8,8 @@ class SoundService {
       "bullet_bounce.wav",
       "bullet_fire.wav",
       "player_death.wav",
+      "high_score.wav",
+      "wave_warning.mp3",
     ]);
   } 
 
@@ -25,5 +27,13 @@ class SoundService {
 
   static void playPlayerDeath() {
     FlameAudio.play("player_death.wav", volume: 0.9);
+  }
+
+  static void playHighScore() {
+    FlameAudio.play("high_score.wav", volume: 1.0);
+  }
+
+  static void playWaveWarning() {
+    FlameAudio.play("wave_warning.mp3", volume: 0.3);
   }
 }

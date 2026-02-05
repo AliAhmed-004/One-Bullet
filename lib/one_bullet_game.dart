@@ -252,9 +252,6 @@ class OneBulletGame extends FlameGame
 
     _isGameOver = true;
 
-    // play sound effect
-    SoundService.playPlayerDeath();
-
     // Check and save high score
     isNewHighScore = ScoreService.checkAndSaveHighScore(survivalTime.value);
 
@@ -278,6 +275,13 @@ class OneBulletGame extends FlameGame
 
     // TODO: Re-enable ad showing after Play Store publication
     // AdService.onPlayerDeath(survivalTime.value.inSeconds);
+
+    // Play appropriate sound effect based on whether it's a new high score or not
+    if (isNewHighScore) {
+      SoundService.playHighScore();
+    } else {
+      SoundService.playPlayerDeath();
+    }
 
     // Delay showing game over to let fragments animate (cancellable timer)
     _gameOverTimer?.cancel();
@@ -398,8 +402,10 @@ class OneBulletGame extends FlameGame
   /// Continues the game after watching a rewarded ad.
   /// Player respawns at center, bullet continues, timer preserved.
   void continueGame() {
-    debugPrint('OneBulletGame: continueGame() called, _hasUsedContinue=$_hasUsedContinue');
-    
+    debugPrint(
+      'OneBulletGame: continueGame() called, _hasUsedContinue=$_hasUsedContinue',
+    );
+
     if (_hasUsedContinue) {
       debugPrint('OneBulletGame: Already used continue, returning');
       return; // Only one continue per run
