@@ -4,10 +4,18 @@ import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
+import 'package:vibration/vibration.dart';
 
 /// The bullet that bounces off walls forever.
 /// Only one bullet exists in the game - fired once by the player.
 class Bullet extends CircleComponent with CollisionCallbacks {
+    /// Controls whether vibration is enabled (set from settings).
+    static bool hapticEnabled = true;
+
+    /// Call this to update haptic setting from settings page.
+    static void setHapticEnabled(bool enabled) {
+      hapticEnabled = enabled;
+    }
   Bullet({
     required Vector2 position,
     required Vector2 direction,
@@ -28,16 +36,16 @@ class Bullet extends CircleComponent with CollisionCallbacks {
   static Vector2 _applyLaunchImperfection(Vector2 velocity) {
     // Random number generator seeded once at launch
     final rng = math.Random();
-    
+
     // Random offset between -5 and +5 degrees (in radians)
     // Increased for less predictable initial trajectory
     final maxOffset = 5 * math.pi / 180; // 5 degrees in radians
     final offset = (rng.nextDouble() * 2 - 1) * maxOffset;
-    
+
     // Rotate velocity by the offset
     final cosA = math.cos(offset);
     final sinA = math.sin(offset);
-    
+
     return Vector2(
       velocity.x * cosA - velocity.y * sinA,
       velocity.x * sinA + velocity.y * cosA,
@@ -61,19 +69,19 @@ class Bullet extends CircleComponent with CollisionCallbacks {
 
   /// Circular buffer for trail positions (more efficient than Queue).
   late final List<Vector2> _trailPositions;
-  
+
   /// Current write index for circular buffer.
   int _trailIndex = 0;
-  
+
   /// Number of valid positions in the trail buffer.
   int _trailCount = 0;
 
   /// Cached Paint for glow effect (avoid recreation each frame).
   late final Paint _glowPaint;
-  
+
   /// Cached Paint for trail rendering (reused with color updates).
   late final Paint _trailPaint;
-  
+
   /// Cached reference to the game (avoid findGame() each frame).
   OneBulletGame? _gameRef;
 
@@ -82,7 +90,7 @@ class Bullet extends CircleComponent with CollisionCallbacks {
 
   /// Perpendicular bias strength as a fraction of speed (~2-3% deviation).
   static const double _perpBiasStrength = 0.025;
-  
+
   /// Epsilon threshold for axis-alignment breaking (~0.85 degrees).
   static const double _axisEpsilon = 0.015;
 
@@ -96,9 +104,9 @@ class Bullet extends CircleComponent with CollisionCallbacks {
   /// Smoothly adjusts velocity magnitude while preserving direction.
   void setSpeed(double newSpeed) {
     if (newSpeed == _currentSpeed) return;
-    
+
     _currentSpeed = newSpeed;
-    
+
     // Preserve direction, update magnitude
     _velocity.normalize();
     _velocity.scale(_currentSpeed);
@@ -110,7 +118,7 @@ class Bullet extends CircleComponent with CollisionCallbacks {
   void reflectOffDeflector(Vector2 reflectedVelocity) {
     // Set the new velocity direction from the reflection
     _velocity.setFrom(reflectedVelocity.normalized() * _currentSpeed);
-    
+
     // Apply the standard perpendicular deviation
     _applyBounceDeviation();
   }
@@ -121,20 +129,19 @@ class Bullet extends CircleComponent with CollisionCallbacks {
 
     // Add circular hitbox for collision detection
     add(CircleHitbox());
-    
+
     // Initialize circular buffer for trail positions
     _trailPositions = List.generate(trailLength, (_) => Vector2.zero());
-    
+
     // Initialize cached paints
     _glowPaint = Paint()
       ..color = Colors.yellow.withValues(alpha: 0.5)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3;
-    
-    _trailPaint = Paint()
-      ..style = PaintingStyle.fill;
+
+    _trailPaint = Paint()..style = PaintingStyle.fill;
   }
-  
+
   @override
   void onMount() {
     super.onMount();
@@ -160,11 +167,13 @@ class Bullet extends CircleComponent with CollisionCallbacks {
 
     for (int i = 0; i < _trailCount; i++) {
       // Calculate the actual index in circular buffer (oldest first)
-      final bufferIndex = (_trailIndex - _trailCount + i + trailLength) % trailLength;
-      
+      final bufferIndex =
+          (_trailIndex - _trailCount + i + trailLength) % trailLength;
+
       // Calculate opacity: older positions are more transparent
       final opacity = (i + 1) / _trailCount * 0.6; // Max 0.6 opacity for trail
-      final trailRadius = radius * (0.3 + 0.5 * (i + 1) / _trailCount); // Shrinking trail
+      final trailRadius =
+          radius * (0.3 + 0.5 * (i + 1) / _trailCount); // Shrinking trail
 
       // Reuse cached paint, just update color
       _trailPaint.color = color.withValues(alpha: opacity);
@@ -227,6 +236,10 @@ class Bullet extends CircleComponent with CollisionCallbacks {
 
     // Apply subtle deviation on bounce
     if (bounced) {
+      // Trigger vibration only if enabled
+      if (Bullet.hapticEnabled) {
+        Vibration.vibrate(duration: 50, amplitude: 20);
+      }
       _applyBounceDeviation();
     }
   }
@@ -241,7 +254,8 @@ class Bullet extends CircleComponent with CollisionCallbacks {
 
     // Deterministic bias using sine wave with golden ratio multiplier
     // Creates non-repeating but predictable pattern
-    final bias = math.sin(_bounceCount * 1.618) * _perpBiasStrength * _currentSpeed;
+    final bias =
+        math.sin(_bounceCount * 1.618) * _perpBiasStrength * _currentSpeed;
 
     // Apply perpendicular bias to velocity
     _velocity.add(perp * bias);
