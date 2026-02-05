@@ -4,6 +4,7 @@ import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
+import 'package:one_bullet/services/sound_service.dart';
 import 'package:vibration/vibration.dart';
 
 /// The bullet that bounces off walls forever.
@@ -140,6 +141,9 @@ class Bullet extends CircleComponent with CollisionCallbacks {
       ..strokeWidth = 3;
 
     _trailPaint = Paint()..style = PaintingStyle.fill;
+
+    // play sound effect
+    SoundService.playBulletFire();
   }
 
   @override
@@ -236,6 +240,7 @@ class Bullet extends CircleComponent with CollisionCallbacks {
 
     // Apply subtle deviation on bounce
     if (bounced) {
+      SoundService.playBulletBounce();
       // Trigger vibration only if enabled
       if (Bullet.hapticEnabled) {
         Vibration.vibrate(duration: 50, amplitude: 20);

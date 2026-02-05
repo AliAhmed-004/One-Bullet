@@ -12,6 +12,7 @@ import 'package:one_bullet/components/player.dart';
 import 'package:one_bullet/components/player_death_effect.dart';
 import 'package:one_bullet/components/wave_manager.dart';
 import 'package:one_bullet/services/score_service.dart';
+import 'package:one_bullet/services/sound_service.dart';
 
 /// The main game class for One Bullet.
 ///
@@ -98,6 +99,9 @@ class OneBulletGame extends FlameGame
   @override
   Future<void> onLoad() async {
     await super.onLoad();
+
+    // Load all sound effects
+    await SoundService.init();
 
     // Create the arena boundary (persists across games)
     // Must be fully loaded before other components use it
@@ -247,6 +251,9 @@ class OneBulletGame extends FlameGame
     if (_isGameOver) return; // Prevent multiple triggers
 
     _isGameOver = true;
+
+    // play sound effect
+    SoundService.playPlayerDeath();
 
     // Check and save high score
     isNewHighScore = ScoreService.checkAndSaveHighScore(survivalTime.value);

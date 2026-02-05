@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:one_bullet/components/bullet.dart';
 import 'package:one_bullet/components/player.dart';
 import 'package:one_bullet/one_bullet_game.dart';
+import 'package:one_bullet/services/sound_service.dart';
 
 /// A wooden obstacle that deflects bullets and blocks player movement.
 /// Spawns starting from wave 5 and breaks apart when hit by a bullet.
@@ -122,6 +123,9 @@ class Deflector extends PositionComponent with CollisionCallbacks {
   /// 2. Then applies perpendicular deviation (handled by bullet)
   void _handleBulletCollision(Bullet bullet, Set<Vector2> intersectionPoints) {
     _isDestroyed = true;
+
+    // play sound effect
+    SoundService.playDeflectorBreak();
 
     // Calculate the surface normal of the deflector
     // The deflector's "up" direction in world space
