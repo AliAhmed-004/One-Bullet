@@ -304,6 +304,7 @@ class OneBulletGame extends FlameGame
 
     _isPaused = true;
     pauseEngine();
+    SoundService.pauseAll();
     overlays.add(pauseOverlayId);
   }
 
@@ -312,6 +313,7 @@ class OneBulletGame extends FlameGame
     if (!_isPaused) return;
 
     _isPaused = false;
+    SoundService.resumeAll();
     overlays.remove(pauseOverlayId);
     resumeEngine();
   }
