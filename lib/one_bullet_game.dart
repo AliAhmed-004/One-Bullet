@@ -451,12 +451,13 @@ class OneBulletGame extends FlameGame
     _isPaused = true;
   }
 
-  /// Closes the settings overlay and returns to the pause menu.
+  /// Closes the settings overlay and returns to the appropriate previous screen.
   void closeSettings() {
-    // Remove settings and show pause menu
     overlays.remove(settingsOverlayId);
-    overlays.add(pauseOverlayId);
-    pauseEngine();
-    _isPaused = true;
+    if (_isPaused) {
+      overlays.add(pauseOverlayId);
+    } else {
+      overlays.add(startScreenOverlayId);
+    }
   }
 }
