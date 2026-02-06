@@ -385,7 +385,7 @@ class OneBulletGame extends FlameGame
       camera.viewport.children.whereType<MobileJoystick>(),
     );
 
-    // Remove wave manager
+    // Remove wave manager and reset references
     waveManager?.removeFromParent();
 
     // Reset references
@@ -394,6 +394,9 @@ class OneBulletGame extends FlameGame
     bullet = null;
     waveManager = null;
     _deflectors.clear();
+
+    // Reset wave state to initial values
+    waveState.value = (waveNumber: 1, isFlashing: false);
 
     // Initialize fresh game components
     _initializeGame();
