@@ -68,6 +68,15 @@ class _PauseOverlayState extends State<PauseOverlay> {
           ),
           const SizedBox(height: 16),
 
+          // Settings button
+          _buildMenuButton(
+            label: 'Settings',
+            icon: Icons.settings,
+            color: Colors.blueGrey,
+            onTap: () => widget.game.openSettings(),
+          ),
+          const SizedBox(height: 16),
+
           // Back to Menu button
           _buildMenuButton(
             label: 'Back to Menu',

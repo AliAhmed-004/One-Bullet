@@ -33,6 +33,27 @@ class StartScreenOverlay extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+
+                    // Settings Button (top-right corner)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            Icons.settings,
+                            color: Colors.white,
+                            size: titleFontSize * 0.6,
+                          ),
+                          onPressed: () {
+                            game.overlays.add(OneBulletGame.settingsOverlayId);
+                            game.overlays.remove(OneBulletGame.startScreenOverlayId);
+                          },
+                        ),
+                      ], 
+                    ),
+
+                    SizedBox(height: isSmallScreen ? 32 : 48),
+
                     // Game title
                     Text(
                       'ONE BULLET',

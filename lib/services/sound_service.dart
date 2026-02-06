@@ -1,4 +1,5 @@
 import 'package:flame_audio/flame_audio.dart';
+import 'package:one_bullet/services/settings_service.dart';
 
 class SoundService {
   static Future<void> init() async {
@@ -14,26 +15,38 @@ class SoundService {
   } 
 
   static void playDeflectorBreak() {
-    FlameAudio.play("deflector_break.wav", volume: 0.7);
+    if (SettingsService.soundEnabled.value) {
+      FlameAudio.play("deflector_break.wav", volume: 0.7);
+    }
   }
 
   static void playBulletBounce() {
-    FlameAudio.play("bullet_bounce.wav", volume: 0.5);
+    if (SettingsService.soundEnabled.value) {
+      FlameAudio.play("bullet_bounce.wav", volume: 0.5);
+    }
   }
 
   static void playBulletFire() {
-    FlameAudio.play("bullet_fire.wav", volume: 0.8);
+    if (SettingsService.soundEnabled.value) {
+      FlameAudio.play("bullet_fire.wav", volume: 0.8);
+    }
   }
 
   static void playPlayerDeath() {
-    FlameAudio.play("player_death.wav", volume: 0.9);
+    if (SettingsService.soundEnabled.value) {
+      FlameAudio.play("player_death.wav", volume: 0.9);
+    }
   }
 
   static void playHighScore() {
-    FlameAudio.play("high_score.wav", volume: 1.0);
+    if (SettingsService.soundEnabled.value) {
+      FlameAudio.play("high_score.wav", volume: 1.0);
+    }
   }
 
   static void playWaveWarning() {
-    FlameAudio.play("wave_warning.mp3", volume: 0.3);
+    if (SettingsService.soundEnabled.value) {
+      FlameAudio.play("wave_warning.mp3", volume: 0.3);
+    }
   }
 }

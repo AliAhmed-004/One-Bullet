@@ -39,6 +39,9 @@ class OneBulletGame extends FlameGame
   /// Overlay ID for the pause menu.
   static const String pauseOverlayId = 'pause';
 
+  /// Overlay ID for settings
+  static const String settingsOverlayId = 'settings';
+
   /// Height reserved for the HUD at the top of the screen.
   static const double hudHeight = 125.0;
 
@@ -435,5 +438,23 @@ class OneBulletGame extends FlameGame
     _isPaused = false;
     resumeEngine();
     debugPrint('OneBulletGame: Engine resumed, paused=$paused');
+  }
+
+  /// Opens the settings overlay from the pause menu.
+  void openSettings() {
+    // Remove pause menu and show settings
+    overlays.remove(pauseOverlayId);
+    overlays.add(settingsOverlayId);
+    pauseEngine();
+    _isPaused = true;
+  }
+
+  /// Closes the settings overlay and returns to the pause menu.
+  void closeSettings() {
+    // Remove settings and show pause menu
+    overlays.remove(settingsOverlayId);
+    overlays.add(pauseOverlayId);
+    pauseEngine();
+    _isPaused = true;
   }
 }

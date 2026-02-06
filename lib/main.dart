@@ -5,14 +5,19 @@ import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/overlays/game_hud_overlay.dart';
 import 'package:one_bullet/overlays/game_over_overlay.dart';
 import 'package:one_bullet/overlays/pause_overlay.dart';
+import 'package:one_bullet/overlays/settings_overlay.dart';
 import 'package:one_bullet/overlays/start_screen_overlay.dart';
 import 'package:one_bullet/services/score_service.dart';
+import 'package:one_bullet/services/settings_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Hive for high score storage
   await ScoreService.init();
+
+  // Initialize settings service
+  await SettingsService.init();
 
   Flame.device.fullScreen();
   Flame.device.setPortrait();
@@ -28,18 +33,16 @@ class OneBullet extends StatelessWidget {
     return GameWidget<OneBulletGame>.controlled(
       gameFactory: OneBulletGame.new,
       overlayBuilderMap: {
-        OneBulletGame.startScreenOverlayId: (context, game) => StartScreenOverlay(
-          game: game,
-        ),
-        OneBulletGame.gameHudOverlayId: (context, game) => GameHudOverlay(
-          game: game,
-        ),
-        OneBulletGame.pauseOverlayId: (context, game) => PauseOverlay(
-          game: game,
-        ),
-        OneBulletGame.gameOverOverlayId: (context, game) => GameOverOverlay(
-          game: game,
-        ),
+        OneBulletGame.startScreenOverlayId: (context, game) =>
+            StartScreenOverlay(game: game),
+        OneBulletGame.gameHudOverlayId: (context, game) =>
+            GameHudOverlay(game: game),
+        OneBulletGame.pauseOverlayId: (context, game) =>
+            PauseOverlay(game: game),
+        OneBulletGame.gameOverOverlayId: (context, game) =>
+            GameOverOverlay(game: game),
+        OneBulletGame.settingsOverlayId: (context, game) =>
+            SettingsOverlay(game: game),
       },
     );
   }

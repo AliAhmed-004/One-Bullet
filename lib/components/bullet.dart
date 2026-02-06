@@ -4,19 +4,13 @@ import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
+import 'package:one_bullet/services/settings_service.dart';
 import 'package:one_bullet/services/sound_service.dart';
 import 'package:vibration/vibration.dart';
 
 /// The bullet that bounces off walls forever.
 /// Only one bullet exists in the game - fired once by the player.
 class Bullet extends CircleComponent with CollisionCallbacks {
-    /// Controls whether vibration is enabled (set from settings).
-    static bool hapticEnabled = true;
-
-    /// Call this to update haptic setting from settings page.
-    static void setHapticEnabled(bool enabled) {
-      hapticEnabled = enabled;
-    }
   Bullet({
     required Vector2 position,
     required Vector2 direction,
@@ -242,7 +236,7 @@ class Bullet extends CircleComponent with CollisionCallbacks {
     if (bounced) {
       SoundService.playBulletBounce();
       // Trigger vibration only if enabled
-      if (Bullet.hapticEnabled) {
+      if (SettingsService.hapticsEnabled.value) {
         Vibration.vibrate(duration: 50, amplitude: 20);
       }
       _applyBounceDeviation();
