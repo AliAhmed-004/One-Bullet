@@ -136,7 +136,11 @@ class OneBulletGame extends FlameGame
     world.add(player!);
 
     // Add the mobile joystick (renders in screen space, not world space)
-    joystick = MobileJoystick(player: player!);
+    joystick = MobileJoystick(
+      player: player!,
+      isInActivationZone: _isInArena,
+      onMovementStart: _onPlayerMovementStart,
+    );
     camera.viewport.add(joystick!);
 
     // Create wave manager
@@ -173,17 +177,36 @@ class OneBulletGame extends FlameGame
   void onTapDown(TapDownEvent event) {
     super.onTapDown(event);
 
-    // Don't fire if game not started, game over, already fired, or tapping in joystick zone
+    // Don't fire if game not started, game over, or already fired.
     if (!_hasStarted || _isGameOver || player == null || player!.hasFired) {
       return;
     }
 
-    // Check if tap is in the joystick activation zone (bottom quarter)
-    // If so, don't fire - let the joystick handle it
-    if (event.canvasPosition.y >= size.y * 0.75) return;
-
     // Fire the bullet!
     _fireBullet();
+  }
+
+  /// Called when player starts moving via joystick.
+  void _onPlayerMovementStart() {
+    if (!_hasStarted || _isGameOver || player == null || player!.hasFired) {
+      return;
+    }
+
+    _fireBullet();
+  }
+
+  /// Returns true if a screen-space point is inside the arena.
+  bool _isInArena(Vector2 canvasPosition) {
+    if (arenaBoundary == null) return false;
+
+    final worldPosition = Vector2(
+      canvasPosition.x - (size.x / 2),
+      canvasPosition.y - (size.y / 2),
+    );
+
+    return arenaBoundary!.bounds.contains(
+      Offset(worldPosition.x, worldPosition.y),
+    );
   }
 
   /// Fires the bullet in the current aim direction.

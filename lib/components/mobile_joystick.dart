@@ -3,13 +3,25 @@ import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
 import 'package:one_bullet/components/player.dart';
 
-/// A mobile joystick that appears when the user drags in the bottom
-/// quarter of the screen. Controls the player's movement direction.
+/// A mobile joystick that appears when the user drags in the activation
+/// zone. Controls the player's movement direction.
 class MobileJoystick extends PositionComponent with DragCallbacks {
-  MobileJoystick({required Player player}) : _player = player;
+  MobileJoystick({
+    required Player player,
+    required bool Function(Vector2 position) isInActivationZone,
+    required VoidCallback onMovementStart,
+  }) : _player = player,
+       _isInActivationZone = isInActivationZone,
+       _onMovementStart = onMovementStart;
 
   /// Reference to the player to control.
   Player _player;
+
+  /// Callback to determine if a screen position is in the joystick activation zone.
+  final bool Function(Vector2 position) _isInActivationZone;
+
+  /// Callback for when player starts moving via joystick drag.
+  final VoidCallback _onMovementStart;
 
   /// Updates the player reference (used when player respawns after continue).
   void updatePlayer(Player newPlayer) {
@@ -34,8 +46,8 @@ class MobileJoystick extends PositionComponent with DragCallbacks {
   /// The current position of the knob (in screen coordinates).
   Vector2 _knobPosition = Vector2.zero();
 
-  /// The game's screen size.
-  Vector2 _screenSize = Vector2.zero();
+  /// Whether this drag has already moved past deadzone.
+  bool _hasMovementInCurrentDrag = false;
 
   /// Paint for the joystick base.
   final Paint _basePaint = Paint()
@@ -56,7 +68,6 @@ class MobileJoystick extends PositionComponent with DragCallbacks {
   @override
   void onGameResize(Vector2 size) {
     super.onGameResize(size);
-    _screenSize = size;
 
     // Make this component cover the entire screen for drag detection
     this.size = size;
@@ -70,19 +81,13 @@ class MobileJoystick extends PositionComponent with DragCallbacks {
     priority = 100;
   }
 
-  /// Checks if the given position is within the joystick activation zone
-  /// (bottom quarter of the screen).
-  bool _isInActivationZone(Vector2 position) {
-    final activationZoneTop = _screenSize.y * 0.75;
-    return position.y >= activationZoneTop;
-  }
-
   @override
   void onDragStart(DragStartEvent event) {
     super.onDragStart(event);
-    // Only activate if the drag starts in the bottom quarter
+    // Only activate if drag starts in activation zone.
     if (_isInActivationZone(event.canvasPosition)) {
       _isActive = true;
+      _hasMovementInCurrentDrag = false;
       _baseCenter = event.canvasPosition.clone();
       _knobPosition = event.canvasPosition.clone();
     }
@@ -109,6 +114,11 @@ class MobileJoystick extends PositionComponent with DragCallbacks {
       // Small deadzone to prevent jitter
       final direction = offset.normalized();
       _player.setMovementDirection(direction);
+
+      if (!_hasMovementInCurrentDrag) {
+        _hasMovementInCurrentDrag = true;
+        _onMovementStart();
+      }
     } else {
       _player.setMovementDirection(Vector2.zero());
     }
@@ -129,6 +139,7 @@ class MobileJoystick extends PositionComponent with DragCallbacks {
   /// Deactivates the joystick and stops player movement.
   void _deactivate() {
     _isActive = false;
+    _hasMovementInCurrentDrag = false;
     _player.setMovementDirection(Vector2.zero());
   }
 
@@ -161,7 +172,7 @@ class MobileJoystick extends PositionComponent with DragCallbacks {
 
   @override
   bool containsLocalPoint(Vector2 point) {
-    // Only respond to touches in the bottom quarter activation zone
+    // Only respond to touches in the joystick activation zone.
     return _isInActivationZone(point);
   }
 }

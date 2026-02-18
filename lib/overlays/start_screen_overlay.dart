@@ -208,7 +208,7 @@ class StartScreenOverlay extends StatelessWidget {
                           _buildInstructionRow(
                             icon: Icons.gamepad,
                             text: isSmallScreen
-                                ? 'Use the joystick (bottom of screen) to move'
+                                ? 'Drag anywhere in the arena to move'
                                 : 'Use WASD or Arrow keys to move',
                             fontSize: instructionFontSize,
                           ),
