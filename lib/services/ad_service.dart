@@ -36,9 +36,19 @@ class AdService {
   /// Survival time (in seconds) that counts as a "good run" and triggers an ad.
   static const int _goodRunThresholdSeconds = 90; // 1 minute 30 seconds
 
+  /// Whether to force test ads (ignoring release mode). Useful for testing on
+  /// release builds or when test ads aren't showing properly.
+  static bool get forceTestAds =>
+      const bool.fromEnvironment("FORCE_TEST_ADS", defaultValue: false);
+
   /// Test Ad Unit IDs (use these during development).
   static String get _interstitialAdUnitId {
     if (Platform.isAndroid) {
+      if (forceTestAds) {
+        // Android test interstitial ad unit ID
+        return 'ca-app-pub-3940256099942544/1033173712';
+      }
+
       return kDebugMode
           ? 'ca-app-pub-3940256099942544/1033173712'
           : 'ca-app-pub-4588211425588192/7743120305';
@@ -52,10 +62,15 @@ class AdService {
   /// Rewarded Ad Unit IDs (test IDs during development).
   static String get _rewardedAdUnitId {
     if (Platform.isAndroid) {
-      // Android test rewarded ad unit ID
+      // Force test ads if the flag is set, regardless of build mode
+      if (forceTestAds) {
+        // Android test rewarded ad unit ID
+        return 'ca-app-pub-3940256099942544/5224354917';
+      }
+
       return kDebugMode
-          ? 'ca-app-pub-3940256099942544/5224354917'
-          : 'ca-app-pub-4588211425588192/6790691784';
+          ? 'ca-app-pub-3940256099942544/5224354917' // Test ID for debug builds
+          : 'ca-app-pub-4588211425588192/6790691784'; // Real ID for release builds
     } else if (Platform.isIOS) {
       // iOS test rewarded ad unit ID
       return 'ca-app-pub-3940256099942544/1712485313';
