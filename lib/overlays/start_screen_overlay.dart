@@ -215,7 +215,7 @@ class StartScreenOverlay extends StatelessWidget {
                           const SizedBox(height: 12),
                           _buildInstructionRow(
                             icon: Icons.touch_app,
-                            text: 'Tap/Click to fire the bullet',
+                            text: 'Tap or start moving to fire the bullet',
                             fontSize: instructionFontSize,
                           ),
                           const SizedBox(height: 12),
