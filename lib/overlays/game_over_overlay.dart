@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
+import 'package:one_bullet/services/ad_service.dart';
 import 'package:one_bullet/services/score_service.dart';
 
 /// Overlay displayed when the player dies.
@@ -14,11 +15,16 @@ class GameOverOverlay extends StatefulWidget {
 }
 
 class _GameOverOverlayState extends State<GameOverOverlay> {
+  /// Whether the rewarded ad is currently loading/showing.
+  bool _isLoadingAd = false;
+  
+  
   @override
   Widget build(BuildContext context) {
-    // Get the final survival time
+  
     final finalTime = widget.game.survivalTime.value;
     final isNewRecord = widget.game.isNewHighScore;
+    final canContinue = widget.game.canContinue;
 
     return Material(
       color: Colors.black54,
@@ -115,16 +121,40 @@ class _GameOverOverlayState extends State<GameOverOverlay> {
 
               const SizedBox(height: 32),
 
-              // TODO: Re-enable continue button when ads are implemented after Play Store publication
-              // Continue button (watch ad to revive) - currently disabled
-              // if (canContinue) ...[
-              //   ElevatedButton.icon(
-              //     onPressed: _onContinuePressed,
-              //     icon: const Icon(Icons.play_circle_fill, size: 24),
-              //     label: const Text('Watch Ad to Continue'),
-              //     ...
-              //   ),
-              // ],
+              // Continue button (watch ad to revive)
+              if (canContinue) ...[
+                _isLoadingAd
+                    ? const SizedBox(
+                        height: 56,
+                        child: Center(
+                          child: CircularProgressIndicator(color: Colors.green),
+                        ),
+                      )
+                    : ElevatedButton.icon(
+                        onPressed: _onContinuePressed,
+                        icon: const Icon(Icons.play_circle_fill, size: 24),
+                        label: const Text(
+                          'Watch Ad to Continue',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 14,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                const SizedBox(height: 16),
+              ],
+
 
               // Restart button
               ElevatedButton(
@@ -151,6 +181,30 @@ class _GameOverOverlayState extends State<GameOverOverlay> {
           ),
         ),
       ),
+    );
+  }
+
+  /// Called when the user taps "Watch Ad to Continue".
+  void _onContinuePressed() {
+    setState(() {
+      _isLoadingAd = true;
+    });
+
+    AdService.showRewardedAd(
+      onRewardEarned: () {
+        // User watched full ad AND ad is now closed - continue the game
+        debugPrint('GameOverOverlay: onRewardEarned callback - calling continueGame()');
+        widget.game.continueGame();
+      },
+      onAdDismissedWithoutReward: () {
+        // User skipped or ad failed - reset loading state
+        debugPrint('GameOverOverlay: onAdDismissedWithoutReward callback');
+        if (mounted) {
+          setState(() {
+            _isLoadingAd = false;
+          });
+        }
+      },
     );
   }
 }

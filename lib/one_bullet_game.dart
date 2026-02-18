@@ -11,6 +11,7 @@ import 'package:one_bullet/components/mobile_joystick.dart';
 import 'package:one_bullet/components/player.dart';
 import 'package:one_bullet/components/player_death_effect.dart';
 import 'package:one_bullet/components/wave_manager.dart';
+import 'package:one_bullet/services/ad_service.dart';
 import 'package:one_bullet/services/score_service.dart';
 import 'package:one_bullet/services/sound_service.dart';
 
@@ -85,10 +86,8 @@ class OneBulletGame extends FlameGame
   bool isNewHighScore = false;
 
   /// Whether a continue is available.
-  /// TODO: Re-enable when ads are implemented after Play Store publication.
-  /// TODO: Remember to configure ads for ages 12+.
-  bool get canContinue => false;
-
+  bool get canContinue => !_hasUsedContinue && AdService.isRewardedAdReady;
+  
   /// Tracks the survival time (notifier for UI updates).
   final ValueNotifier<Duration> survivalTime = ValueNotifier(Duration.zero);
 
@@ -299,8 +298,7 @@ class OneBulletGame extends FlameGame
     // Add all fragments to the world
     world.addAll(fragments);
 
-    // TODO: Re-enable ad showing after Play Store publication
-    // AdService.onPlayerDeath(survivalTime.value.inSeconds);
+    AdService.onPlayerDeath(survivalTime.value.inSeconds);
 
     // Play appropriate sound effect based on whether it's a new high score or not
     if (isNewHighScore) {
@@ -349,8 +347,7 @@ class OneBulletGame extends FlameGame
     _gameOverTimer?.cancel();
     _gameOverTimer = null;
 
-    // TODO: Re-enable ad reset after Play Store publication
-    // AdService.resetDeathCount();
+    AdService.resetDeathCount();
 
     // Remove all overlays
     overlays.remove(pauseOverlayId);

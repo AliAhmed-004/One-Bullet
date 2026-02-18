@@ -7,6 +7,7 @@ import 'package:one_bullet/overlays/game_over_overlay.dart';
 import 'package:one_bullet/overlays/pause_overlay.dart';
 import 'package:one_bullet/overlays/settings_overlay.dart';
 import 'package:one_bullet/overlays/start_screen_overlay.dart';
+import 'package:one_bullet/services/ad_service.dart';
 import 'package:one_bullet/services/score_service.dart';
 import 'package:one_bullet/services/settings_service.dart';
 
@@ -15,6 +16,12 @@ void main() async {
 
   // Initialize Hive for high score storage
   await ScoreService.init();
+
+  // Initialize Google Mobile Ads SDK
+  AdService.init();
+
+  // Set up ad configurations
+  AdService.setupAds();
 
   // Initialize settings service
   await SettingsService.init();
