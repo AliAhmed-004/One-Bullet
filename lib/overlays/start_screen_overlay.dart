@@ -5,10 +5,7 @@ import 'package:one_bullet/services/score_service.dart';
 /// Start screen overlay displayed when the game begins.
 /// Responsive design for both mobile and desktop screens.
 class StartScreenOverlay extends StatelessWidget {
-  const StartScreenOverlay({
-    required this.game,
-    super.key,
-  });
+  const StartScreenOverlay({required this.game, super.key});
 
   final OneBulletGame game;
 
@@ -24,16 +21,27 @@ class StartScreenOverlay extends StatelessWidget {
         final instructionFontSize = isSmallScreen ? 12.0 : 14.0;
         final horizontalPadding = isSmallScreen ? 24.0 : 48.0;
 
+        final accentColor = Theme.of(context).colorScheme.secondary;
+
         return Material(
-          color: Colors.black.withValues(alpha: 0.85),
-          child: SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+          color: Colors.black,
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+            decoration: const BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment(0, -0.2), // slightly above center
+                radius: 1.2,
+                colors: [
+                  Color(0xFF181820), // subtle inner glow
+                  Color(0xFF0B0B10), // outer dark
+                ],
+              ),
+            ),
+            child: SafeArea(
+              child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-
                     // Settings Button (top-right corner)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -46,10 +54,12 @@ class StartScreenOverlay extends StatelessWidget {
                           ),
                           onPressed: () {
                             game.overlays.add(OneBulletGame.settingsOverlayId);
-                            game.overlays.remove(OneBulletGame.startScreenOverlayId);
+                            game.overlays.remove(
+                              OneBulletGame.startScreenOverlayId,
+                            );
                           },
                         ),
-                      ], 
+                      ],
                     ),
 
                     SizedBox(height: isSmallScreen ? 32 : 48),
@@ -61,17 +71,6 @@ class StartScreenOverlay extends StatelessWidget {
                         fontSize: titleFontSize,
                         fontWeight: FontWeight.w900,
                         color: Colors.white,
-                        letterSpacing: 4,
-                        shadows: const [
-                          Shadow(
-                            color: Colors.orange,
-                            blurRadius: 30,
-                          ),
-                          Shadow(
-                            color: Colors.red,
-                            blurRadius: 60,
-                          ),
-                        ],
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -83,9 +82,7 @@ class StartScreenOverlay extends StatelessWidget {
                       style: TextStyle(
                         fontSize: subtitleFontSize,
                         fontWeight: FontWeight.w300,
-                        color: Colors.white70,
-                        fontStyle: FontStyle.italic,
-                        letterSpacing: 2,
+                        color: Colors.white60,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -113,10 +110,10 @@ class StartScreenOverlay extends StatelessWidget {
                             vertical: 10,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.amber.withValues(alpha: 0.2),
+                            color: Colors.black.withValues(alpha: 0.4),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: Colors.amber.withValues(alpha: 0.5),
+                              color: Colors.amber.withValues(alpha: 0.3),
                             ),
                           ),
                           child: Row(
@@ -130,11 +127,10 @@ class StartScreenOverlay extends StatelessWidget {
                               const SizedBox(width: 8),
                               Text(
                                 'BEST: ${ScoreService.formatDuration(highScore)}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 18,
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w600,
                                   color: Colors.amber,
-                                  letterSpacing: 1,
                                 ),
                               ),
                             ],
@@ -151,21 +147,16 @@ class StartScreenOverlay extends StatelessWidget {
                         onTap: () => game.startGame(),
                         child: Container(
                           padding: EdgeInsets.symmetric(
-                            horizontal: isSmallScreen ? 48 : 64,
-                            vertical: isSmallScreen ? 16 : 20,
+                            horizontal: isSmallScreen ? 40 : 52,
+                            vertical: isSmallScreen ? 12 : 14,
                           ),
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Colors.orange, Colors.deepOrange],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
+                            color: accentColor,
+                            borderRadius: BorderRadius.circular(10),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.orange.withValues(alpha: 0.5),
-                                blurRadius: 20,
-                                spreadRadius: 2,
+                                color: accentColor.withValues(alpha: 0.4),
+                                blurRadius: 18,
                               ),
                             ],
                           ),
@@ -173,9 +164,8 @@ class StartScreenOverlay extends StatelessWidget {
                             isSmallScreen ? 'TAP TO START' : 'CLICK TO START',
                             style: TextStyle(
                               fontSize: buttonFontSize,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w700,
                               color: Colors.white,
-                              letterSpacing: 2,
                             ),
                           ),
                         ),
@@ -187,7 +177,6 @@ class StartScreenOverlay extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: Colors.white.withValues(alpha: 0.2),
@@ -199,9 +188,8 @@ class StartScreenOverlay extends StatelessWidget {
                             'HOW TO PLAY',
                             style: TextStyle(
                               fontSize: instructionFontSize + 2,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w600,
                               color: Colors.white,
-                              letterSpacing: 2,
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -211,24 +199,28 @@ class StartScreenOverlay extends StatelessWidget {
                                 ? 'Drag anywhere in the arena to move'
                                 : 'Use WASD or Arrow keys to move',
                             fontSize: instructionFontSize,
+                            accentColor: accentColor,
                           ),
                           const SizedBox(height: 12),
                           _buildInstructionRow(
                             icon: Icons.touch_app,
                             text: 'Tap or start moving to fire the bullet',
                             fontSize: instructionFontSize,
+                            accentColor: accentColor,
                           ),
                           const SizedBox(height: 12),
                           _buildInstructionRow(
                             icon: Icons.warning_amber,
                             text: 'The bullet never stops - dodge it!',
                             fontSize: instructionFontSize,
+                            accentColor: accentColor,
                           ),
                           const SizedBox(height: 12),
                           _buildInstructionRow(
                             icon: Icons.timer,
                             text: 'Survive as long as you can',
                             fontSize: instructionFontSize,
+                            accentColor: accentColor,
                           ),
                         ],
                       ),
@@ -247,21 +239,19 @@ class StartScreenOverlay extends StatelessWidget {
     required IconData icon,
     required String text,
     required double fontSize,
+    required Color accentColor,
   }) {
     return Row(
       children: [
-        Icon(
-          icon,
-          color: Colors.orange,
-          size: fontSize + 6,
-        ),
+        Icon(icon, color: accentColor, size: fontSize + 6),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
             text,
             style: TextStyle(
               fontSize: fontSize,
-              color: Colors.white70,
+              fontWeight: FontWeight.w400,
+              color: Colors.white60,
             ),
           ),
         ),
