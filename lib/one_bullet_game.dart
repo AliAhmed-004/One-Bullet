@@ -87,7 +87,7 @@ class OneBulletGame extends FlameGame
 
   /// Whether a continue is available.
   bool get canContinue => !_hasUsedContinue && AdService.isRewardedAdReady;
-  
+
   /// Tracks the survival time (notifier for UI updates).
   final ValueNotifier<Duration> survivalTime = ValueNotifier(Duration.zero);
 
@@ -97,6 +97,7 @@ class OneBulletGame extends FlameGame
 
   /// Accumulated time in seconds for the timer.
   double _elapsedSeconds = 0;
+  double _uiUpdateAccumulator = 0;
 
   @override
   Future<void> onLoad() async {
@@ -163,12 +164,17 @@ class OneBulletGame extends FlameGame
   void update(double dt) {
     super.update(dt);
 
-    // Update survival timer only after the bullet has been fired
     if (_hasStarted && !_isGameOver && !_isPaused && player?.hasFired == true) {
       _elapsedSeconds += dt;
-      survivalTime.value = Duration(
-        milliseconds: (_elapsedSeconds * 1000).toInt(),
-      );
+      _uiUpdateAccumulator += dt;
+
+      // Update UI only every 100ms
+      if (_uiUpdateAccumulator >= 0.1) {
+        survivalTime.value = Duration(
+          milliseconds: (_elapsedSeconds * 1000).toInt(),
+        );
+        _uiUpdateAccumulator = 0;
+      }
     }
   }
 

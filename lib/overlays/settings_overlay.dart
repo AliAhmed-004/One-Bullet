@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/services/settings_service.dart';
@@ -50,14 +49,10 @@ class _SettingsOverlayState extends State<SettingsOverlay>
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.black.withOpacity(0.6),
+      color: Colors.black.withValues(alpha: 0.6),
       child: Stack(
         children: [
-          /// Subtle blur background
-          BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-            child: const SizedBox.expand(),
-          ),
+          const SizedBox.expand(),
 
           /// Animated card
           Center(
@@ -83,13 +78,6 @@ class _SettingsOverlayState extends State<SettingsOverlay>
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white10),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.6),
-            blurRadius: 30,
-            spreadRadius: 4,
-          ),
-        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -148,7 +136,7 @@ class _SettingsOverlayState extends State<SettingsOverlay>
       duration: const Duration(milliseconds: 200),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: value ? Colors.white.withOpacity(0.05) : Colors.transparent,
+        color: value ? Colors.white.withValues(alpha: 0.05) : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -202,13 +190,6 @@ class _AnimatedButtonState extends State<_AnimatedButton> {
           decoration: BoxDecoration(
             color: Colors.redAccent,
             borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.redAccent.withOpacity(0.4),
-                blurRadius: 16,
-                spreadRadius: 1,
-              ),
-            ],
           ),
           child: Text(
             widget.label.toUpperCase(),

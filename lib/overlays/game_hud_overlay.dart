@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/overlays/wave_indicator_widget.dart';
@@ -58,21 +57,15 @@ class _PauseButtonState extends State<_PauseButton> {
       child: AnimatedScale(
         scale: _pressed ? 0.95 : 1,
         duration: const Duration(milliseconds: 100),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(14),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.06),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.white10),
-              ),
-              child: const Icon(Icons.pause, color: Colors.white, size: 24),
-            ),
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.white10),
           ),
+          child: const Icon(Icons.pause, color: Colors.white, size: 24),
         ),
       ),
     );
@@ -118,27 +111,21 @@ class _GlassTimerDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.06),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white10),
-          ),
-          child: Text(
-            time,
-            style: const TextStyle(
-              fontSize: 30,
-              fontWeight: FontWeight.w700,
-              fontFamily: 'monospace',
-              letterSpacing: 3,
-              color: Colors.white,
-            ),
-          ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Text(
+        time,
+        style: const TextStyle(
+          fontSize: 30,
+          fontWeight: FontWeight.w700,
+          fontFamily: 'monospace',
+          letterSpacing: 3,
+          color: Colors.white,
         ),
       ),
     );

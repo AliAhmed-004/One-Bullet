@@ -51,3 +51,4 @@ android/keystores/
 *.keystore
 
 pubspec.lock
+devtools_options.yaml

@@ -4,7 +4,7 @@ import 'package:one_bullet/services/settings_service.dart';
 
 class SoundService {
   static AudioPlayer? waveWarningPlayer;
-  static List<AudioPlayer> _activePlayers = [];
+  static final List<AudioPlayer> _activePlayers = [];
 
   static Future<void> init() async {
     // Preload sound effects

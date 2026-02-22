@@ -153,12 +153,6 @@ class StartScreenOverlay extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: accentColor,
                             borderRadius: BorderRadius.circular(10),
-                            boxShadow: [
-                              BoxShadow(
-                                color: accentColor.withValues(alpha: 0.4),
-                                blurRadius: 18,
-                              ),
-                            ],
                           ),
                           child: Text(
                             isSmallScreen ? 'TAP TO START' : 'CLICK TO START',

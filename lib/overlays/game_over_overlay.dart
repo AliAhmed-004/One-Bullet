@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/services/ad_service.dart';
@@ -55,13 +54,10 @@ class _GameOverOverlayState extends State<GameOverOverlay>
     final accent = isNewRecord ? Colors.amberAccent : Colors.redAccent;
 
     return Material(
-      color: Colors.black.withOpacity(0.65),
+      color: Colors.black.withValues(alpha: 0.65),
       child: Stack(
         children: [
-          BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: const SizedBox.expand(),
-          ),
+          const SizedBox.expand(),
           Center(
             child: FadeTransition(
               opacity: _fade,
@@ -97,14 +93,7 @@ class _GameOverOverlayState extends State<GameOverOverlay>
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: accent.withOpacity(0.6)),
-        boxShadow: [
-          BoxShadow(
-            color: accent.withOpacity(0.25),
-            blurRadius: 40,
-            spreadRadius: 2,
-          ),
-        ],
+        border: Border.all(color: accent.withValues(alpha: 0.6)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -125,7 +114,7 @@ class _GameOverOverlayState extends State<GameOverOverlay>
             style: TextStyle(
               fontSize: 13,
               letterSpacing: 1.5,
-              color: Colors.white.withOpacity(0.6),
+              color: Colors.white.withValues(alpha: 0.6),
             ),
           ),
           const SizedBox(height: 6),
@@ -145,9 +134,11 @@ class _GameOverOverlayState extends State<GameOverOverlay>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.amberAccent.withOpacity(0.12),
+                color: Colors.amberAccent.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.amberAccent.withOpacity(0.6)),
+                border: Border.all(
+                  color: Colors.amberAccent.withValues(alpha: 0.6),
+                ),
               ),
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
@@ -239,8 +230,8 @@ class _ActionButtonState extends State<_ActionButton> {
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = widget.accentColor.withOpacity(0.12);
-    final borderColor = widget.accentColor.withOpacity(0.5);
+    final bgColor = widget.accentColor.withValues(alpha: 0.12);
+    final borderColor = widget.accentColor.withValues(alpha: 0.5);
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
@@ -259,18 +250,15 @@ class _ActionButtonState extends State<_ActionButton> {
             color: bgColor,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: borderColor),
-            boxShadow: [
-              BoxShadow(
-                color: widget.accentColor.withOpacity(0.2),
-                blurRadius: 18,
-                spreadRadius: 1,
-              ),
-            ],
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(widget.icon, color: Colors.white.withOpacity(0.9), size: 20),
+              Icon(
+                widget.icon,
+                color: Colors.white.withValues(alpha: 0.9),
+                size: 20,
+              ),
               const SizedBox(width: 10),
               Text(
                 widget.label,

@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
 
@@ -55,13 +54,10 @@ class _PauseOverlayState extends State<PauseOverlay>
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.black.withOpacity(0.6),
+      color: Colors.black.withValues(alpha: 0.6),
       child: Stack(
         children: [
-          BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-            child: const SizedBox.expand(),
-          ),
+          const SizedBox.expand(),
           SafeArea(
             child: Center(
               child: FadeTransition(
@@ -96,13 +92,6 @@ class _PauseOverlayState extends State<PauseOverlay>
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white10),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.6),
-            blurRadius: 30,
-            spreadRadius: 4,
-          ),
-        ],
       ),
       child: child,
     );
@@ -228,8 +217,8 @@ class _AnimatedMenuButtonState extends State<_AnimatedMenuButton> {
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = widget.accentColor.withOpacity(0.12);
-    final borderColor = widget.accentColor.withOpacity(0.4);
+    final bgColor = widget.accentColor.withValues(alpha: 0.12);
+    final borderColor = widget.accentColor.withValues(alpha: 0.4);
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
@@ -252,13 +241,6 @@ class _AnimatedMenuButtonState extends State<_AnimatedMenuButton> {
             color: bgColor,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: borderColor),
-            boxShadow: [
-              BoxShadow(
-                color: widget.accentColor.withOpacity(0.15),
-                blurRadius: 18,
-                spreadRadius: _pressed ? 0 : 1,
-              ),
-            ],
           ),
           child: Row(
             mainAxisSize:
@@ -267,7 +249,7 @@ class _AnimatedMenuButtonState extends State<_AnimatedMenuButton> {
             children: [
               Icon(
                 widget.icon,
-                color: Colors.white.withOpacity(0.9),
+                color: Colors.white.withValues(alpha: 0.9),
                 size: 20,
               ),
               const SizedBox(width: 10),
