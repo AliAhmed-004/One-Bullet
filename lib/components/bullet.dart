@@ -248,8 +248,7 @@ class Bullet extends CircleComponent with CollisionCallbacks {
   Future<void> _triggerHaptics() async {
     if (!SettingsService.hapticsEnabled.value || kIsWeb) return;
 
-    final canVibrate =
-        _canVibrate ??= (await Vibration.hasVibrator()) ?? false;
+    final canVibrate = _canVibrate ??= (await Vibration.hasVibrator());
 
     if (canVibrate) {
       Vibration.vibrate(duration: 50, amplitude: 20);

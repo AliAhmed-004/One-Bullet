@@ -42,7 +42,10 @@ class SoundService {
 
   static void playDeflectorBreak() async {
     if (SettingsService.soundEnabled.value) {
-      AudioPlayer player = await FlameAudio.play("deflector_break.wav", volume: 0.7);
+      AudioPlayer player = await FlameAudio.play(
+        "deflector_break.wav",
+        volume: 0.7,
+      );
       _activePlayers.add(player);
       player.onPlayerComplete.listen((_) {
         _activePlayers.remove(player);
@@ -52,7 +55,10 @@ class SoundService {
 
   static void playBulletBounce() async {
     if (SettingsService.soundEnabled.value) {
-      AudioPlayer player = await FlameAudio.play("bullet_bounce.wav", volume: 0.5);
+      AudioPlayer player = await FlameAudio.play(
+        "bullet_bounce.wav",
+        volume: 0.5,
+      );
       _activePlayers.add(player);
       player.onPlayerComplete.listen((_) {
         _activePlayers.remove(player);
@@ -62,7 +68,10 @@ class SoundService {
 
   static void playBulletFire() async {
     if (SettingsService.soundEnabled.value) {
-      AudioPlayer player = await FlameAudio.play("bullet_fire.wav", volume: 0.8);
+      AudioPlayer player = await FlameAudio.play(
+        "bullet_fire.wav",
+        volume: 0.8,
+      );
       _activePlayers.add(player);
       player.onPlayerComplete.listen((_) {
         _activePlayers.remove(player);
@@ -72,7 +81,10 @@ class SoundService {
 
   static void playPlayerDeath() async {
     if (SettingsService.soundEnabled.value) {
-      AudioPlayer player = await FlameAudio.play("player_death.wav", volume: 0.9);
+      AudioPlayer player = await FlameAudio.play(
+        "player_death.wav",
+        volume: 0.6,
+      );
       _activePlayers.add(player);
       player.onPlayerComplete.listen((_) {
         _activePlayers.remove(player);

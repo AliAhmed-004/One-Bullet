@@ -27,15 +27,8 @@ class StartScreenOverlay extends StatelessWidget {
           color: Colors.black,
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-            decoration: const BoxDecoration(
-              gradient: RadialGradient(
-                center: Alignment(0, -0.2), // slightly above center
-                radius: 1.2,
-                colors: [
-                  Color(0xFF181820), // subtle inner glow
-                  Color(0xFF0B0B10), // outer dark
-                ],
-              ),
+            decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
             ),
             child: SafeArea(
               child: Center(
@@ -67,10 +60,8 @@ class StartScreenOverlay extends StatelessWidget {
                     // Game title
                     Text(
                       'ONE BULLET',
-                      style: TextStyle(
+                      style: Theme.of(context).textTheme.displayLarge?.copyWith(
                         fontSize: titleFontSize,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -79,10 +70,9 @@ class StartScreenOverlay extends StatelessWidget {
                     // Tagline
                     Text(
                       'Avoid the bullet that YOU fired!',
-                      style: TextStyle(
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontSize: subtitleFontSize,
                         fontWeight: FontWeight.w300,
-                        color: Colors.white60,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -96,11 +86,16 @@ class StartScreenOverlay extends StatelessWidget {
                         if (highScore == Duration.zero) {
                           return Text(
                             'Start playing to set a high score!',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white.withValues(alpha: 0.5),
-                              fontStyle: FontStyle.italic,
-                            ),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  fontSize: 14,
+                                  fontStyle: FontStyle.italic,
+                                  color: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.color
+                                      ?.withOpacity(0.6),
+                                ),
                           );
                         }
                         // Show high score badge
@@ -127,11 +122,12 @@ class StartScreenOverlay extends StatelessWidget {
                               const SizedBox(width: 8),
                               Text(
                                 'BEST: ${ScoreService.formatDuration(highScore)}',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.amber,
-                                ),
+                                style: Theme.of(context).textTheme.bodyLarge
+                                    ?.copyWith(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.amber,
+                                    ),
                               ),
                             ],
                           ),
@@ -156,11 +152,12 @@ class StartScreenOverlay extends StatelessWidget {
                           ),
                           child: Text(
                             isSmallScreen ? 'TAP TO START' : 'CLICK TO START',
-                            style: TextStyle(
-                              fontSize: buttonFontSize,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
+                            style: Theme.of(context).textTheme.labelLarge
+                                ?.copyWith(
+                                  fontSize: buttonFontSize,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
                           ),
                         ),
                       ),
@@ -180,14 +177,11 @@ class StartScreenOverlay extends StatelessWidget {
                         children: [
                           Text(
                             'HOW TO PLAY',
-                            style: TextStyle(
-                              fontSize: instructionFontSize + 2,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
+                            style: Theme.of(context).textTheme.titleLarge,
                           ),
                           const SizedBox(height: 16),
                           _buildInstructionRow(
+                            context: context,
                             icon: Icons.gamepad,
                             text: isSmallScreen
                                 ? 'Drag anywhere in the arena to move'
@@ -197,6 +191,7 @@ class StartScreenOverlay extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
                           _buildInstructionRow(
+                            context: context,
                             icon: Icons.touch_app,
                             text: 'Tap or start moving to fire the bullet',
                             fontSize: instructionFontSize,
@@ -204,6 +199,7 @@ class StartScreenOverlay extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
                           _buildInstructionRow(
+                            context: context,
                             icon: Icons.warning_amber,
                             text: 'The bullet never stops - dodge it!',
                             fontSize: instructionFontSize,
@@ -211,6 +207,7 @@ class StartScreenOverlay extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
                           _buildInstructionRow(
+                            context: context,
                             icon: Icons.timer,
                             text: 'Survive as long as you can',
                             fontSize: instructionFontSize,
@@ -234,20 +231,14 @@ class StartScreenOverlay extends StatelessWidget {
     required String text,
     required double fontSize,
     required Color accentColor,
+    required BuildContext context,
   }) {
     return Row(
       children: [
         Icon(icon, color: accentColor, size: fontSize + 6),
         const SizedBox(width: 12),
         Expanded(
-          child: Text(
-            text,
-            style: TextStyle(
-              fontSize: fontSize,
-              fontWeight: FontWeight.w400,
-              color: Colors.white60,
-            ),
-          ),
+          child: Text(text, style: Theme.of(context).textTheme.bodyMedium),
         ),
       ],
     );
