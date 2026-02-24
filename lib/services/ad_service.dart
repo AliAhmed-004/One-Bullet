@@ -95,7 +95,12 @@ class AdService {
     _onAdDismissedWithoutRewardCallback = null;
     _deathCount = 0;
 
-    await MobileAds.instance.initialize();
+    if (Platform.isAndroid || Platform.isIOS) {
+      await MobileAds.instance.initialize();
+      log('AdService: Mobile Ads SDK initialized');
+    } else {
+      log('AdService: Mobile Ads SDK not initialized - unsupported platform');
+    }
 
     // Start loading ads immediately
     _loadInterstitialAd();

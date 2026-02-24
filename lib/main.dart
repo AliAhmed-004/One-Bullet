@@ -7,6 +7,7 @@ import 'package:one_bullet/overlays/game_over_overlay.dart';
 import 'package:one_bullet/overlays/pause_overlay.dart';
 import 'package:one_bullet/overlays/settings_overlay.dart';
 import 'package:one_bullet/overlays/start_screen_overlay.dart';
+import 'package:one_bullet/themes.dart';
 import 'package:one_bullet/services/ad_service.dart';
 import 'package:one_bullet/services/score_service.dart';
 import 'package:one_bullet/services/settings_service.dart';
@@ -37,20 +38,26 @@ class OneBullet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GameWidget<OneBulletGame>.controlled(
-      gameFactory: OneBulletGame.new,
-      overlayBuilderMap: {
-        OneBulletGame.startScreenOverlayId: (context, game) =>
-            StartScreenOverlay(game: game),
-        OneBulletGame.gameHudOverlayId: (context, game) =>
-            GameHudOverlay(game: game),
-        OneBulletGame.pauseOverlayId: (context, game) =>
-            PauseOverlay(game: game),
-        OneBulletGame.gameOverOverlayId: (context, game) =>
-            GameOverOverlay(game: game),
-        OneBulletGame.settingsOverlayId: (context, game) =>
-            SettingsOverlay(game: game),
-      },
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: appLightTheme,
+      darkTheme: appDarkTheme,
+      themeMode: ThemeMode.system,
+      home: GameWidget<OneBulletGame>.controlled(
+        gameFactory: OneBulletGame.new,
+        overlayBuilderMap: {
+          OneBulletGame.startScreenOverlayId: (context, game) =>
+              StartScreenOverlay(game: game),
+          OneBulletGame.gameHudOverlayId: (context, game) =>
+              GameHudOverlay(game: game),
+          OneBulletGame.pauseOverlayId: (context, game) =>
+              PauseOverlay(game: game),
+          OneBulletGame.gameOverOverlayId: (context, game) =>
+              GameOverOverlay(game: game),
+          OneBulletGame.settingsOverlayId: (context, game) =>
+              SettingsOverlay(game: game),
+        },
+      ),
     );
   }
 }
