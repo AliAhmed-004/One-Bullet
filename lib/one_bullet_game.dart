@@ -275,6 +275,7 @@ class OneBulletGame extends FlameGame
   /// Called when the player is hit by the bullet.
   void onPlayerDeath() {
     if (_isGameOver) return; // Prevent multiple triggers
+    if (player == null) return;
 
     _isGameOver = true;
 
@@ -314,6 +315,7 @@ class OneBulletGame extends FlameGame
     _gameOverTimer = Timer(const Duration(milliseconds: 800), () {
       // Pause the game
       pauseEngine();
+      SoundService.stopAll();
 
       // Hide HUD and show game over overlay
       overlays.remove(gameHudOverlayId);
@@ -355,6 +357,11 @@ class OneBulletGame extends FlameGame
     // Remove all overlays
     overlays.remove(pauseOverlayId);
     overlays.remove(gameHudOverlayId);
+    overlays.remove(settingsOverlayId);
+    overlays.remove(gameOverOverlayId);
+
+    // Stop all active sound effects before teardown
+    SoundService.stopAll();
 
     // Remove game components except arena boundary
     world.removeAll(world.children.where((c) => c is! ArenaBoundary));
@@ -402,6 +409,9 @@ class OneBulletGame extends FlameGame
     // Hide game over overlay
     overlays.remove(gameOverOverlayId);
 
+    // Stop all active sound effects before teardown
+    SoundService.stopAll();
+
     // Remove game components except arena boundary
     world.removeAll(world.children.where((c) => c is! ArenaBoundary));
     camera.viewport.removeAll(
@@ -433,12 +443,7 @@ class OneBulletGame extends FlameGame
   /// Continues the game after watching a rewarded ad.
   /// Player respawns at center, bullet continues, timer preserved.
   void continueGame() {
-    debugPrint(
-      'OneBulletGame: continueGame() called, _hasUsedContinue=$_hasUsedContinue',
-    );
-
     if (_hasUsedContinue) {
-      debugPrint('OneBulletGame: Already used continue, returning');
       return; // Only one continue per run
     }
 
@@ -447,25 +452,21 @@ class OneBulletGame extends FlameGame
 
     // Hide game over overlay
     overlays.remove(gameOverOverlayId);
-    debugPrint('OneBulletGame: Removed game over overlay');
 
     // Respawn the player at the center of the arena (skip aim indicator since bullet is in play)
     final playerStartY = hudHeight / 2;
     player = Player(position: Vector2(0, playerStartY), skipAimIndicator: true);
     world.add(player!);
-    debugPrint('OneBulletGame: Added new player');
 
     // Update joystick reference to new player
     joystick?.updatePlayer(player!);
 
     // Show HUD
     overlays.add(gameHudOverlayId);
-    debugPrint('OneBulletGame: Added HUD overlay');
 
     // Resume engine (make sure it's running)
     _isPaused = false;
     resumeEngine();
-    debugPrint('OneBulletGame: Engine resumed, paused=$paused');
   }
 
   /// Opens the settings overlay from the pause menu.

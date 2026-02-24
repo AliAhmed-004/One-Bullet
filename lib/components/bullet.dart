@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/services/settings_service.dart';
@@ -88,6 +89,9 @@ class Bullet extends CircleComponent with CollisionCallbacks {
 
   /// Epsilon threshold for axis-alignment breaking (~0.85 degrees).
   static const double _axisEpsilon = 0.015;
+
+  /// Whether this runtime can vibrate (cached after first check).
+  static bool? _canVibrate;
 
   /// Getter for velocity (useful for debugging or effects).
   Vector2 get velocity => _velocity;
@@ -235,11 +239,20 @@ class Bullet extends CircleComponent with CollisionCallbacks {
     // Apply subtle deviation on bounce
     if (bounced) {
       SoundService.playBulletBounce();
-      // Trigger vibration only if enabled
-      if (SettingsService.hapticsEnabled.value) {
-        Vibration.vibrate(duration: 50, amplitude: 20);
-      }
+      _triggerHaptics();
       _applyBounceDeviation();
+    }
+  }
+
+  /// Triggers haptic feedback only on supported platforms/devices.
+  Future<void> _triggerHaptics() async {
+    if (!SettingsService.hapticsEnabled.value || kIsWeb) return;
+
+    final canVibrate =
+        _canVibrate ??= (await Vibration.hasVibrator()) ?? false;
+
+    if (canVibrate) {
+      Vibration.vibrate(duration: 50, amplitude: 20);
     }
   }
 
