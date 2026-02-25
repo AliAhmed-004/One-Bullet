@@ -37,6 +37,33 @@ class AimIndicator extends PositionComponent {
   /// The center offset for orbiting (set based on parent's radius).
   Vector2 _orbitCenter = Vector2.zero();
 
+  /// Cached paints/path to avoid render-loop allocations.
+  late final Paint _fillPaint;
+  late final Paint _borderPaint;
+  late final Path _trianglePath;
+
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+
+    _fillPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    _borderPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+
+    final halfSize = triangleSize / 2;
+    _trianglePath = Path()
+      ..moveTo(halfSize, 0)
+      ..lineTo(-halfSize, -halfSize)
+      ..lineTo(-halfSize, halfSize)
+      ..close();
+  }
+
   @override
   void onMount() {
     super.onMount();
@@ -62,10 +89,10 @@ class AimIndicator extends PositionComponent {
       _currentAngle -= 2 * pi;
     }
 
-    // Update position relative to parent's center
-    position = _orbitCenter + Vector2(
-      cos(_currentAngle) * orbitRadius,
-      sin(_currentAngle) * orbitRadius,
+    // Update position relative to parent's center without allocating new vectors
+    position.setValues(
+      _orbitCenter.x + cos(_currentAngle) * orbitRadius,
+      _orbitCenter.y + sin(_currentAngle) * orbitRadius,
     );
 
     // Rotate the triangle to point outward
@@ -76,29 +103,7 @@ class AimIndicator extends PositionComponent {
   void render(Canvas canvas) {
     super.render(canvas);
 
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    // Draw a triangle pointing in the direction of movement
-    // Centered around (0, 0) since anchor is Anchor.center
-    final path = Path();
-
-    // Triangle pointing to the right (will be rotated by the component's angle)
-    final halfSize = triangleSize / 2;
-    path.moveTo(halfSize, 0); // Tip (pointing outward)
-    path.lineTo(-halfSize, -halfSize); // Bottom left
-    path.lineTo(-halfSize, halfSize); // Top left
-    path.close();
-
-    canvas.drawPath(path, paint);
-
-    // Optional: Add a border for better visibility
-    final borderPaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-
-    canvas.drawPath(path, borderPaint);
+    canvas.drawPath(_trianglePath, _fillPaint);
+    canvas.drawPath(_trianglePath, _borderPaint);
   }
 }

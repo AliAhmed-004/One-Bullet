@@ -93,6 +93,18 @@ class Bullet extends CircleComponent with CollisionCallbacks {
   /// Whether this runtime can vibrate (cached after first check).
   static bool? _canVibrate;
 
+  /// Reused vector to avoid per-bounce temporary allocations.
+  final Vector2 _perpendicular = Vector2.zero();
+
+  /// Timestamp of last bounce side effects (seconds).
+  double _lastBounceEffectTime = -1;
+
+  /// Elapsed lifetime in seconds.
+  double _elapsedTime = 0;
+
+  /// Minimum spacing between bounce side-effects.
+  static const double _bounceEffectCooldown = 0.045;
+
   /// Getter for velocity (useful for debugging or effects).
   Vector2 get velocity => _velocity;
 
@@ -116,7 +128,10 @@ class Bullet extends CircleComponent with CollisionCallbacks {
   /// 2. Then applies perpendicular deviation
   void reflectOffDeflector(Vector2 reflectedVelocity) {
     // Set the new velocity direction from the reflection
-    _velocity.setFrom(reflectedVelocity.normalized() * _currentSpeed);
+    _velocity
+      ..setFrom(reflectedVelocity)
+      ..normalize()
+      ..scale(_currentSpeed);
 
     // Apply the standard perpendicular deviation
     _applyBounceDeviation();
@@ -198,8 +213,11 @@ class Bullet extends CircleComponent with CollisionCallbacks {
     _trailIndex = (_trailIndex + 1) % trailLength;
     if (_trailCount < trailLength) _trailCount++;
 
-    // Move the bullet
-    position += _velocity * dt;
+    // Move the bullet without allocating temporary vectors
+    position.x += _velocity.x * dt;
+    position.y += _velocity.y * dt;
+
+    _elapsedTime += dt;
 
     // Check for wall collisions and bounce
     _handleWallBounce();
@@ -238,8 +256,12 @@ class Bullet extends CircleComponent with CollisionCallbacks {
 
     // Apply subtle deviation on bounce
     if (bounced) {
-      SoundService.playBulletBounce();
-      _triggerHaptics();
+      final timeSinceLastEffect = _elapsedTime - _lastBounceEffectTime;
+      if (timeSinceLastEffect >= _bounceEffectCooldown) {
+        _lastBounceEffectTime = _elapsedTime;
+        SoundService.playBulletBounce();
+        _triggerHaptics();
+      }
       _applyBounceDeviation();
     }
   }
@@ -261,7 +283,9 @@ class Bullet extends CircleComponent with CollisionCallbacks {
     _bounceCount++;
 
     // Calculate perpendicular vector to current velocity
-    final perp = Vector2(-_velocity.y, _velocity.x)..normalize();
+    _perpendicular
+      ..setValues(-_velocity.y, _velocity.x)
+      ..normalize();
 
     // Deterministic bias using sine wave with golden ratio multiplier
     // Creates non-repeating but predictable pattern
@@ -269,7 +293,7 @@ class Bullet extends CircleComponent with CollisionCallbacks {
         math.sin(_bounceCount * 1.618) * _perpBiasStrength * _currentSpeed;
 
     // Apply perpendicular bias to velocity
-    _velocity.add(perp * bias);
+    _velocity.addScaled(_perpendicular, bias);
 
     // Normalize and reapply speed to maintain constant velocity
     _velocity.normalize();

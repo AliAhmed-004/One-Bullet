@@ -34,6 +34,10 @@ class ArenaBoundary extends PositionComponent with HasGameReference {
   /// Whether bounds have been initialized.
   bool _boundsInitialized = false;
 
+  /// Cached paints to avoid per-frame allocations.
+  late final Paint _borderPaint;
+  late final Paint _accentPaint;
+
   /// Gets the arena bounds in world coordinates.
   Rect get bounds {
     _ensureBoundsInitialized();
@@ -61,6 +65,18 @@ class ArenaBoundary extends PositionComponent with HasGameReference {
   @override
   Future<void> onLoad() async {
     await super.onLoad();
+
+    _borderPaint = Paint()
+      ..color = borderColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = borderWidth;
+
+    _accentPaint = Paint()
+      ..color = Colors.white38
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round;
+
     // Initialize bounds immediately when mounted
     _updateBounds(game.size);
   }
@@ -92,78 +108,67 @@ class ArenaBoundary extends PositionComponent with HasGameReference {
   void render(Canvas canvas) {
     super.render(canvas);
 
-    final paint = Paint()
-      ..color = borderColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = borderWidth;
-
     // The arena bounds are already in world coordinates
     // and this component is in the world, so we draw directly
     final renderRect = _arenaBounds;
 
     // Draw rounded rectangle border
     final rrect = RRect.fromRectAndRadius(renderRect, const Radius.circular(8));
-    canvas.drawRRect(rrect, paint);
+    canvas.drawRRect(rrect, _borderPaint);
 
     // Optional: Add corner accents for a more stylized look
     _drawCornerAccents(canvas, renderRect);
   }
 
   void _drawCornerAccents(Canvas canvas, Rect rect) {
-    final accentPaint = Paint()
-      ..color = Colors.white38
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round;
-
     const accentLength = 20.0;
 
     // Top-left corner
     canvas.drawLine(
       Offset(rect.left, rect.top + accentLength),
       Offset(rect.left, rect.top),
-      accentPaint,
+      _accentPaint,
     );
     canvas.drawLine(
       Offset(rect.left, rect.top),
       Offset(rect.left + accentLength, rect.top),
-      accentPaint,
+      _accentPaint,
     );
 
     // Top-right corner
     canvas.drawLine(
       Offset(rect.right - accentLength, rect.top),
       Offset(rect.right, rect.top),
-      accentPaint,
+      _accentPaint,
     );
     canvas.drawLine(
       Offset(rect.right, rect.top),
       Offset(rect.right, rect.top + accentLength),
-      accentPaint,
+      _accentPaint,
     );
 
     // Bottom-left corner
     canvas.drawLine(
       Offset(rect.left, rect.bottom - accentLength),
       Offset(rect.left, rect.bottom),
-      accentPaint,
+      _accentPaint,
     );
     canvas.drawLine(
       Offset(rect.left, rect.bottom),
       Offset(rect.left + accentLength, rect.bottom),
-      accentPaint,
+      _accentPaint,
     );
 
     // Bottom-right corner
     canvas.drawLine(
       Offset(rect.right - accentLength, rect.bottom),
       Offset(rect.right, rect.bottom),
-      accentPaint,
+      _accentPaint,
     );
     canvas.drawLine(
       Offset(rect.right, rect.bottom),
       Offset(rect.right, rect.bottom - accentLength),
-      accentPaint,
+      _accentPaint,
     );
   }
 }

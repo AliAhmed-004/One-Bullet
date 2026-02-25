@@ -67,6 +67,9 @@ class OneBulletGame extends FlameGame
   /// List of active deflectors in the arena.
   final List<Deflector> _deflectors = [];
 
+  /// Hard cap to prevent collision-system overload in long runs.
+  static const int _maxActiveDeflectors = 16;
+
   /// Random number generator for deflector placement.
   final math.Random _rng = math.Random();
 
@@ -255,11 +258,19 @@ class OneBulletGame extends FlameGame
   void _onSpawnDeflectors(int count) {
     if (arenaBoundary == null) return;
 
+    // Clean up stale references before deciding spawn budget.
+    _deflectors.removeWhere((deflector) => deflector.isRemoving || !deflector.isMounted);
+
+    final availableSlots = _maxActiveDeflectors - _deflectors.length;
+    if (availableSlots <= 0) return;
+
+    final spawnCount = math.min(count, availableSlots);
+
     final bounds = arenaBoundary!.bounds;
     // Margin from arena edges to ensure deflectors don't touch walls
     const margin = 60.0;
 
-    for (int i = 0; i < count; i++) {
+    for (int i = 0; i < spawnCount; i++) {
       // Generate random position and angle
       final position = Deflector.randomPositionInArena(bounds, _rng, margin);
       final angle = Deflector.randomAngle(_rng);
