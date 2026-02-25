@@ -34,7 +34,7 @@ class AdService {
   static const int _deathsBeforeAd = 3;
 
   /// Survival time (in seconds) that counts as a "good run" and triggers an ad.
-  static const int _goodRunThresholdSeconds = 90; // 1 minute 30 seconds
+  static const int _goodRunThresholdSeconds = 45; // 1 minute 30 seconds
 
   /// Whether to force test ads (ignoring release mode). Useful for testing on
   /// release builds or when test ads aren't showing properly.
