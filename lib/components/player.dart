@@ -52,7 +52,12 @@ class Player extends CircleComponent with KeyboardHandler, CollisionCallbacks {
   /// Set movement direction externally (e.g., from a joystick).
   /// The vector should be normalized or have magnitude <= 1.
   void setMovementDirection(Vector2 direction) {
-    _movementDirection = direction;
+    _movementDirection.setFrom(direction);
+  }
+
+  /// Stops player movement without allocating a new vector.
+  void stopMovement() {
+    _movementDirection.setZero();
   }
 
   // Track which keys are currently pressed
@@ -99,8 +104,8 @@ class Player extends CircleComponent with KeyboardHandler, CollisionCallbacks {
     super.update(dt);
 
     // Calculate movement based on direction and speed
-    if (_movementDirection != Vector2.zero()) {
-      position += _movementDirection * speed * dt;
+    if (_movementDirection.length2 > 0) {
+      position.addScaled(_movementDirection, speed * dt);
     }
 
     // Clamp player position to stay within game bounds
@@ -132,7 +137,7 @@ class Player extends CircleComponent with KeyboardHandler, CollisionCallbacks {
   /// Updates the movement direction based on currently pressed keys.
   void _updateMovementFromKeyboard() {
     // Reset direction
-    _movementDirection = Vector2.zero();
+    _movementDirection.setZero();
 
     // Check for horizontal movement (A/D or Left/Right arrows)
     if (_keysPressed.contains(LogicalKeyboardKey.keyA) ||

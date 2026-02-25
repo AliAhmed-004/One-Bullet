@@ -1,4 +1,3 @@
-// import 'package:flame_audio/flame_audio.dart';
 import 'package:flame_audio/flame_audio.dart';
 import 'package:one_bullet/services/settings_service.dart';
 
@@ -6,113 +5,103 @@ class SoundService {
   static AudioPlayer? waveWarningPlayer;
   static final List<AudioPlayer> _activePlayers = [];
 
+  /// Last timestamp (ms) each SFX was played, used for throttling.
+  static final Map<String, int> _lastSfxPlayMs = {};
+
+  /// Limit concurrent one-shot players to reduce audio churn under stress.
+  static const int _maxActivePlayers = 24;
+
   static Future<void> init() async {
     // Preload sound effects
     await FlameAudio.audioCache.loadAll([
-      "deflector_break.wav",
-      "bullet_bounce.wav",
-      "bullet_fire.wav",
-      "player_death.wav",
-      "high_score.wav",
-      "wave_warning.mp3",
+      'deflector_break.wav',
+      'bullet_bounce.wav',
+      'bullet_fire.wav',
+      'player_death.wav',
+      'high_score.wav',
+      'wave_warning.mp3',
     ]);
   }
 
   static void pauseAll() {
-    // Pause all sound effects except background music
-    for (var player in _activePlayers) {
+    for (final player in _activePlayers) {
       player.pause();
     }
   }
 
   static void resumeAll() {
-    // Resume all sound effects
-    for (var player in _activePlayers) {
+    for (final player in _activePlayers) {
       player.resume();
     }
   }
 
   static void stopAll() {
-    // Stop all sound effects
-    for (var player in _activePlayers) {
+    for (final player in _activePlayers) {
       player.stop();
     }
     _activePlayers.clear();
+    _lastSfxPlayMs.clear();
+    waveWarningPlayer = null;
   }
 
-  static void playDeflectorBreak() async {
-    if (SettingsService.soundEnabled.value) {
-      AudioPlayer player = await FlameAudio.play(
-        "deflector_break.wav",
-        volume: 0.7,
-      );
-      _activePlayers.add(player);
-      player.onPlayerComplete.listen((_) {
-        _activePlayers.remove(player);
-      });
+  static Future<void> _playSfx(
+    String file, {
+    required double volume,
+    int minIntervalMs = 0,
+  }) async {
+    if (!SettingsService.soundEnabled.value) return;
+
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    final previousMs = _lastSfxPlayMs[file] ?? 0;
+    if (minIntervalMs > 0 && nowMs - previousMs < minIntervalMs) {
+      return;
     }
+
+    // Enforce an upper bound to prevent runaway player creation.
+    if (_activePlayers.length >= _maxActivePlayers) {
+      return;
+    }
+
+    _lastSfxPlayMs[file] = nowMs;
+
+    final player = await FlameAudio.play(file, volume: volume);
+    _activePlayers.add(player);
+
+    player.onPlayerComplete.listen((_) {
+      _activePlayers.remove(player);
+    });
   }
 
-  static void playBulletBounce() async {
-    if (SettingsService.soundEnabled.value) {
-      AudioPlayer player = await FlameAudio.play(
-        "bullet_bounce.wav",
-        volume: 0.5,
-      );
-      _activePlayers.add(player);
-      player.onPlayerComplete.listen((_) {
-        _activePlayers.remove(player);
-      });
-    }
+  static void playDeflectorBreak() {
+    _playSfx('deflector_break.wav', volume: 0.7, minIntervalMs: 20);
   }
 
-  static void playBulletFire() async {
-    if (SettingsService.soundEnabled.value) {
-      AudioPlayer player = await FlameAudio.play(
-        "bullet_fire.wav",
-        volume: 0.8,
-      );
-      _activePlayers.add(player);
-      player.onPlayerComplete.listen((_) {
-        _activePlayers.remove(player);
-      });
-    }
+  static void playBulletBounce() {
+    _playSfx('bullet_bounce.wav', volume: 0.5, minIntervalMs: 35);
   }
 
-  static void playPlayerDeath() async {
-    if (SettingsService.soundEnabled.value) {
-      AudioPlayer player = await FlameAudio.play(
-        "player_death.wav",
-        volume: 0.6,
-      );
-      _activePlayers.add(player);
-      player.onPlayerComplete.listen((_) {
-        _activePlayers.remove(player);
-      });
-    }
+  static void playBulletFire() {
+    _playSfx('bullet_fire.wav', volume: 0.8);
   }
 
-  static void playHighScore() async {
-    if (SettingsService.soundEnabled.value) {
-      AudioPlayer player = await FlameAudio.play("high_score.wav", volume: 1.0);
-      _activePlayers.add(player);
-      player.onPlayerComplete.listen((_) {
-        _activePlayers.remove(player);
-      });
-    }
+  static void playPlayerDeath() {
+    _playSfx('player_death.wav', volume: 0.6);
   }
 
-  static void playWaveWarning() async {
-    if (SettingsService.soundEnabled.value) {
-      waveWarningPlayer = await FlameAudio.play(
-        "wave_warning.mp3",
-        volume: 0.3,
-      );
-      _activePlayers.add(waveWarningPlayer!);
-      waveWarningPlayer!.onPlayerComplete.listen((_) {
-        _activePlayers.remove(waveWarningPlayer);
-        waveWarningPlayer = null;
-      });
-    }
+  static void playHighScore() {
+    _playSfx('high_score.wav', volume: 1.0);
+  }
+
+  static Future<void> playWaveWarning() async {
+    if (!SettingsService.soundEnabled.value) return;
+    if (waveWarningPlayer != null) return;
+
+    waveWarningPlayer = await FlameAudio.play('wave_warning.mp3', volume: 0.3);
+    _activePlayers.add(waveWarningPlayer!);
+
+    waveWarningPlayer!.onPlayerComplete.listen((_) {
+      _activePlayers.remove(waveWarningPlayer);
+      waveWarningPlayer = null;
+    });
   }
 }

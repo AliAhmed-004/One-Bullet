@@ -45,6 +45,9 @@ class Deflector extends PositionComponent with CollisionCallbacks {
   /// Whether this deflector has been destroyed.
   bool _isDestroyed = false;
 
+  /// Reused vector to avoid temporary allocations in collision response.
+  final Vector2 _pushDirection = Vector2.zero();
+
   @override
   Future<void> onLoad() async {
     await super.onLoad();
@@ -159,10 +162,24 @@ class Deflector extends PositionComponent with CollisionCallbacks {
     if (intersectionPoints.isEmpty) return;
 
     // Calculate push direction (from deflector center to player)
-    final pushDirection = (player.position - position).normalized();
+    _pushDirection
+      ..setFrom(player.position)
+      ..sub(position);
+
+    if (_pushDirection.length2 == 0) return;
+    _pushDirection.normalize();
 
     // Push player out slightly
-    player.position.add(pushDirection * 2);
+    player.position.addScaled(_pushDirection, 2);
+  }
+
+  @override
+  void onRemove() {
+    final game = findGame();
+    if (game is OneBulletGame) {
+      game.removeDeflector(this);
+    }
+    super.onRemove();
   }
 
   /// Spawns wood fragment particles when destroyed.

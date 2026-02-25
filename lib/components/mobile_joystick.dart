@@ -49,6 +49,10 @@ class MobileJoystick extends PositionComponent with DragCallbacks {
   /// Whether this drag has already moved past deadzone.
   bool _hasMovementInCurrentDrag = false;
 
+  /// Scratch vectors to avoid per-event allocations.
+  final Vector2 _offset = Vector2.zero();
+  final Vector2 _direction = Vector2.zero();
+
   /// Paint for the joystick base.
   final Paint _basePaint = Paint()
     ..color = Colors.white.withValues(alpha: 0.3)
@@ -88,8 +92,8 @@ class MobileJoystick extends PositionComponent with DragCallbacks {
     if (_isInActivationZone(event.canvasPosition)) {
       _isActive = true;
       _hasMovementInCurrentDrag = false;
-      _baseCenter = event.canvasPosition.clone();
-      _knobPosition = event.canvasPosition.clone();
+      _baseCenter.setFrom(event.canvasPosition);
+      _knobPosition.setFrom(event.canvasPosition);
     }
   }
 
@@ -98,29 +102,36 @@ class MobileJoystick extends PositionComponent with DragCallbacks {
     if (!_isActive) return;
 
     // Calculate the offset from the base center
-    final offset = event.canvasEndPosition - _baseCenter;
-    final distance = offset.length;
+    _offset
+      ..setFrom(event.canvasEndPosition)
+      ..sub(_baseCenter);
+    final distance = _offset.length;
 
     // Clamp the knob position to the max distance
     if (distance > maxKnobDistance) {
-      offset.normalize();
-      offset.scale(maxKnobDistance);
+      _offset
+        ..normalize()
+        ..scale(maxKnobDistance);
     }
 
-    _knobPosition = _baseCenter + offset;
+    _knobPosition
+      ..setFrom(_baseCenter)
+      ..add(_offset);
 
     // Calculate and set the movement direction (normalized)
     if (distance > 5) {
       // Small deadzone to prevent jitter
-      final direction = offset.normalized();
-      _player.setMovementDirection(direction);
+      _direction
+        ..setFrom(_offset)
+        ..normalize();
+      _player.setMovementDirection(_direction);
 
       if (!_hasMovementInCurrentDrag) {
         _hasMovementInCurrentDrag = true;
         _onMovementStart();
       }
     } else {
-      _player.setMovementDirection(Vector2.zero());
+      _player.stopMovement();
     }
   }
 
@@ -140,7 +151,7 @@ class MobileJoystick extends PositionComponent with DragCallbacks {
   void _deactivate() {
     _isActive = false;
     _hasMovementInCurrentDrag = false;
-    _player.setMovementDirection(Vector2.zero());
+    _player.stopMovement();
   }
 
   @override
