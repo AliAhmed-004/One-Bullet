@@ -42,6 +42,7 @@ class WaveIndicator extends PositionComponent {
         fontWeight: FontWeight.w500,
         color: Colors.white.withValues(alpha: 0.7),
         letterSpacing: 1,
+        decoration: TextDecoration.none,
       ),
     );
   }
@@ -151,6 +152,7 @@ class WaveIndicator extends PositionComponent {
           ? Color.lerp(Colors.orange, Colors.red, _flashProgress)
           : Colors.white,
       letterSpacing: 2,
+      decoration: TextDecoration.none,
       shadows: _isFlashing
           ? [
               Shadow(

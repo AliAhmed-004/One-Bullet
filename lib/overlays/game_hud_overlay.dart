@@ -126,6 +126,7 @@ class _GlassTimerDisplay extends StatelessWidget {
           fontFamily: 'monospace',
           letterSpacing: 3,
           color: Colors.white,
+          decoration: TextDecoration.none,
         ),
       ),
     );
@@ -155,6 +156,7 @@ class _HighScoreRow extends StatelessWidget {
                 color: Colors.amberAccent,
                 fontFamily: 'monospace',
                 letterSpacing: 1.2,
+                decoration: TextDecoration.none,
               ),
             ),
           ],

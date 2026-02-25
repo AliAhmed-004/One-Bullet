@@ -114,6 +114,7 @@ class _WaveIndicatorWidgetState extends State<WaveIndicatorWidget>
                     letterSpacing: 2,
                     color: Colors.white.withValues(alpha: 0.5),
                     fontWeight: FontWeight.w500,
+                    decoration: TextDecoration.none,
                     height: 1,
                   ),
                 ),
@@ -126,6 +127,7 @@ class _WaveIndicatorWidgetState extends State<WaveIndicatorWidget>
                     letterSpacing: 2,
                     height: 1,
                     color: baseAccent,
+                    decoration: TextDecoration.none,
                     shadows: [
                       Shadow(
                         color: baseAccent.withValues(alpha: glowStrength * 2),
