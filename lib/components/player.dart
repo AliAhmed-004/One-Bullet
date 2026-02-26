@@ -44,7 +44,7 @@ class Player extends CircleComponent with KeyboardHandler, CollisionCallbacks {
 
   /// Current movement direction (normalized or zero).
   /// This can be set by keyboard input OR joystick input.
-  Vector2 _movementDirection = Vector2.zero();
+  final Vector2 _movementDirection = Vector2.zero();
 
   /// Getter for movement direction (useful for external joystick control).
   Vector2 get movementDirection => _movementDirection;

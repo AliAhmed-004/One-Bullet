@@ -41,10 +41,10 @@ class MobileJoystick extends PositionComponent with DragCallbacks {
   bool _isActive = false;
 
   /// The center position of the joystick base (in screen coordinates).
-  Vector2 _baseCenter = Vector2.zero();
+  final Vector2 _baseCenter = Vector2.zero();
 
   /// The current position of the knob (in screen coordinates).
-  Vector2 _knobPosition = Vector2.zero();
+  final Vector2 _knobPosition = Vector2.zero();
 
   /// Whether this drag has already moved past deadzone.
   bool _hasMovementInCurrentDrag = false;
