@@ -365,17 +365,15 @@ class OneBulletGame extends FlameGame
     _gameOverTimer?.cancel();
     _gameOverTimer = null;
 
-    // Pause the game and halt sounds before transitioning overlays.
-    pauseEngine();
-    SoundService.stopAll();
+      // Hide HUD and show game over overlay
+      overlays.remove(gameHudOverlayId);
 
-    overlays.remove(gameHudOverlayId);
-
-    if (lastUnlockedAchievements.isNotEmpty) {
-      overlays.add(achievementUnlockedOverlayId);
-    } else {
-      overlays.add(gameOverOverlayId);
-    }
+      if (lastUnlockedAchievements.isNotEmpty) {
+        overlays.add(achievementUnlockedOverlayId);
+      } else {
+        overlays.add(gameOverOverlayId);
+      }
+    });
   }
 
   /// Pauses the game (from HUD pause button).
