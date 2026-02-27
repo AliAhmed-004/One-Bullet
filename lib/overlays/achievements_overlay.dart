@@ -70,8 +70,11 @@ class _AchievementsOverlayState extends State<AchievementsOverlay>
             height: 520,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF1E1E1E), Color(0xFF0F0F12)],
+              gradient: LinearGradient(
+                colors: [
+                  Theme.of(context).colorScheme.surface.withValues(alpha: 0.15),
+                  Theme.of(context).colorScheme.surface.withValues(alpha: 0.25),
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -82,11 +85,11 @@ class _AchievementsOverlayState extends State<AchievementsOverlay>
               children: [
                 Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         'ACHIEVEMENTS',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 1.5,
@@ -99,9 +102,14 @@ class _AchievementsOverlayState extends State<AchievementsOverlay>
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white10,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.1),
                         ),
-                        child: const Icon(Icons.close, color: Colors.white70),
+                        child: Icon(
+                          Icons.close,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                       ),
                     ),
                   ],
@@ -110,7 +118,7 @@ class _AchievementsOverlayState extends State<AchievementsOverlay>
                 Expanded(
                   child: ListView.separated(
                     itemCount: all.length,
-                    separatorBuilder: (_, __) =>
+                    separatorBuilder: (_, _) =>
                         const Divider(color: Colors.white10),
                     itemBuilder: (context, index) {
                       final ach = all[index];
@@ -129,22 +137,27 @@ class _AchievementsOverlayState extends State<AchievementsOverlay>
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: unlocked
-                                ? const Color(
-                                    0xFF6AA8FF,
-                                  ).withValues(alpha: 0.12)
-                                : Colors.white10,
+                                ? Theme.of(
+                                    context,
+                                  ).colorScheme.primary.withValues(alpha: 0.15)
+                                : Theme.of(context).colorScheme.onSurface
+                                      .withValues(alpha: 0.06),
                           ),
                           child: Icon(
                             unlocked ? Icons.workspace_premium : Icons.lock,
                             color: unlocked
-                                ? const Color(0xFF9BC5FF)
-                                : Colors.white54,
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.onSurface
+                                      .withValues(alpha: 0.4),
                           ),
                         ),
                         title: Text(
                           formatAchievementId(ach.id),
                           style: TextStyle(
-                            color: unlocked ? Colors.white : Colors.white70,
+                            color: unlocked
+                                ? Theme.of(context).colorScheme.onSurfaceVariant
+                                : Theme.of(context).colorScheme.onSurface
+                                      .withValues(alpha: 0.6),
                             fontWeight: unlocked
                                 ? FontWeight.w700
                                 : FontWeight.w600,
@@ -152,12 +165,17 @@ class _AchievementsOverlayState extends State<AchievementsOverlay>
                         ),
                         subtitle: Text(
                           'Survive ${_formatTime(ach.requiredSeconds)}',
-                          style: const TextStyle(color: Color(0xFF8D94A8)),
+                          style: TextStyle(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant
+                                .withValues(alpha: 0.7),
+                          ),
                         ),
                         trailing: unlocked
-                            ? const Icon(
+                            ? Icon(
                                 Icons.check_circle,
-                                color: Color(0xFF6AA8FF),
+                                color: Theme.of(context).colorScheme.primary,
                               )
                             : const SizedBox.shrink(),
                       );
@@ -167,7 +185,11 @@ class _AchievementsOverlayState extends State<AchievementsOverlay>
                 const SizedBox(height: 20),
                 Text(
                   'Total Unlocked: ${AchievementService.instance.unlockedCount}/${all.length}',
-                  style: const TextStyle(color: Colors.white70),
+                  style: TextStyle(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                  ),
                 ),
               ],
             ),
