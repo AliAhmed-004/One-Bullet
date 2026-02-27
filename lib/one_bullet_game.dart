@@ -358,9 +358,7 @@ class OneBulletGame extends FlameGame
   }
 
   void _showPostDeathOverlayFlow() {
-    if (!_isGameOver) {
-      return;
-    }
+    if (!_isGameOver) return;
 
     _gameOverTimer?.cancel();
     _gameOverTimer = null;
