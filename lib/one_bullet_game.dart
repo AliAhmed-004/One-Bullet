@@ -335,6 +335,12 @@ class OneBulletGame extends FlameGame
     // Add all fragments to the world
     world.addAll(fragments);
 
+    // Pause game and sounds
+    Future.delayed(const Duration(milliseconds: 500), () {
+      pauseEngine();
+      SoundService.stopAll();
+    });
+
     final showedInterstitial = AdService.onPlayerDeath(
       survivalTime.value.inSeconds,
       onInterstitialDismissed: _showPostDeathOverlayFlow,

@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:one_bullet/overlays/achievement_overlay_helpers.dart';
 
@@ -16,23 +19,37 @@ class AchievementUnlockedOverlay extends StatefulWidget {
       _AchievementUnlockedOverlayState();
 }
 
-class _AchievementUnlockedOverlayState extends State<AchievementUnlockedOverlay>
+class _AchievementUnlockedOverlayState
+    extends State<AchievementUnlockedOverlay>
     with SingleTickerProviderStateMixin {
-  static const _totalDuration = Duration(milliseconds: 1400);
+  static const _totalDuration = Duration(milliseconds: 1500);
 
   late final AnimationController _controller;
+  late final Animation<double> _scale;
+  late final Animation<double> _fade;
 
   @override
   void initState() {
     super.initState();
 
-    _controller = AnimationController(vsync: this, duration: _totalDuration);
+    _controller = AnimationController(
+      vsync: this,
+      duration: _totalDuration,
+    );
+
+    _scale = Tween<double>(begin: 0.6, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
+    );
+
+    _fade = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOut,
+    );
+
     _controller.forward();
 
-    Future<void>.delayed(_totalDuration, () {
-      if (mounted) {
-        widget.onDismissed();
-      }
+    Future.delayed(_totalDuration, () {
+      if (mounted) widget.onDismissed();
     });
   }
 
@@ -42,142 +59,127 @@ class _AchievementUnlockedOverlayState extends State<AchievementUnlockedOverlay>
     super.dispose();
   }
 
+  String _randomVictoryText() {
+    const texts = [
+      "YOU DID IT!",
+      "VICTORY!",
+      "SKILL RECOGNIZED",
+      "CHAOS SURVIVED",
+      "HARD EARNED",
+      "LEGENDARY MOMENT",
+    ];
+
+    return texts[Random().nextInt(texts.length)];
+  }
+
   @override
   Widget build(BuildContext context) {
-    final ids = widget.unlockedAchievementIds;
+    final achievementId = widget.unlockedAchievementIds.first;
+    final remaining = widget.unlockedAchievementIds.length - 1;
 
     return Material(
-      color: Colors.black.withValues(alpha: 0.72),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 440),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (var i = 0; i < ids.length; i++) ...[
-                  _AchievementItem(
-                    id: ids[i],
-                    controller: _controller,
-                    index: i,
-                    count: ids.length,
-                  ),
-                  if (i != ids.length - 1) const SizedBox(height: 14),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AchievementItem extends StatelessWidget {
-  const _AchievementItem({
-    required this.id,
-    required this.controller,
-    required this.index,
-    required this.count,
-  });
-
-  final String id;
-  final AnimationController controller;
-  final int index;
-  final int count;
-
-  @override
-  Widget build(BuildContext context) {
-    final start = (index * 0.08).clamp(0.0, 0.6);
-    final end = (start + 0.32).clamp(0.0, 1.0);
-
-    final curve = CurvedAnimation(
-      parent: controller,
-      curve: Interval(start, end, curve: Curves.easeOutCubic),
-    );
-
-    final fade = Tween<double>(begin: 0, end: 1).animate(curve);
-    final scale = Tween<double>(begin: 0.9, end: 1).animate(curve);
-
-    return FadeTransition(
-      opacity: fade,
-      child: ScaleTransition(
-        scale: scale,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF191A22), Color(0xFF101116)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFF6AA8FF).withValues(alpha: 0.45)),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x33288CFF),
-                blurRadius: 20,
-                spreadRadius: 1,
-                offset: Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF6AA8FF).withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.workspace_premium,
-                  color: Color(0xFF9BC5FF),
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'Achievement Unlocked',
-                      style: TextStyle(
-                        fontSize: 11,
-                        letterSpacing: 1.4,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF9BA3B5),
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      formatAchievementId(id),
-                      style: const TextStyle(
-                        fontSize: 20,
-                        height: 1.1,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        letterSpacing: 0.4,
-                      ),
-                    ),
+      color: Colors.black.withValues(alpha: 0.75),
+      child: FadeTransition(
+        opacity: _fade,
+        child: Center(
+          child: ScaleTransition(
+            scale: _scale,
+            child: Container(
+              width: 340,
+              padding: const EdgeInsets.all(28),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFF191A22),
+                    Color(0xFF0F1016),
                   ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-              ),
-              if (count > 1)
-                Text(
-                  '${index + 1}/$count',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFF7A8397),
-                    fontWeight: FontWeight.w600,
+                borderRadius: BorderRadius.circular(26),
+                border: Border.all(
+                  color: const Color(0xFF6AA8FF).withValues(alpha: 0.5),
+                ),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x33000000),
+                    blurRadius: 40,
+                    spreadRadius: 6,
                   ),
-                ),
-            ],
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Victory Text
+                  Text(
+                    _randomVictoryText(),
+                    style: const TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 2,
+                      color: Colors.white,
+                    ),
+                  ),
+
+                  const SizedBox(height: 22),
+
+                  // Icon Circle
+                  Container(
+                    padding: const EdgeInsets.all(22),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFF6AA8FF).withValues(alpha: 0.12),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x336AA8FF),
+                          blurRadius: 30,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.workspace_premium,
+                      size: 48,
+                      color: Color(0xFF9BC5FF),
+                    ),
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  Text(
+                    formatAchievementId(achievementId),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  const Text(
+                    "Achievement Unlocked",
+                    style: TextStyle(
+                      color: Color(0xFF7A8397),
+                      fontSize: 13,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+
+                  if (remaining > 0) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      "+ $remaining more unlocked",
+                      style: const TextStyle(
+                        color: Color(0xFF6AA8FF),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ]
+                ],
+              ),
+            ),
           ),
         ),
       ),

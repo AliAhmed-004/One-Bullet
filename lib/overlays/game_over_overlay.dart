@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
-import 'package:one_bullet/overlays/achievement_overlay_helpers.dart';
 import 'package:one_bullet/services/ad_service.dart';
 import 'package:one_bullet/services/score_service.dart';
 
@@ -165,7 +164,6 @@ class _GameOverOverlayState extends State<GameOverOverlay>
 
           const SizedBox(height: 36),
 
-          if (unlocked.isNotEmpty) ...[_buildAchievementSection(unlocked)],
 
           if (canContinue) ...[
             _isLoadingAd
@@ -195,46 +193,6 @@ class _GameOverOverlayState extends State<GameOverOverlay>
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildAchievementSection(List<String> unlocked) {
-    return Column(
-      children: unlocked.map((id) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.blueAccent.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: Colors.blueAccent.withValues(alpha: 0.5),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.workspace_premium,
-                  color: Colors.blueAccent,
-                  size: 18,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  formatAchievementId(id),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
-                    color: Colors.blueAccent,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      }).toList(),
     );
   }
 
