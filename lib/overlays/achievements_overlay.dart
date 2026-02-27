@@ -61,7 +61,7 @@ class _AchievementsOverlayState extends State<AchievementsOverlay>
     final all = AchievementService.instance.getAllAchievements();
 
     return Material(
-      color: Colors.black.withValues(alpha: 0.6),
+      color: Theme.of(context).colorScheme.surface,
       child: FadeTransition(
         opacity: _fade,
         child: Center(

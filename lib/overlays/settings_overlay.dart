@@ -53,7 +53,7 @@ class _SettingsOverlayState extends State<SettingsOverlay>
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.black.withValues(alpha: 0.6),
+      color: Theme.of(context).colorScheme.surface,
       child: Stack(
         children: [
           const SizedBox.expand(),
@@ -75,8 +75,11 @@ class _SettingsOverlayState extends State<SettingsOverlay>
       width: 320,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1E1E1E), Color(0xFF141414)],
+        gradient: LinearGradient(
+          colors: [
+            Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.95),
+            Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.85),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -86,13 +89,13 @@ class _SettingsOverlayState extends State<SettingsOverlay>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
+          Text(
             'SETTINGS',
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w700,
               letterSpacing: 2,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 30),
@@ -152,9 +155,9 @@ class _SettingsOverlayState extends State<SettingsOverlay>
       duration: const Duration(milliseconds: 200),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: value
-            ? Colors.white.withValues(alpha: 0.05)
-            : Colors.transparent,
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -168,8 +171,8 @@ class _SettingsOverlayState extends State<SettingsOverlay>
           Switch(
             value: value,
             onChanged: onChanged,
-            activeThumbColor: Colors.amber.withAlpha(200),
-            activeTrackColor: Colors.amber.withValues(alpha: 0.3),
+            activeThumbColor: Theme.of(context).colorScheme.primary,
+            activeTrackColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
           ),
         ],
       ),
@@ -205,7 +208,7 @@ class _AnimatedButtonState extends State<_AnimatedButton> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
           decoration: BoxDecoration(
-            color: Colors.redAccent,
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Text(
