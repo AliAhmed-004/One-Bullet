@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 import 'dart:math' as math;
 
 import 'package:flame/events.dart';
@@ -14,6 +15,7 @@ import 'package:one_bullet/components/wave_manager.dart';
 import 'package:one_bullet/services/ad_service.dart';
 import 'package:one_bullet/services/score_service.dart';
 import 'package:one_bullet/services/sound_service.dart';
+import 'package:one_bullet/services/achievement_service.dart';
 
 /// The main game class for One Bullet.
 ///
@@ -102,9 +104,15 @@ class OneBulletGame extends FlameGame
   double _elapsedSeconds = 0;
   double _uiUpdateAccumulator = 0;
 
+  /// List of currently unlocked achievement IDs (cached for quick access).
+  List<String> lastUnlockedAchievements = [];
+
   @override
   Future<void> onLoad() async {
     await super.onLoad();
+
+    // Initialize achievements (must be before any achievement logic)
+    await AchievementService().init();
 
     // Load all sound effects
     await SoundService.init();
@@ -259,7 +267,9 @@ class OneBulletGame extends FlameGame
     if (arenaBoundary == null) return;
 
     // Clean up stale references before deciding spawn budget.
-    _deflectors.removeWhere((deflector) => deflector.isRemoving || !deflector.isMounted);
+    _deflectors.removeWhere(
+      (deflector) => deflector.isRemoving || !deflector.isMounted,
+    );
 
     final availableSlots = _maxActiveDeflectors - _deflectors.length;
     if (availableSlots <= 0) return;
@@ -289,11 +299,18 @@ class OneBulletGame extends FlameGame
   }
 
   /// Called when the player is hit by the bullet.
-  void onPlayerDeath() {
+  Future<void> onPlayerDeath() async {
     if (_isGameOver) return; // Prevent multiple triggers
     if (player == null) return;
 
     _isGameOver = true;
+
+    // Check and unlock achievements based on survival time (only on death)
+    final secondsSurvived = survivalTime.value.inSeconds;
+    final newlyUnlocked = await AchievementService.instance
+        .checkAndUnlockForSurvivalTime(secondsSurvived);
+
+    lastUnlockedAchievements = newlyUnlocked;
 
     // Check and save high score
     isNewHighScore = ScoreService.checkAndSaveHighScore(survivalTime.value);
@@ -327,7 +344,7 @@ class OneBulletGame extends FlameGame
 
     // Delay showing game over to let fragments animate (cancellable timer)
     _gameOverTimer?.cancel();
-    _gameOverTimer = Timer(const Duration(milliseconds: 800), () {
+    _gameOverTimer = Timer(const Duration(milliseconds: 1000), () {
       // Pause the game
       pauseEngine();
       SoundService.stopAll();

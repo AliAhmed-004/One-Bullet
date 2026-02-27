@@ -50,6 +50,7 @@ class _GameOverOverlayState extends State<GameOverOverlay>
     final finalTime = widget.game.survivalTime.value;
     final isNewRecord = widget.game.isNewHighScore;
     final canContinue = widget.game.canContinue;
+    final unlockedAchievements = widget.game.lastUnlockedAchievements;
 
     final accent = isNewRecord ? Colors.amberAccent : Colors.redAccent;
 
@@ -68,6 +69,7 @@ class _GameOverOverlayState extends State<GameOverOverlay>
                   finalTime: finalTime,
                   isNewRecord: isNewRecord,
                   canContinue: canContinue,
+                  unlocked: unlockedAchievements,
                 ),
               ),
             ),
@@ -82,6 +84,7 @@ class _GameOverOverlayState extends State<GameOverOverlay>
     required Duration finalTime,
     required bool isNewRecord,
     required bool canContinue,
+    required List<String> unlocked,
   }) {
     return Container(
       width: 360,
@@ -161,6 +164,8 @@ class _GameOverOverlayState extends State<GameOverOverlay>
 
           const SizedBox(height: 36),
 
+          if (unlocked.isNotEmpty) ...[_buildAchievementSection(unlocked)],
+
           if (canContinue) ...[
             _isLoadingAd
                 ? const SizedBox(
@@ -190,6 +195,65 @@ class _GameOverOverlayState extends State<GameOverOverlay>
         ],
       ),
     );
+  }
+
+  Widget _buildAchievementSection(List<String> unlocked) {
+    return Column(
+      children: unlocked.map((id) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.blueAccent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: Colors.blueAccent.withValues(alpha: 0.5),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.workspace_premium,
+                  color: Colors.blueAccent,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _formatAchievementTitle(id),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                    color: Colors.blueAccent,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  String _formatAchievementTitle(String id) {
+    switch (id) {
+      case 'survive_60':
+        return 'SURVIVED 1 MINUTE';
+      case 'reach_endurance':
+        return 'ENDURANCE UNLOCKED';
+      case 'survive_150':
+        return 'SURVIVED 2:30';
+      case 'survive_240':
+        return 'SURVIVED 4 MINUTES';
+      case 'survive_360':
+        return 'SURVIVED 6 MINUTES';
+      case 'survive_520':
+        return 'SURVIVED 8+ MINUTES';
+      default:
+        return id.toUpperCase();
+    }
   }
 
   void _onContinuePressed() {
