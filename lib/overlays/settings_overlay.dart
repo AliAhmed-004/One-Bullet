@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/services/achievement_service.dart';
@@ -125,10 +126,13 @@ class _SettingsOverlayState extends State<SettingsOverlay>
           const SizedBox(height: 32),
 
           _AnimatedButton(label: "Close", onTap: _close),
-          _AnimatedButton(
-            label: "Reset Achievements",
-            onTap: _resetAchievements,
-          ),
+          const SizedBox(height: 8),
+
+          if (kDebugMode)
+            _AnimatedButton(
+              label: "Reset Achievements",
+              onTap: _resetAchievements,
+            ),
         ],
       ),
     );

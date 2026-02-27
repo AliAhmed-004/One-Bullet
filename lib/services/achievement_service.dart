@@ -36,6 +36,9 @@ class AchievementService {
   /// Cached unlocked achievements (in-memory for performance).
   final Set<String> _unlockedCache = {};
 
+  /// Number ot achievements that have been unlocked (for quick access).
+  int get unlockedCount => _unlockedCache.length;
+
   /// Sorted list (defensive ordering).
   late final List<TimeAchievement> _sortedAchievements;
 

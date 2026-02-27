@@ -35,10 +35,23 @@ class StartScreenOverlay extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Settings Button (top-right corner)
+                    // Settings & Achievements Buttons (top-right corner)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
+                        IconButton(
+                          icon: Icon(
+                            Icons.emoji_events,
+                            color: Colors.white,
+                            size: titleFontSize * 0.56,
+                          ),
+                          tooltip: 'Achievements',
+                          onPressed: () {
+                            game.overlays.add(OneBulletGame.achievementsOverlayId);
+                            game.overlays.remove(OneBulletGame.startScreenOverlayId);
+                          },
+                        ),
+                        const SizedBox(width: 8),
                         IconButton(
                           icon: Icon(
                             Icons.settings,

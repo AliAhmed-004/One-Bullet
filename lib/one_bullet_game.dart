@@ -47,6 +47,9 @@ class OneBulletGame extends FlameGame
   /// Overlay ID for settings
   static const String settingsOverlayId = 'settings';
 
+  /// Overlay ID to show the full achievements list.
+  static const String achievementsOverlayId = 'achievements';
+
   /// Height reserved for the HUD at the top of the screen.
   static const double hudHeight = 125.0;
 
