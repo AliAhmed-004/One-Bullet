@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer';
 import 'dart:math' as math;
 
 import 'package:flame/events.dart';
@@ -32,6 +31,9 @@ class OneBulletGame extends FlameGame
 
   /// Overlay ID for the start screen.
   static const String startScreenOverlayId = 'startScreen';
+
+  /// Overlay ID for achievement unlock announcements.
+  static const String achievementUnlockedOverlayId = 'achievementUnlocked';
 
   /// Overlay ID for the game over screen.
   static const String gameOverOverlayId = 'gameOver';
@@ -333,7 +335,10 @@ class OneBulletGame extends FlameGame
     // Add all fragments to the world
     world.addAll(fragments);
 
-    AdService.onPlayerDeath(survivalTime.value.inSeconds);
+    final showedInterstitial = AdService.onPlayerDeath(
+      survivalTime.value.inSeconds,
+      onInterstitialDismissed: _showPostDeathOverlayFlow,
+    );
 
     // Play appropriate sound effect based on whether it's a new high score or not
     if (isNewHighScore) {
@@ -342,17 +347,35 @@ class OneBulletGame extends FlameGame
       SoundService.playPlayerDeath();
     }
 
-    // Delay showing game over to let fragments animate (cancellable timer)
-    _gameOverTimer?.cancel();
-    _gameOverTimer = Timer(const Duration(milliseconds: 1000), () {
-      // Pause the game
-      pauseEngine();
-      SoundService.stopAll();
+    // Delay post-death overlays for fragment animation when no interstitial was shown.
+    if (!showedInterstitial) {
+      _gameOverTimer?.cancel();
+      _gameOverTimer = Timer(
+        const Duration(milliseconds: 1000),
+        _showPostDeathOverlayFlow,
+      );
+    }
+  }
 
-      // Hide HUD and show game over overlay
-      overlays.remove(gameHudOverlayId);
+  void _showPostDeathOverlayFlow() {
+    if (!_isGameOver) {
+      return;
+    }
+
+    _gameOverTimer?.cancel();
+    _gameOverTimer = null;
+
+    // Pause the game and halt sounds before transitioning overlays.
+    pauseEngine();
+    SoundService.stopAll();
+
+    overlays.remove(gameHudOverlayId);
+
+    if (lastUnlockedAchievements.isNotEmpty) {
+      overlays.add(achievementUnlockedOverlayId);
+    } else {
       overlays.add(gameOverOverlayId);
-    });
+    }
   }
 
   /// Pauses the game (from HUD pause button).
@@ -389,6 +412,7 @@ class OneBulletGame extends FlameGame
     overlays.remove(pauseOverlayId);
     overlays.remove(gameHudOverlayId);
     overlays.remove(settingsOverlayId);
+    overlays.remove(achievementUnlockedOverlayId);
     overlays.remove(gameOverOverlayId);
 
     // Stop all active sound effects before teardown
@@ -431,6 +455,15 @@ class OneBulletGame extends FlameGame
     super.onRemove();
   }
 
+  /// Called by the achievement overlay once its animation has completed.
+  void onAchievementOverlayComplete() {
+    overlays.remove(achievementUnlockedOverlayId);
+
+    if (_isGameOver) {
+      overlays.add(gameOverOverlayId);
+    }
+  }
+
   /// Restarts the game.
   void restart() {
     // Cancel any pending game over timer
@@ -438,6 +471,7 @@ class OneBulletGame extends FlameGame
     _gameOverTimer = null;
 
     // Hide game over overlay
+    overlays.remove(achievementUnlockedOverlayId);
     overlays.remove(gameOverOverlayId);
 
     // Stop all active sound effects before teardown
@@ -482,6 +516,7 @@ class OneBulletGame extends FlameGame
     _isGameOver = false;
 
     // Hide game over overlay
+    overlays.remove(achievementUnlockedOverlayId);
     overlays.remove(gameOverOverlayId);
 
     // Respawn the player at the center of the arena (skip aim indicator since bullet is in play)
