@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
+import 'package:one_bullet/overlays/achievement_overlay_helpers.dart';
 import 'package:one_bullet/services/ad_service.dart';
 import 'package:one_bullet/services/score_service.dart';
 
@@ -221,7 +222,7 @@ class _GameOverOverlayState extends State<GameOverOverlay>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  _formatAchievementTitle(id),
+                  formatAchievementId(id),
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
@@ -235,25 +236,6 @@ class _GameOverOverlayState extends State<GameOverOverlay>
         );
       }).toList(),
     );
-  }
-
-  String _formatAchievementTitle(String id) {
-    switch (id) {
-      case 'survive_60':
-        return 'SURVIVED 1 MINUTE';
-      case 'reach_endurance':
-        return 'ENDURANCE UNLOCKED';
-      case 'survive_150':
-        return 'SURVIVED 2:30';
-      case 'survive_240':
-        return 'SURVIVED 4 MINUTES';
-      case 'survive_360':
-        return 'SURVIVED 6 MINUTES';
-      case 'survive_520':
-        return 'SURVIVED 8+ MINUTES';
-      default:
-        return id.toUpperCase();
-    }
   }
 
   void _onContinuePressed() {

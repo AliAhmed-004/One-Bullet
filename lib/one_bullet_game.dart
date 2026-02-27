@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer';
 import 'dart:math' as math;
 
 import 'package:flame/events.dart';
@@ -32,6 +31,9 @@ class OneBulletGame extends FlameGame
 
   /// Overlay ID for the start screen.
   static const String startScreenOverlayId = 'startScreen';
+
+  /// Overlay ID for achievement unlock announcements.
+  static const String achievementUnlockedOverlayId = 'achievementUnlocked';
 
   /// Overlay ID for the game over screen.
   static const String gameOverOverlayId = 'gameOver';
@@ -351,7 +353,12 @@ class OneBulletGame extends FlameGame
 
       // Hide HUD and show game over overlay
       overlays.remove(gameHudOverlayId);
-      overlays.add(gameOverOverlayId);
+
+      if (lastUnlockedAchievements.isNotEmpty) {
+        overlays.add(achievementUnlockedOverlayId);
+      } else {
+        overlays.add(gameOverOverlayId);
+      }
     });
   }
 
@@ -389,6 +396,7 @@ class OneBulletGame extends FlameGame
     overlays.remove(pauseOverlayId);
     overlays.remove(gameHudOverlayId);
     overlays.remove(settingsOverlayId);
+    overlays.remove(achievementUnlockedOverlayId);
     overlays.remove(gameOverOverlayId);
 
     // Stop all active sound effects before teardown
@@ -431,6 +439,15 @@ class OneBulletGame extends FlameGame
     super.onRemove();
   }
 
+  /// Called by the achievement overlay once its animation has completed.
+  void onAchievementOverlayComplete() {
+    overlays.remove(achievementUnlockedOverlayId);
+
+    if (_isGameOver) {
+      overlays.add(gameOverOverlayId);
+    }
+  }
+
   /// Restarts the game.
   void restart() {
     // Cancel any pending game over timer
@@ -438,6 +455,7 @@ class OneBulletGame extends FlameGame
     _gameOverTimer = null;
 
     // Hide game over overlay
+    overlays.remove(achievementUnlockedOverlayId);
     overlays.remove(gameOverOverlayId);
 
     // Stop all active sound effects before teardown
@@ -482,6 +500,7 @@ class OneBulletGame extends FlameGame
     _isGameOver = false;
 
     // Hide game over overlay
+    overlays.remove(achievementUnlockedOverlayId);
     overlays.remove(gameOverOverlayId);
 
     // Respawn the player at the center of the arena (skip aim indicator since bullet is in play)
