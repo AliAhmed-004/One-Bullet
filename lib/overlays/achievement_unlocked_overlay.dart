@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:one_bullet/overlays/achievement_overlay_helpers.dart';
 import 'package:one_bullet/services/achievement_service.dart';
 
 class AchievementUnlockedOverlay extends StatefulWidget {
