@@ -160,7 +160,7 @@ class _AchievementsOverlayState extends State<AchievementsOverlay>
                                       .withValues(alpha: 0.06),
                           ),
                           child: Icon(
-                            unlocked ? ach.icon : Icons.lock,
+                            ach.icon,
                             color: unlocked
                                 ? Theme.of(context).colorScheme.primary
                                 : Theme.of(context).colorScheme.onSurface
@@ -185,7 +185,12 @@ class _AchievementsOverlayState extends State<AchievementsOverlay>
                                 Icons.check_circle,
                                 color: Theme.of(context).colorScheme.primary,
                               )
-                            : const SizedBox.shrink(),
+                            : Icon(
+                                Icons.lock,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.4),
+                              ),
                       );
                     },
                   ),

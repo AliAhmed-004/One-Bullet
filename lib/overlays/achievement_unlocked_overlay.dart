@@ -89,7 +89,10 @@ class _AchievementUnlockedOverlayState extends State<AchievementUnlockedOverlay>
                   // Victory Text
                   Text(
                     "ACHIEVEMENTS UNLOCKED: ${achievements.length}",
-                    style: Theme.of(context).textTheme.headlineMedium,
+                    style: Theme.of(context).textTheme.headlineSmall!.copyWith(
+                      // color: Theme.of(context).colorScheme.onSurface,
+                      fontWeight: FontWeight.bold,
+                    ),
                     textAlign: TextAlign.center,
                   ),
 
@@ -107,19 +110,15 @@ class _AchievementUnlockedOverlayState extends State<AchievementUnlockedOverlay>
                               Icon(
                                 achievement.icon,
                                 size: 22,
-                                color: Theme.of(context).primaryColor,
+                                color: Theme.of(context).colorScheme.primary,
                               ),
                               const SizedBox(width: 10),
                               Flexible(
                                 child: Text(
                                   achievement.title,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface,
-                                  ),
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.bodyLarge,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
