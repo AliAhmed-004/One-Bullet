@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
+import 'package:one_bullet/services/achievement_service.dart';
 import 'package:one_bullet/services/ad_service.dart';
 import 'package:one_bullet/services/score_service.dart';
 
@@ -69,7 +70,6 @@ class _GameOverOverlayState extends State<GameOverOverlay>
                   finalTime: finalTime,
                   isNewRecord: isNewRecord,
                   canContinue: canContinue,
-                  unlocked: unlockedAchievements,
                 ),
               ),
             ),
@@ -84,7 +84,6 @@ class _GameOverOverlayState extends State<GameOverOverlay>
     required Duration finalTime,
     required bool isNewRecord,
     required bool canContinue,
-    required List<String> unlocked,
   }) {
     return Container(
       width: 360,

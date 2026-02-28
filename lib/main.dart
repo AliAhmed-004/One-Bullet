@@ -56,7 +56,7 @@ class OneBullet extends StatelessWidget {
               PauseOverlay(game: game),
           OneBulletGame.achievementUnlockedOverlayId: (context, game) =>
               AchievementUnlockedOverlay(
-                unlockedAchievementIds: game.lastUnlockedAchievements,
+                achievements: game.lastUnlockedAchievements,
                 onDismissed: game.onAchievementOverlayComplete,
               ),
           OneBulletGame.gameOverOverlayId: (context, game) =>

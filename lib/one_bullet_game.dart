@@ -110,7 +110,7 @@ class OneBulletGame extends FlameGame
   double _uiUpdateAccumulator = 0;
 
   /// List of currently unlocked achievement IDs (cached for quick access).
-  List<String> lastUnlockedAchievements = [];
+  List<Achievement> lastUnlockedAchievements = [];
 
   @override
   Future<void> onLoad() async {

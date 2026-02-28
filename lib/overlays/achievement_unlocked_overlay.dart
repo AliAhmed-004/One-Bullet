@@ -2,15 +2,16 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:one_bullet/overlays/achievement_overlay_helpers.dart';
+import 'package:one_bullet/services/achievement_service.dart';
 
 class AchievementUnlockedOverlay extends StatefulWidget {
   const AchievementUnlockedOverlay({
-    required this.unlockedAchievementIds,
+    required this.achievements,
     required this.onDismissed,
     super.key,
   });
 
-  final List<String> unlockedAchievementIds;
+  final List<Achievement> achievements;
   final VoidCallback onDismissed;
 
   @override
@@ -55,7 +56,7 @@ class _AchievementUnlockedOverlayState extends State<AchievementUnlockedOverlay>
 
   @override
   Widget build(BuildContext context) {
-    final achievements = widget.unlockedAchievementIds;
+    final achievements = widget.achievements;
 
     return Material(
       color: Theme.of(context).colorScheme.surface,
@@ -78,7 +79,6 @@ class _AchievementUnlockedOverlayState extends State<AchievementUnlockedOverlay>
                 crossAxisAlignment: CrossAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-
                   // Icon
                   Icon(
                     Icons.workspace_premium,
@@ -99,21 +99,21 @@ class _AchievementUnlockedOverlayState extends State<AchievementUnlockedOverlay>
                     const SizedBox(height: 20),
                     Column(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: achievements.map((id) {
+                      children: achievements.map((achievement) {
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 6),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                Icons.workspace_premium,
+                                achievement.icon,
                                 size: 22,
                                 color: Theme.of(context).primaryColor,
                               ),
                               const SizedBox(width: 10),
                               Flexible(
                                 child: Text(
-                                  formatAchievementId(id),
+                                  achievement.title,
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,

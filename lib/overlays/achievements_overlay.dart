@@ -70,16 +70,9 @@ class _AchievementsOverlayState extends State<AchievementsOverlay>
             height: 520,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Theme.of(context).colorScheme.surface.withValues(alpha: 0.15),
-                  Theme.of(context).colorScheme.surface.withValues(alpha: 0.25),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.white10),
+              border: Border.all(color: Theme.of(context).colorScheme.surfaceBright),
             ),
             child: Column(
               children: [
@@ -144,7 +137,7 @@ class _AchievementsOverlayState extends State<AchievementsOverlay>
                                       .withValues(alpha: 0.06),
                           ),
                           child: Icon(
-                            unlocked ? Icons.workspace_premium : Icons.lock,
+                            unlocked ? ach.icon : Icons.lock,
                             color: unlocked
                                 ? Theme.of(context).colorScheme.primary
                                 : Theme.of(context).colorScheme.onSurface
@@ -152,7 +145,7 @@ class _AchievementsOverlayState extends State<AchievementsOverlay>
                           ),
                         ),
                         title: Text(
-                          formatAchievementId(ach.id),
+                          ach.title,
                           style: TextStyle(
                             color: unlocked
                                 ? Theme.of(context).colorScheme.onSurfaceVariant
@@ -163,15 +156,7 @@ class _AchievementsOverlayState extends State<AchievementsOverlay>
                                 : FontWeight.w600,
                           ),
                         ),
-                        subtitle: Text(
-                          'Survive ${_formatTime(ach.requiredSeconds)}',
-                          style: TextStyle(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant
-                                .withValues(alpha: 0.7),
-                          ),
-                        ),
+                        subtitle: _buildSubtitle(ach),
                         trailing: unlocked
                             ? Icon(
                                 Icons.check_circle,
@@ -197,5 +182,20 @@ class _AchievementsOverlayState extends State<AchievementsOverlay>
         ),
       ),
     );
+  }
+
+  Widget _buildSubtitle(Achievement ach) {
+    if (ach is TimeAchievement) {
+      return Text(
+        'Survive for ${_formatTime(ach.requiredSeconds)}',
+        style: TextStyle(
+          color: Theme.of(
+            context,
+          ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
   }
 }
