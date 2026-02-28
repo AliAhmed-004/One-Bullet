@@ -14,6 +14,7 @@ import 'package:one_bullet/components/wave_manager.dart';
 import 'package:one_bullet/services/ad_service.dart';
 import 'package:one_bullet/services/score_service.dart';
 import 'package:one_bullet/services/sound_service.dart';
+import 'package:one_bullet/services/achievement_service.dart';
 
 /// The main game class for One Bullet.
 ///
@@ -31,6 +32,9 @@ class OneBulletGame extends FlameGame
   /// Overlay ID for the start screen.
   static const String startScreenOverlayId = 'startScreen';
 
+  /// Overlay ID for achievement unlock announcements.
+  static const String achievementUnlockedOverlayId = 'achievementUnlocked';
+
   /// Overlay ID for the game over screen.
   static const String gameOverOverlayId = 'gameOver';
 
@@ -42,6 +46,9 @@ class OneBulletGame extends FlameGame
 
   /// Overlay ID for settings
   static const String settingsOverlayId = 'settings';
+
+  /// Overlay ID to show the full achievements list.
+  static const String achievementsOverlayId = 'achievements';
 
   /// Height reserved for the HUD at the top of the screen.
   static const double hudHeight = 125.0;
@@ -102,9 +109,15 @@ class OneBulletGame extends FlameGame
   double _elapsedSeconds = 0;
   double _uiUpdateAccumulator = 0;
 
+  /// List of currently unlocked achievement IDs (cached for quick access).
+  List<String> lastUnlockedAchievements = [];
+
   @override
   Future<void> onLoad() async {
     await super.onLoad();
+
+    // Initialize achievements (must be before any achievement logic)
+    await AchievementService().init();
 
     // Load all sound effects
     await SoundService.init();
@@ -259,7 +272,9 @@ class OneBulletGame extends FlameGame
     if (arenaBoundary == null) return;
 
     // Clean up stale references before deciding spawn budget.
-    _deflectors.removeWhere((deflector) => deflector.isRemoving || !deflector.isMounted);
+    _deflectors.removeWhere(
+      (deflector) => deflector.isRemoving || !deflector.isMounted,
+    );
 
     final availableSlots = _maxActiveDeflectors - _deflectors.length;
     if (availableSlots <= 0) return;
@@ -289,11 +304,18 @@ class OneBulletGame extends FlameGame
   }
 
   /// Called when the player is hit by the bullet.
-  void onPlayerDeath() {
+  Future<void> onPlayerDeath() async {
     if (_isGameOver) return; // Prevent multiple triggers
     if (player == null) return;
 
     _isGameOver = true;
+
+    // Check and unlock achievements based on survival time (only on death)
+    final secondsSurvived = survivalTime.value.inSeconds;
+    final newlyUnlocked = await AchievementService.instance
+        .checkAndUnlockForSurvivalTime(secondsSurvived);
+
+    lastUnlockedAchievements = newlyUnlocked;
 
     // Check and save high score
     isNewHighScore = ScoreService.checkAndSaveHighScore(survivalTime.value);
@@ -316,7 +338,16 @@ class OneBulletGame extends FlameGame
     // Add all fragments to the world
     world.addAll(fragments);
 
-    AdService.onPlayerDeath(survivalTime.value.inSeconds);
+    // Pause game and sounds
+    Future.delayed(const Duration(milliseconds: 500), () {
+      pauseEngine();
+      SoundService.stopAll();
+    });
+
+    final showedInterstitial = AdService.onPlayerDeath(
+      survivalTime.value.inSeconds,
+      onInterstitialDismissed: _showPostDeathOverlayFlow,
+    );
 
     // Play appropriate sound effect based on whether it's a new high score or not
     if (isNewHighScore) {
@@ -325,17 +356,33 @@ class OneBulletGame extends FlameGame
       SoundService.playPlayerDeath();
     }
 
-    // Delay showing game over to let fragments animate (cancellable timer)
-    _gameOverTimer?.cancel();
-    _gameOverTimer = Timer(const Duration(milliseconds: 800), () {
-      // Pause the game
-      pauseEngine();
-      SoundService.stopAll();
+    // Delay post-death overlays for fragment animation when no interstitial was shown.
+    if (!showedInterstitial) {
+      _gameOverTimer?.cancel();
+      _gameOverTimer = Timer(
+        const Duration(milliseconds: 1000),
+        _showPostDeathOverlayFlow,
+      );
+    }
+  }
 
-      // Hide HUD and show game over overlay
-      overlays.remove(gameHudOverlayId);
+  void _showPostDeathOverlayFlow() {
+    if (!_isGameOver) return;
+
+    _gameOverTimer?.cancel();
+    _gameOverTimer = null;
+
+    // Pause the game and halt sounds before transitioning overlays.
+    pauseEngine();
+    SoundService.stopAll();
+
+    overlays.remove(gameHudOverlayId);
+
+    if (lastUnlockedAchievements.isNotEmpty) {
+      overlays.add(achievementUnlockedOverlayId);
+    } else {
       overlays.add(gameOverOverlayId);
-    });
+    }
   }
 
   /// Pauses the game (from HUD pause button).
@@ -372,6 +419,7 @@ class OneBulletGame extends FlameGame
     overlays.remove(pauseOverlayId);
     overlays.remove(gameHudOverlayId);
     overlays.remove(settingsOverlayId);
+    overlays.remove(achievementUnlockedOverlayId);
     overlays.remove(gameOverOverlayId);
 
     // Stop all active sound effects before teardown
@@ -414,6 +462,15 @@ class OneBulletGame extends FlameGame
     super.onRemove();
   }
 
+  /// Called by the achievement overlay once its animation has completed.
+  void onAchievementOverlayComplete() {
+    overlays.remove(achievementUnlockedOverlayId);
+
+    if (_isGameOver) {
+      overlays.add(gameOverOverlayId);
+    }
+  }
+
   /// Restarts the game.
   void restart() {
     // Cancel any pending game over timer
@@ -421,6 +478,7 @@ class OneBulletGame extends FlameGame
     _gameOverTimer = null;
 
     // Hide game over overlay
+    overlays.remove(achievementUnlockedOverlayId);
     overlays.remove(gameOverOverlayId);
 
     // Stop all active sound effects before teardown
@@ -465,6 +523,7 @@ class OneBulletGame extends FlameGame
     _isGameOver = false;
 
     // Hide game over overlay
+    overlays.remove(achievementUnlockedOverlayId);
     overlays.remove(gameOverOverlayId);
 
     // Respawn the player at the center of the arena (skip aim indicator since bullet is in play)

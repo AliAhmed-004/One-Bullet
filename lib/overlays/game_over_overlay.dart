@@ -50,11 +50,12 @@ class _GameOverOverlayState extends State<GameOverOverlay>
     final finalTime = widget.game.survivalTime.value;
     final isNewRecord = widget.game.isNewHighScore;
     final canContinue = widget.game.canContinue;
+    final unlockedAchievements = widget.game.lastUnlockedAchievements;
 
     final accent = isNewRecord ? Colors.amberAccent : Colors.redAccent;
 
     return Material(
-      color: Colors.black.withValues(alpha: 0.65),
+      color: Theme.of(context).colorScheme.surface,
       child: Stack(
         children: [
           const SizedBox.expand(),
@@ -68,6 +69,7 @@ class _GameOverOverlayState extends State<GameOverOverlay>
                   finalTime: finalTime,
                   isNewRecord: isNewRecord,
                   canContinue: canContinue,
+                  unlocked: unlockedAchievements,
                 ),
               ),
             ),
@@ -82,13 +84,17 @@ class _GameOverOverlayState extends State<GameOverOverlay>
     required Duration finalTime,
     required bool isNewRecord,
     required bool canContinue,
+    required List<String> unlocked,
   }) {
     return Container(
       width: 360,
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 36),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1E1E1E), Color(0xFF141414)],
+        gradient: LinearGradient(
+          colors: [
+            Theme.of(context).scaffoldBackgroundColor,
+            Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.9),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -104,7 +110,7 @@ class _GameOverOverlayState extends State<GameOverOverlay>
               fontSize: 22,
               fontWeight: FontWeight.w700,
               letterSpacing: 3,
-              color: accent,
+              color: Theme.of(context).colorScheme.errorContainer,
             ),
           ),
           const SizedBox(height: 28),
@@ -114,18 +120,20 @@ class _GameOverOverlayState extends State<GameOverOverlay>
             style: TextStyle(
               fontSize: 13,
               letterSpacing: 1.5,
-              color: Colors.white.withValues(alpha: 0.6),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.7),
             ),
           ),
           const SizedBox(height: 6),
           Text(
             ScoreService.formatDuration(finalTime),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 42,
               fontWeight: FontWeight.bold,
               fontFamily: 'monospace',
               letterSpacing: 3,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
 
@@ -184,8 +192,15 @@ class _GameOverOverlayState extends State<GameOverOverlay>
           _ActionButton(
             label: 'Restart',
             icon: Icons.refresh,
-            accentColor: Colors.redAccent,
+            accentColor: Theme.of(context).colorScheme.errorContainer,
             onTap: widget.game.restart,
+          ),
+          const SizedBox(height: 12),
+          _ActionButton(
+            label: 'Main Menu',
+            icon: Icons.home,
+            accentColor: Theme.of(context).colorScheme.primary,
+            onTap: widget.game.returnToMenu,
           ),
         ],
       ),
@@ -256,17 +271,17 @@ class _ActionButtonState extends State<_ActionButton> {
             children: [
               Icon(
                 widget.icon,
-                color: Colors.white.withValues(alpha: 0.9),
+                color: Theme.of(context).colorScheme.onSurface,
                 size: 20,
               ),
               const SizedBox(width: 10),
               Text(
                 widget.label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.5,
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ],

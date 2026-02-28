@@ -5,9 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "one_bullet",
+            "name": "one_bullet (debug mode)",
             "request": "launch",
-            "type": "dart"
+            "type": "dart",
+            "flutterMode": "debug",
+            "toolArgs": [
+                "--dart-define=FORCE_TEST_ADS=true"
+            ]
         },
         {
             "name": "one_bullet (profile mode)",

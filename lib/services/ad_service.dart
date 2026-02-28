@@ -16,6 +16,9 @@ class AdService {
   static InterstitialAd? _interstitialAd;
   static bool _isInterstitialLoaded = false;
 
+  /// Optional callback invoked after an interstitial ad is dismissed.
+  static VoidCallback? _onInterstitialDismissedCallback;
+
   // ===== Rewarded Ads =====
   static RewardedAd? _rewardedAd;
   static bool _isRewardedLoaded = false;
@@ -84,6 +87,7 @@ class AdService {
     _interstitialAd?.dispose();
     _interstitialAd = null;
     _isInterstitialLoaded = false;
+    _onInterstitialDismissedCallback = null;
 
     _rewardedAd?.dispose();
     _rewardedAd = null;
@@ -140,8 +144,14 @@ class AdService {
                 onAdDismissedFullScreenContent: (ad) {
                   ad.dispose();
                   _isInterstitialLoaded = false;
+
+                  final dismissedCallback = _onInterstitialDismissedCallback;
+                  _onInterstitialDismissedCallback = null;
+
                   // Preload the next ad
                   _loadInterstitialAd();
+
+                  dismissedCallback?.call();
                 },
                 onAdFailedToShowFullScreenContent: (ad, error) {
                   if (kDebugMode) {
@@ -149,6 +159,7 @@ class AdService {
                   }
                   ad.dispose();
                   _isInterstitialLoaded = false;
+                  _onInterstitialDismissedCallback = null;
                   _loadInterstitialAd();
                 },
               );
@@ -332,7 +343,10 @@ class AdService {
   /// Called when the player dies. Returns true if an ad will be shown.
   ///
   /// [survivalTimeSeconds] - How long the player survived in this run.
-  static bool onPlayerDeath(int survivalTimeSeconds) {
+  static bool onPlayerDeath(
+    int survivalTimeSeconds, {
+    VoidCallback? onInterstitialDismissed,
+  }) {
     _deathCount++;
 
     final bool hadGoodRun = survivalTimeSeconds >= _goodRunThresholdSeconds;
@@ -341,7 +355,7 @@ class AdService {
     if (hadGoodRun || reachedDeathThreshold) {
       // Reset death count when showing an ad
       _deathCount = 0;
-      return _showInterstitialAd();
+      return _showInterstitialAd(onDismissed: onInterstitialDismissed);
     }
 
     return false;
@@ -349,8 +363,9 @@ class AdService {
 
   /// Shows the interstitial ad if one is loaded.
   /// Returns true if an ad was shown.
-  static bool _showInterstitialAd() {
+  static bool _showInterstitialAd({VoidCallback? onDismissed}) {
     if (_isInterstitialLoaded && _interstitialAd != null) {
+      _onInterstitialDismissedCallback = onDismissed;
       _interstitialAd!.show();
       if (kDebugMode) {
         print('AdService: Showing interstitial ad');
@@ -361,6 +376,7 @@ class AdService {
         print('AdService: No ad loaded to show');
       }
       // Try to load one for next time
+      _onInterstitialDismissedCallback = null;
       _loadInterstitialAd();
       return false;
     }
@@ -376,6 +392,7 @@ class AdService {
     _interstitialAd?.dispose();
     _interstitialAd = null;
     _isInterstitialLoaded = false;
+    _onInterstitialDismissedCallback = null;
 
     _rewardedAd?.dispose();
     _rewardedAd = null;

@@ -1,5 +1,9 @@
+import 'dart:developer';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
+import 'package:one_bullet/services/achievement_service.dart';
 import 'package:one_bullet/services/settings_service.dart';
 
 class SettingsOverlay extends StatefulWidget {
@@ -49,7 +53,7 @@ class _SettingsOverlayState extends State<SettingsOverlay>
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.black.withValues(alpha: 0.6),
+      color: Theme.of(context).colorScheme.surface,
       child: Stack(
         children: [
           const SizedBox.expand(),
@@ -71,8 +75,11 @@ class _SettingsOverlayState extends State<SettingsOverlay>
       width: 320,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1E1E1E), Color(0xFF141414)],
+        gradient: LinearGradient(
+          colors: [
+            Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.95),
+            Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.85),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -82,13 +89,13 @@ class _SettingsOverlayState extends State<SettingsOverlay>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
+          Text(
             'SETTINGS',
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w700,
               letterSpacing: 2,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 30),
@@ -122,9 +129,21 @@ class _SettingsOverlayState extends State<SettingsOverlay>
           const SizedBox(height: 32),
 
           _AnimatedButton(label: "Close", onTap: _close),
+          const SizedBox(height: 8),
+
+          if (kDebugMode)
+            _AnimatedButton(
+              label: "Reset Achievements",
+              onTap: _resetAchievements,
+            ),
         ],
       ),
     );
+  }
+
+  void _resetAchievements() async {
+    await AchievementService.instance.resetAll();
+    log("[SETTINGS OVERLAY] Achievements have been reset.");
   }
 
   Widget _buildSettingsRow({
@@ -136,7 +155,9 @@ class _SettingsOverlayState extends State<SettingsOverlay>
       duration: const Duration(milliseconds: 200),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: value ? Colors.white.withValues(alpha: 0.05) : Colors.transparent,
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -150,9 +171,8 @@ class _SettingsOverlayState extends State<SettingsOverlay>
           Switch(
             value: value,
             onChanged: onChanged,
-            activeThumbColor: Colors.amber.withAlpha(200),
-            activeTrackColor: Colors.amber.withValues(alpha: 0.3),
-
+            activeThumbColor: Theme.of(context).colorScheme.primary,
+            activeTrackColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
           ),
         ],
       ),
@@ -188,7 +208,7 @@ class _AnimatedButtonState extends State<_AnimatedButton> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
           decoration: BoxDecoration(
-            color: Colors.redAccent,
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Text(

@@ -24,21 +24,36 @@ class StartScreenOverlay extends StatelessWidget {
         final accentColor = Theme.of(context).colorScheme.secondary;
 
         return Material(
-          color: Colors.black,
+          color: Theme.of(context).colorScheme.surface,
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-            decoration: BoxDecoration(
-              color: Theme.of(context).scaffoldBackgroundColor,
-            ),
+
             child: SafeArea(
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Settings Button (top-right corner)
+                    // Settings & Achievements Buttons (top-right corner)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
+                        IconButton(
+                          icon: Icon(
+                            Icons.emoji_events,
+                            color: Colors.white,
+                            size: titleFontSize * 0.56,
+                          ),
+                          tooltip: 'Achievements',
+                          onPressed: () {
+                            game.overlays.add(
+                              OneBulletGame.achievementsOverlayId,
+                            );
+                            game.overlays.remove(
+                              OneBulletGame.startScreenOverlayId,
+                            );
+                          },
+                        ),
+                        const SizedBox(width: 8),
                         IconButton(
                           icon: Icon(
                             Icons.settings,
@@ -147,7 +162,7 @@ class StartScreenOverlay extends StatelessWidget {
                             vertical: isSmallScreen ? 12 : 14,
                           ),
                           decoration: BoxDecoration(
-                            color: accentColor,
+                            color: Theme.of(context).colorScheme.secondaryContainer,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
@@ -156,7 +171,9 @@ class StartScreenOverlay extends StatelessWidget {
                                 ?.copyWith(
                                   fontSize: buttonFontSize,
                                   fontWeight: FontWeight.w700,
-                                  color: Colors.white,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSecondaryContainer,
                                 ),
                           ),
                         ),
