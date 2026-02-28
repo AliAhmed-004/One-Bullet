@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
-import 'package:one_bullet/overlays/achievement_overlay_helpers.dart';
 import 'package:one_bullet/services/achievement_service.dart';
 
 class AchievementsOverlay extends StatefulWidget {

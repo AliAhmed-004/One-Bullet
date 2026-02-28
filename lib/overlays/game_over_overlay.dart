@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
-import 'package:one_bullet/services/achievement_service.dart';
 import 'package:one_bullet/services/ad_service.dart';
 import 'package:one_bullet/services/score_service.dart';
 
@@ -51,7 +50,6 @@ class _GameOverOverlayState extends State<GameOverOverlay>
     final finalTime = widget.game.survivalTime.value;
     final isNewRecord = widget.game.isNewHighScore;
     final canContinue = widget.game.canContinue;
-    final unlockedAchievements = widget.game.lastUnlockedAchievements;
 
     final accent = isNewRecord ? Colors.amberAccent : Colors.redAccent;
 
