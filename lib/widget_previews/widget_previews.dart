@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widget_previews.dart';
 import 'package:one_bullet/overlays/achievement_unlocked_overlay.dart';
+import 'package:one_bullet/overlays/achievements_overlay.dart';
 import 'package:one_bullet/services/achievement_service.dart';
 import 'package:one_bullet/themes.dart';
 
 @Preview(name: "Achievement Unlocked Overlay", group: "Overlays")
-Widget previewAchievementOverlay() {
+Widget previewAchievementUnlockedOverlay() {
   return MaterialApp(
     theme: appLightTheme,
     darkTheme: appDarkTheme,
@@ -55,4 +56,40 @@ Widget previewAchievementOverlay() {
   );
 }
 
+@Preview(name: "Achievements Overlay", group: "Overlays")
+Widget previewAchievementsOverlay() {
+  final demoAchievements = [
+    TimeAchievement(
+      id: 'survive_30',
+      title: '30 Seconds',
+      icon: Icons.timer,
+      requiredSeconds: 30,
+    ),
+    TimeAchievement(
+      id: 'survive_60',
+      title: '1 Minute',
+      icon: Icons.hourglass_bottom,
+      requiredSeconds: 60,
+    ),
+    TimeAchievement(
+      id: 'survive_180',
+      title: '3 Minutes',
+      icon: Icons.local_fire_department,
+      requiredSeconds: 180,
+    ),
+  ];
+
+  return MaterialApp(
+    theme: appLightTheme,
+    darkTheme: appDarkTheme,
+    home: Scaffold(
+      body: Center(
+        child: AchievementsOverlay(
+          previewAchievements: demoAchievements,
+          previewUnlocked: {'survive_30', 'survive_60'},
+        ),
+      ),
+    ),
+  );
+}
 void _noop() {}

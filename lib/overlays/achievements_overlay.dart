@@ -3,14 +3,22 @@ import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/services/achievement_service.dart';
 
 class AchievementsOverlay extends StatefulWidget {
-  final OneBulletGame game;
+  final OneBulletGame? game;
   final bool returnToSettings;
+
+  // 👇 Add these
+  final List<Achievement>? previewAchievements;
+  final Set<String>? previewUnlocked;
 
   const AchievementsOverlay({
     super.key,
-    required this.game,
+    this.game,
     this.returnToSettings = false,
+    this.previewAchievements,
+    this.previewUnlocked,
   });
+
+  bool get isPreview => previewAchievements != null;
 
   @override
   State<AchievementsOverlay> createState() => _AchievementsOverlayState();
@@ -39,12 +47,15 @@ class _AchievementsOverlayState extends State<AchievementsOverlay>
   }
 
   void _close() async {
+    if (widget.isPreview) return;
+
     await _controller.reverse();
-    widget.game.overlays.remove(OneBulletGame.achievementsOverlayId);
+    widget.game!.overlays.remove(OneBulletGame.achievementsOverlayId);
+
     if (widget.returnToSettings) {
-      widget.game.overlays.add(OneBulletGame.settingsOverlayId);
+      widget.game!.overlays.add(OneBulletGame.settingsOverlayId);
     } else {
-      widget.game.overlays.add(OneBulletGame.startScreenOverlayId);
+      widget.game!.overlays.add(OneBulletGame.startScreenOverlayId);
     }
   }
 
@@ -57,7 +68,20 @@ class _AchievementsOverlayState extends State<AchievementsOverlay>
 
   @override
   Widget build(BuildContext context) {
-    final all = AchievementService.instance.getAllAchievements();
+    final all =
+        widget.previewAchievements ??
+        AchievementService.instance.getAllAchievements();
+
+    final unlockedCount =
+        widget.previewUnlocked?.length ??
+        AchievementService.instance.unlockedCount;
+
+    bool isUnlocked(String id) {
+      if (widget.previewUnlocked != null) {
+        return widget.previewUnlocked!.contains(id);
+      }
+      return AchievementService.instance.isUnlocked(id);
+    }
 
     return Material(
       color: Theme.of(context).colorScheme.surface,
@@ -71,7 +95,9 @@ class _AchievementsOverlayState extends State<AchievementsOverlay>
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Theme.of(context).colorScheme.surfaceBright),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.surfaceBright,
+              ),
             ),
             child: Column(
               children: [
@@ -114,9 +140,7 @@ class _AchievementsOverlayState extends State<AchievementsOverlay>
                         const Divider(color: Colors.white10),
                     itemBuilder: (context, index) {
                       final ach = all[index];
-                      final unlocked = AchievementService.instance.isUnlocked(
-                        ach.id,
-                      );
+                      final unlocked = isUnlocked(ach.id);
 
                       return ListTile(
                         contentPadding: const EdgeInsets.symmetric(
@@ -168,7 +192,7 @@ class _AchievementsOverlayState extends State<AchievementsOverlay>
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'Total Unlocked: ${AchievementService.instance.unlockedCount}/${all.length}',
+                  'Total Unlocked: $unlockedCount/${all.length}',
                   style: TextStyle(
                     color: Theme.of(
                       context,
