@@ -1,57 +1,119 @@
 import 'dart:developer';
-
+import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
-/// Represents a single achievement definition.
-class TimeAchievement {
-  final String id;
-  final int requiredSeconds;
+/// ===============================
+/// ACHIEVEMENT DEFINITIONS
+/// ===============================
 
-  const TimeAchievement({required this.id, required this.requiredSeconds});
+/// Base class for all achievements.
+abstract class Achievement {
+  final String id;
+  final String title;
+  final IconData icon;
+
+  const Achievement({
+    required this.id,
+    required this.title,
+    required this.icon,
+  });
 }
 
-/// List of all survival time-based achievements.
+/// Survival time-based achievement.
+class TimeAchievement extends Achievement {
+  final int requiredSeconds;
+
+  const TimeAchievement({
+    required super.id,
+    required super.title,
+    required super.icon,
+    required this.requiredSeconds,
+  });
+}
+
+/// Survival milestone achievements.
 const List<TimeAchievement> kSurvivalAchievements = [
-  TimeAchievement(id: 'survive_60', requiredSeconds: 60),
-  TimeAchievement(id: 'reach_endurance', requiredSeconds: 90),
-  TimeAchievement(id: 'survive_150', requiredSeconds: 150),
-  TimeAchievement(id: 'survive_240', requiredSeconds: 240),
-  TimeAchievement(id: 'survive_360', requiredSeconds: 360),
-  TimeAchievement(id: 'survive_480', requiredSeconds: 480),
+  TimeAchievement(
+    id: 'survive_60',
+    title: 'One Minute Survivor',
+    icon: Icons.timer_outlined,
+    requiredSeconds: 60,
+  ),
+  TimeAchievement(
+    id: 'reach_endurance',
+    title: 'Endurance Initiate',
+    icon: Icons.hourglass_bottom,
+    requiredSeconds: 90,
+  ),
+  TimeAchievement(
+    id: 'survive_150',
+    title: 'Relentless',
+    icon: Icons.local_fire_department_outlined,
+    requiredSeconds: 150,
+  ),
+  TimeAchievement(
+    id: 'survive_240',
+    title: 'Unbreakable Focus',
+    icon: Icons.visibility_outlined,
+    requiredSeconds: 240,
+  ),
+  TimeAchievement(
+    id: 'survive_360',
+    title: 'Iron Reflex',
+    icon: Icons.flash_on_outlined,
+    requiredSeconds: 360,
+  ),
+  TimeAchievement(
+    id: 'survive_480',
+    title: 'Bullet Master',
+    icon: Icons.adjust,
+    requiredSeconds: 480,
+  ),
 ];
 
+/// Master registry of all achievements (expandable later).
+const List<Achievement> kAllAchievements = [
+  ...kSurvivalAchievements,
+];
+
+/// ===============================
+/// ACHIEVEMENT SERVICE
+/// ===============================
+
 class AchievementService {
-  /// Singleton pattern for global access.
   AchievementService._internal();
   static final AchievementService instance = AchievementService._internal();
-
   factory AchievementService() => instance;
 
-  /// Hive box name and keys.
   static const String _boxName = 'achievements';
   static const String _unlockedKey = 'unlocked';
 
   late final Box _box;
 
-  /// Cached unlocked achievements (in-memory for performance).
+  /// In-memory unlocked cache.
   final Set<String> _unlockedCache = {};
 
-  /// Number ot achievements that have been unlocked (for quick access).
+  /// Lookup map for quick access.
+  late final Map<String, Achievement> _achievementMap;
+
+  /// Sorted survival achievements (category-specific logic).
+  late final List<TimeAchievement> _timeAchievements;
+
   int get unlockedCount => _unlockedCache.length;
 
-  /// Sorted list (defensive ordering).
-  late final List<TimeAchievement> _sortedAchievements;
+  /// ===============================
+  /// INIT
+  /// ===============================
 
-  /// Initialize Hive and cache unlocked achievements.
   Future<void> init() async {
-    log("[ACHIEVEMENT SERVICE] Initializing AchievementService...");
+    log("[ACHIEVEMENT SERVICE] Initializing...");
+
     if (!Hive.isBoxOpen(_boxName)) {
       _box = await Hive.openBox(_boxName);
     } else {
       _box = Hive.box(_boxName);
     }
 
-    // Cache unlocked achievements
     final stored = _box.get(_unlockedKey);
     if (stored is List) {
       _unlockedCache
@@ -61,61 +123,76 @@ class AchievementService {
 
     log('[ACHIEVEMENT SERVICE] Cached unlocked: $_unlockedCache');
 
-    // Defensive sort
-    _sortedAchievements = List.of(kSurvivalAchievements)
+    // Build master map
+    _achievementMap = {
+      for (final a in kAllAchievements) a.id: a,
+    };
+
+    // Prepare sorted time achievements
+    _timeAchievements = kSurvivalAchievements.toList()
       ..sort((a, b) => a.requiredSeconds.compareTo(b.requiredSeconds));
   }
 
-  /// Returns all unlocked achievement IDs.
-  Set<String> getUnlockedAchievements() {
-    return Set.unmodifiable(_unlockedCache);
-  }
+  /// ===============================
+  /// CORE GETTERS
+  /// ===============================
 
-  /// Checks and unlocks achievements based on survival time.
-  /// Returns list of newly unlocked IDs.
-  Future<List<String>> checkAndUnlockForSurvivalTime(int seconds) async {
-    log("[ACHIEVEMENT SERVICE] Checking achievements for survival time: $seconds seconds");
-    final newlyUnlocked = <String>[];
+  Set<String> getUnlockedIds() => Set.unmodifiable(_unlockedCache);
 
-    for (final achievement in _sortedAchievements) {
+  Achievement? getAchievementById(String id) => _achievementMap[id];
+
+  List<Achievement> getAllAchievements() =>
+      List.unmodifiable(kAllAchievements);
+
+  /// ===============================
+  /// SURVIVAL TIME CHECK
+  /// ===============================
+
+  /// Returns newly unlocked Achievement objects.
+  Future<List<Achievement>> checkAndUnlockForSurvivalTime(
+    int seconds,
+  ) async {
+    log(
+      "[ACHIEVEMENT SERVICE] Checking survival time: $seconds seconds",
+    );
+
+    final newlyUnlocked = <Achievement>[];
+
+    for (final achievement in _timeAchievements) {
       if (seconds >= achievement.requiredSeconds &&
           !_unlockedCache.contains(achievement.id)) {
-        newlyUnlocked.add(achievement.id);
+        newlyUnlocked.add(achievement);
       }
     }
 
     if (newlyUnlocked.isNotEmpty) {
-      _unlockedCache.addAll(newlyUnlocked);
+      _unlockedCache.addAll(newlyUnlocked.map((a) => a.id));
       await _box.put(_unlockedKey, _unlockedCache.toList());
     }
 
-    log("[ACHIEVEMENT SERVICE] Newly unlocked achievements: $newlyUnlocked");
+    log(
+      "[ACHIEVEMENT SERVICE] Newly unlocked: ${newlyUnlocked.map((a) => a.id).toList()}",
+    );
 
     return newlyUnlocked;
   }
 
-  /// Returns true if achievement is unlocked.
-  bool isUnlocked(String id) {
-    return _unlockedCache.contains(id);
-  }
-
-  /// Returns next locked achievement based on survival time.
-  /// Useful for showing "Next Milestone" during gameplay.
-  TimeAchievement? getNextLockedAchievement() {
-    for (final achievement in _sortedAchievements) {
+  /// Returns next locked survival achievement.
+  TimeAchievement? getNextLockedTimeAchievement() {
+    for (final achievement in _timeAchievements) {
       if (!_unlockedCache.contains(achievement.id)) {
         return achievement;
       }
     }
-    return null; // All unlocked
+    return null;
   }
 
-  /// Returns all achievement definitions (read-only).
-  List<TimeAchievement> getAllAchievements() {
-    return List.unmodifiable(_sortedAchievements);
-  }
+  bool isUnlocked(String id) => _unlockedCache.contains(id);
 
-  /// Reset achievements (for debug/testing).
+  /// ===============================
+  /// DEBUG / RESET
+  /// ===============================
+
   Future<void> resetAll() async {
     _unlockedCache.clear();
     await _box.put(_unlockedKey, <String>[]);
