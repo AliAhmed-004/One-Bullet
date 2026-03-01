@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
@@ -33,6 +34,13 @@ class TimeAchievement extends Achievement {
 
 /// Survival milestone achievements.
 const List<TimeAchievement> kSurvivalAchievements = [
+  if (kDebugMode)
+    TimeAchievement(
+      id: 'debug_10_seconds',
+      title: '10 Seconds Survivor (Debug)',
+      icon: Icons.bug_report_outlined,
+      requiredSeconds: 10,
+    ),
   TimeAchievement(
     id: 'survive_60',
     title: 'One Minute Survivor',
@@ -72,9 +80,7 @@ const List<TimeAchievement> kSurvivalAchievements = [
 ];
 
 /// Master registry of all achievements (expandable later).
-const List<Achievement> kAllAchievements = [
-  ...kSurvivalAchievements,
-];
+const List<Achievement> kAllAchievements = [...kSurvivalAchievements];
 
 /// ===============================
 /// ACHIEVEMENT SERVICE
@@ -124,9 +130,7 @@ class AchievementService {
     log('[ACHIEVEMENT SERVICE] Cached unlocked: $_unlockedCache');
 
     // Build master map
-    _achievementMap = {
-      for (final a in kAllAchievements) a.id: a,
-    };
+    _achievementMap = {for (final a in kAllAchievements) a.id: a};
 
     // Prepare sorted time achievements
     _timeAchievements = kSurvivalAchievements.toList()
@@ -141,20 +145,15 @@ class AchievementService {
 
   Achievement? getAchievementById(String id) => _achievementMap[id];
 
-  List<Achievement> getAllAchievements() =>
-      List.unmodifiable(kAllAchievements);
+  List<Achievement> getAllAchievements() => List.unmodifiable(kAllAchievements);
 
   /// ===============================
   /// SURVIVAL TIME CHECK
   /// ===============================
 
   /// Returns newly unlocked Achievement objects.
-  Future<List<Achievement>> checkAndUnlockForSurvivalTime(
-    int seconds,
-  ) async {
-    log(
-      "[ACHIEVEMENT SERVICE] Checking survival time: $seconds seconds",
-    );
+  Future<List<Achievement>> checkAndUnlockForSurvivalTime(int seconds) async {
+    log("[ACHIEVEMENT SERVICE] Checking survival time: $seconds seconds");
 
     final newlyUnlocked = <Achievement>[];
 

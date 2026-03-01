@@ -97,37 +97,33 @@ class _AchievementUnlockedOverlayState extends State<AchievementUnlockedOverlay>
                   ),
 
                   // SHow all the achievements in a list
-                  if (achievements.length > 1) ...[
-                    const SizedBox(height: 20),
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: achievements.map((achievement) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                achievement.icon,
-                                size: 22,
-                                color: Theme.of(context).colorScheme.primary,
+                  const SizedBox(height: 20),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: achievements.map((achievement) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              achievement.icon,
+                              size: 22,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: 10),
+                            Flexible(
+                              child: Text(
+                                achievement.title,
+                                style: Theme.of(context).textTheme.bodyLarge,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(width: 10),
-                              Flexible(
-                                child: Text(
-                                  achievement.title,
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.bodyLarge,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ],
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
                 ],
               ),
             ),
