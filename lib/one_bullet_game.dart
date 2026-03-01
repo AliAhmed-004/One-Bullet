@@ -338,8 +338,15 @@ class OneBulletGame extends FlameGame
     // Add all fragments to the world
     world.addAll(fragments);
 
+    // Play appropriate sound effect based on whether it's a new high score or not
+    if (isNewHighScore) {
+      SoundService.playHighScore();
+    } else {
+      SoundService.playPlayerDeath();
+    }
+
     // Pause game and sounds
-    Future.delayed(const Duration(milliseconds: 500), () {
+    Future.delayed(const Duration(milliseconds: 1000), () {
       pauseEngine();
       SoundService.stopAll();
     });
@@ -348,13 +355,6 @@ class OneBulletGame extends FlameGame
       survivalTime.value.inSeconds,
       onInterstitialDismissed: _showPostDeathOverlayFlow,
     );
-
-    // Play appropriate sound effect based on whether it's a new high score or not
-    if (isNewHighScore) {
-      SoundService.playHighScore();
-    } else {
-      SoundService.playPlayerDeath();
-    }
 
     // Delay post-death overlays for fragment animation when no interstitial was shown.
     if (!showedInterstitial) {
@@ -372,7 +372,8 @@ class OneBulletGame extends FlameGame
     _gameOverTimer?.cancel();
     _gameOverTimer = null;
 
-    // Pause the game and halt sounds before transitioning overlays.
+    // Pause the engine and stop gameplay SFX. The priority player
+    // (death/high-score) is left alone so it plays to completion.
     pauseEngine();
     SoundService.stopAll();
 

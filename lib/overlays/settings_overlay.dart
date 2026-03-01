@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/services/achievement_service.dart';
 import 'package:one_bullet/services/settings_service.dart';
+import 'package:one_bullet/services/sound_service.dart';
 
 class SettingsOverlay extends StatefulWidget {
   final OneBulletGame game;
@@ -172,7 +173,9 @@ class _SettingsOverlayState extends State<SettingsOverlay>
             value: value,
             onChanged: onChanged,
             activeThumbColor: Theme.of(context).colorScheme.primary,
-            activeTrackColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+            activeTrackColor: Theme.of(
+              context,
+            ).colorScheme.primary.withValues(alpha: 0.3),
           ),
         ],
       ),
@@ -208,7 +211,9 @@ class _AnimatedButtonState extends State<_AnimatedButton> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+            color: Theme.of(
+              context,
+            ).colorScheme.primary.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Text(

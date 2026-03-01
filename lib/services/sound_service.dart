@@ -19,7 +19,7 @@ class SoundService {
       'bullet_fire.wav',
       'player_death.wav',
       'high_score.wav',
-      'wave_warning.mp3',
+      'wave_warning.wav',
     ]);
   }
 
@@ -96,7 +96,7 @@ class SoundService {
     if (!SettingsService.soundEnabled.value) return;
     if (waveWarningPlayer != null) return;
 
-    waveWarningPlayer = await FlameAudio.play('wave_warning.mp3', volume: 0.3);
+    waveWarningPlayer = await FlameAudio.play('wave_warning.wav', volume: 0.6);
     _activePlayers.add(waveWarningPlayer!);
 
     waveWarningPlayer!.onPlayerComplete.listen((_) {
