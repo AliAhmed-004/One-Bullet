@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/services/achievement_service.dart';
 import 'package:one_bullet/services/settings_service.dart';
-import 'package:one_bullet/services/sound_service.dart';
 
 class SettingsOverlay extends StatefulWidget {
   final OneBulletGame game;
