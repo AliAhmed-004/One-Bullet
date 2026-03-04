@@ -57,6 +57,11 @@ android {
     }
 }
 
+dependencies {
+    implementation("com.google.android.gms:play-services-games-v2:+")
+    // Add any additional dependencies here
+}
+
 flutter {
     source = "../.."
 }

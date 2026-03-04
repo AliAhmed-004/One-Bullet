@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/services/achievement_service.dart';
+import 'package:one_bullet/services/play_games_service.dart';
 import 'package:one_bullet/services/settings_service.dart';
 
 class SettingsOverlay extends StatefulWidget {
@@ -126,6 +127,12 @@ class _SettingsOverlayState extends State<SettingsOverlay>
             },
           ),
 
+          const SizedBox(height: 18),
+          _AnimatedButton(
+            label: "Sign in to Play Games",
+            onTap: _signInToPlayGames,
+          ),
+
           const SizedBox(height: 32),
 
           _AnimatedButton(label: "Close", onTap: _close),
@@ -179,6 +186,16 @@ class _SettingsOverlayState extends State<SettingsOverlay>
         ],
       ),
     );
+  }
+
+  void _signInToPlayGames() async {
+    log("[SETTINGS OVERLAY] Attempting to sign in to Play Games...");
+    final success = await PlayGamesService.instance.signIn();
+    if (success) {
+      log("[SETTINGS OVERLAY] User signed in to Play Games successfully.");
+    } else {
+      log("[SETTINGS OVERLAY] Failed to sign in to Play Games.");
+    }
   }
 }
 

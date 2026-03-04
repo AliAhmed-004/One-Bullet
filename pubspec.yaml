@@ -41,6 +41,7 @@ dependencies:
   flame_audio: ^2.11.13
   google_mobile_ads: ^7.0.0
   google_fonts: ^8.0.2
+  games_services: ^5.0.0
   # TODO: Re-enable google_mobile_ads after Play Store publication
   # google_mobile_ads: ^7.0.0
 

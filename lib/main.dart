@@ -1,6 +1,7 @@
 import 'package:flame/flame.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
+
 import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/overlays/achievement_unlocked_overlay.dart';
 import 'package:one_bullet/overlays/achievements_overlay.dart';
@@ -9,7 +10,9 @@ import 'package:one_bullet/overlays/game_over_overlay.dart';
 import 'package:one_bullet/overlays/pause_overlay.dart';
 import 'package:one_bullet/overlays/settings_overlay.dart';
 import 'package:one_bullet/overlays/start_screen_overlay.dart';
+import 'package:one_bullet/services/play_games_service.dart';
 import 'package:one_bullet/themes.dart';
+
 import 'package:one_bullet/services/ad_service.dart';
 import 'package:one_bullet/services/score_service.dart';
 import 'package:one_bullet/services/settings_service.dart';
@@ -28,6 +31,9 @@ void main() async {
 
   // Initialize settings service
   await SettingsService.init();
+
+  // Initialize Play Games Services
+  await PlayGamesService.instance.initialize();
 
   Flame.device.fullScreen();
   Flame.device.setPortrait();

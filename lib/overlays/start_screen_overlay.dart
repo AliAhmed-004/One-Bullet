@@ -109,7 +109,7 @@ class StartScreenOverlay extends StatelessWidget {
                                       .textTheme
                                       .bodyMedium
                                       ?.color
-                                      ?.withOpacity(0.6),
+                                      ?.withValues(alpha: 0.6),
                                 ),
                           );
                         }
