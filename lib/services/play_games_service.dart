@@ -28,25 +28,25 @@ class PlayGamesService {
     }
   }
 
-  /// Attempt silent authentication.
   Future<void> _attemptSilentSignIn() async {
     log('[PLAY GAMES SERVICE] Attempting silent sign-in...');
     try {
       final result = await GameAuth.signIn();
 
-      log('[PLAY GAMES SERVICE] Sign-in successful: $result');
-
+      _isSignedIn = true; // ← THIS WAS MISSING
+      log('[PLAY GAMES SERVICE] Silent sign-in successful: $result');
     } catch (e) {
       log('[PLAY GAMES SERVICE] Silent sign-in failed: $e');
       _isSignedIn = false;
     }
   }
 
-  /// Manual sign-in trigger (call from settings button, etc.)
   Future<bool> signIn() async {
     log('[PLAY GAMES SERVICE] Attempting manual sign-in...');
     try {
       final result = await GameAuth.signIn();
+
+      _isSignedIn = true; // ← ALSO HERE
       log('[PLAY GAMES SERVICE] Manual sign-in successful: $result');
       return true;
     } catch (e) {
@@ -55,14 +55,4 @@ class PlayGamesService {
       return false;
     }
   }
-
-  /// Sign out if needed (optional)
-  // Future<void> signOut() async {
-  //   try {
-  //     await GamesServices.signOut();
-  //     _isSignedIn = false;
-  //   } catch (_) {
-  //     _isSignedIn = false;
-  //   }
-  // }
 }

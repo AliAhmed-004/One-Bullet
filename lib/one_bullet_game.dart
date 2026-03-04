@@ -305,29 +305,36 @@ class OneBulletGame extends FlameGame
 
   /// Called when the player is hit by the bullet.
   Future<void> onPlayerDeath() async {
-    if (_isGameOver) return; // Prevent multiple triggers
+    if (_isGameOver) return;
     if (player == null) return;
 
+    /// 🔥 Freeze game immediately
     _isGameOver = true;
+    pauseEngine();
+    SoundService.stopAll();
 
-    // Check and unlock achievements based on survival time (only on death)
-    final secondsSurvived = survivalTime.value.inSeconds;
-    final newlyUnlocked = await AchievementService.instance
-        .checkAndUnlockForSurvivalTime(secondsSurvived);
-
-    lastUnlockedAchievements = newlyUnlocked;
-
-    // Check and save high score
-    isNewHighScore = ScoreService.checkAndSaveHighScore(survivalTime.value);
-
-    // Store player position and color before removing
     final playerPosition = player!.position.clone();
     const playerColor = Colors.blue;
 
-    // Remove the player immediately
+    /// Remove player from world instantly
     player!.removeFromParent();
 
-    // Spawn death fragments
+    final secondsSurvived = survivalTime.value.inSeconds;
+
+    /// Check rewards + score in parallel
+    final achievementFuture = AchievementService.instance
+        .checkAndUnlockForSurvivalTime(secondsSurvived);
+
+    final highScoreFuture = Future.value(
+      ScoreService.checkAndSaveHighScore(survivalTime.value),
+    );
+
+    final results = await Future.wait([achievementFuture, highScoreFuture]);
+
+    lastUnlockedAchievements = results[0] as List<Achievement>;
+    isNewHighScore = results[1] as bool;
+
+    /// Spawn death effects
     final fragments = PlayerDeathEffect.createFragments(
       position: playerPosition,
       color: playerColor,
@@ -335,32 +342,31 @@ class OneBulletGame extends FlameGame
       baseSpeed: 300.0,
     );
 
-    // Add all fragments to the world
     world.addAll(fragments);
 
-    // Play appropriate sound effect based on whether it's a new high score or not
+    /// Play SFX
     if (isNewHighScore) {
       SoundService.playHighScore();
     } else {
       SoundService.playPlayerDeath();
     }
 
-    // Pause game and sounds
-    Future.delayed(const Duration(milliseconds: 1000), () {
-      pauseEngine();
-      SoundService.stopAll();
-    });
-
+    /// Ad + Reward Flow
     final showedInterstitial = AdService.onPlayerDeath(
-      survivalTime.value.inSeconds,
-      onInterstitialDismissed: _showPostDeathOverlayFlow,
+      secondsSurvived,
+      onInterstitialDismissed: () {
+        Future.delayed(
+          const Duration(milliseconds: 400),
+          _showPostDeathOverlayFlow,
+        );
+      },
     );
 
-    // Delay post-death overlays for fragment animation when no interstitial was shown.
+    /// If no ad was shown, continue directly
     if (!showedInterstitial) {
       _gameOverTimer?.cancel();
       _gameOverTimer = Timer(
-        const Duration(milliseconds: 1000),
+        const Duration(milliseconds: 300),
         _showPostDeathOverlayFlow,
       );
     }
@@ -372,8 +378,6 @@ class OneBulletGame extends FlameGame
     _gameOverTimer?.cancel();
     _gameOverTimer = null;
 
-    // Pause the engine and stop gameplay SFX. The priority player
-    // (death/high-score) is left alone so it plays to completion.
     pauseEngine();
     SoundService.stopAll();
 

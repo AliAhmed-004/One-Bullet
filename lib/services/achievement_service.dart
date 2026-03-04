@@ -2,14 +2,15 @@ import 'dart:developer';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+import 'package:games_services/games_services.dart' as gs;
+import 'package:one_bullet/services/play_games_service.dart';
 
 /// ===============================
-/// ACHIEVEMENT DEFINITIONS
+/// ACHIEVEMENT DEFINITIONS (Domain Layer)
 /// ===============================
 
-/// Base class for all achievements.
 abstract class Achievement {
-  final String id;
+  final String id; // Play Games ID (or local debug ID)
   final String title;
   final IconData icon;
 
@@ -20,7 +21,6 @@ abstract class Achievement {
   });
 }
 
-/// Survival time-based achievement.
 class TimeAchievement extends Achievement {
   final int requiredSeconds;
 
@@ -32,7 +32,10 @@ class TimeAchievement extends Achievement {
   });
 }
 
-/// Survival milestone achievements.
+/// ===============================
+/// ACHIEVEMENTS LIST
+/// ===============================
+
 const List<TimeAchievement> kSurvivalAchievements = [
   if (kDebugMode)
     TimeAchievement(
@@ -42,44 +45,43 @@ const List<TimeAchievement> kSurvivalAchievements = [
       requiredSeconds: 10,
     ),
   TimeAchievement(
-    id: 'survive_60',
-    title: 'One Minute Survivor',
+    id: 'CgkIvLXzppUPEAIQAQ',
+    title: 'First Steps',
     icon: Icons.timer_outlined,
     requiredSeconds: 60,
   ),
   TimeAchievement(
-    id: 'reach_endurance',
+    id: 'CgkIvLXzppUPEAIQAg',
     title: 'Endurance Initiate',
     icon: Icons.hourglass_bottom,
     requiredSeconds: 90,
   ),
   TimeAchievement(
-    id: 'survive_150',
+    id: 'CgkIvLXzppUPEAIQAw',
     title: 'Relentless',
     icon: Icons.local_fire_department_outlined,
     requiredSeconds: 150,
   ),
   TimeAchievement(
-    id: 'survive_240',
+    id: 'CgkIvLXzppUPEAIQBA',
     title: 'Unbreakable Focus',
     icon: Icons.visibility_outlined,
     requiredSeconds: 240,
   ),
   TimeAchievement(
-    id: 'survive_360',
+    id: 'CgkIvLXzppUPEAIQBQ',
     title: 'Iron Reflex',
     icon: Icons.flash_on_outlined,
     requiredSeconds: 360,
   ),
   TimeAchievement(
-    id: 'survive_480',
+    id: 'CgkIvLXzppUPEAIQBg',
     title: 'Bullet Master',
     icon: Icons.adjust,
     requiredSeconds: 480,
   ),
 ];
 
-/// Master registry of all achievements (expandable later).
 const List<Achievement> kAllAchievements = [...kSurvivalAchievements];
 
 /// ===============================
@@ -96,13 +98,9 @@ class AchievementService {
 
   late final Box _box;
 
-  /// In-memory unlocked cache.
   final Set<String> _unlockedCache = {};
 
-  /// Lookup map for quick access.
   late final Map<String, Achievement> _achievementMap;
-
-  /// Sorted survival achievements (category-specific logic).
   late final List<TimeAchievement> _timeAchievements;
 
   int get unlockedCount => _unlockedCache.length;
@@ -114,11 +112,9 @@ class AchievementService {
   Future<void> init() async {
     log("[ACHIEVEMENT SERVICE] Initializing...");
 
-    if (!Hive.isBoxOpen(_boxName)) {
-      _box = await Hive.openBox(_boxName);
-    } else {
-      _box = Hive.box(_boxName);
-    }
+    _box = Hive.isBoxOpen(_boxName)
+        ? Hive.box(_boxName)
+        : await Hive.openBox(_boxName);
 
     final stored = _box.get(_unlockedKey);
     if (stored is List) {
@@ -127,32 +123,34 @@ class AchievementService {
         ..addAll(stored.cast<String>());
     }
 
-    log('[ACHIEVEMENT SERVICE] Cached unlocked: $_unlockedCache');
-
-    // Build master map
     _achievementMap = {for (final a in kAllAchievements) a.id: a};
 
-    // Prepare sorted time achievements
     _timeAchievements = kSurvivalAchievements.toList()
       ..sort((a, b) => a.requiredSeconds.compareTo(b.requiredSeconds));
+
+    log('[ACHIEVEMENT SERVICE] Loaded unlocked: $_unlockedCache');
   }
 
   /// ===============================
-  /// CORE GETTERS
+  /// GETTERS
   /// ===============================
 
   Set<String> getUnlockedIds() => Set.unmodifiable(_unlockedCache);
 
   Achievement? getAchievementById(String id) => _achievementMap[id];
 
-  List<Achievement> getAllAchievements() => List.unmodifiable(kAllAchievements);
+  List<Achievement> getAllAchievements() =>
+      List.unmodifiable(kAllAchievements);
+
+  bool isUnlocked(String id) => _unlockedCache.contains(id);
 
   /// ===============================
   /// SURVIVAL TIME CHECK
   /// ===============================
 
-  /// Returns newly unlocked Achievement objects.
-  Future<List<Achievement>> checkAndUnlockForSurvivalTime(int seconds) async {
+  Future<List<Achievement>> checkAndUnlockForSurvivalTime(
+    int seconds,
+  ) async {
     log("[ACHIEVEMENT SERVICE] Checking survival time: $seconds seconds");
 
     final newlyUnlocked = <Achievement>[];
@@ -164,9 +162,40 @@ class AchievementService {
       }
     }
 
-    if (newlyUnlocked.isNotEmpty) {
-      _unlockedCache.addAll(newlyUnlocked.map((a) => a.id));
-      await _box.put(_unlockedKey, _unlockedCache.toList());
+    if (newlyUnlocked.isEmpty) return [];
+
+    // 1️⃣ Save locally (source of truth)
+    _unlockedCache.addAll(newlyUnlocked.map((a) => a.id));
+    await _box.put(_unlockedKey, _unlockedCache.toList());
+
+    // 2️⃣ Sync to Play Games (translation layer)
+    if (PlayGamesService.instance.isSignedIn) {
+      log('[ACHIEVEMENT SERVICE] PlayGames signed in: ${PlayGamesService.instance.isSignedIn}');
+      for (final achievement in newlyUnlocked) {
+        // Skip debug-only achievements
+        if (achievement.id.startsWith('debug_')) continue;
+
+        try {
+          final gsAchievement = gs.Achievement(
+            androidID: achievement.id,
+            iOSID: achievement.id,
+            percentComplete: 100,
+            showsCompletionBanner: true,
+          );
+
+          await gs.Achievements.unlock(
+            achievement: gsAchievement,
+          );
+
+          log(
+            '[ACHIEVEMENT SERVICE] Synced to Play Games: ${achievement.id}',
+          );
+        } catch (e) {
+          log(
+            '[ACHIEVEMENT SERVICE] Play Games unlock failed for ${achievement.id}: $e',
+          );
+        }
+      }
     }
 
     log(
@@ -176,7 +205,10 @@ class AchievementService {
     return newlyUnlocked;
   }
 
-  /// Returns next locked survival achievement.
+  /// ===============================
+  /// NEXT TARGET
+  /// ===============================
+
   TimeAchievement? getNextLockedTimeAchievement() {
     for (final achievement in _timeAchievements) {
       if (!_unlockedCache.contains(achievement.id)) {
@@ -185,8 +217,6 @@ class AchievementService {
     }
     return null;
   }
-
-  bool isUnlocked(String id) => _unlockedCache.contains(id);
 
   /// ===============================
   /// DEBUG / RESET
