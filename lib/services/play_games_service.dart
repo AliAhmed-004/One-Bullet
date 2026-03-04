@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 import 'package:games_services/games_services.dart';
+import 'package:one_bullet/services/achievement_service.dart';
 
 class PlayGamesService {
   PlayGamesService._internal();
@@ -21,6 +22,9 @@ class PlayGamesService {
     try {
       await _attemptSilentSignIn();
       _isInitialized = true;
+
+      // Sync achievements from Play Games on startup if signed in.
+      await AchievementService.instance.syncFromPlayGames();
     } catch (e) {
       // We don't crash the game because of Play Games.
       _isInitialized = true;

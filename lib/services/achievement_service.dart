@@ -139,8 +139,7 @@ class AchievementService {
 
   Achievement? getAchievementById(String id) => _achievementMap[id];
 
-  List<Achievement> getAllAchievements() =>
-      List.unmodifiable(kAllAchievements);
+  List<Achievement> getAllAchievements() => List.unmodifiable(kAllAchievements);
 
   bool isUnlocked(String id) => _unlockedCache.contains(id);
 
@@ -148,9 +147,7 @@ class AchievementService {
   /// SURVIVAL TIME CHECK
   /// ===============================
 
-  Future<List<Achievement>> checkAndUnlockForSurvivalTime(
-    int seconds,
-  ) async {
+  Future<List<Achievement>> checkAndUnlockForSurvivalTime(int seconds) async {
     log("[ACHIEVEMENT SERVICE] Checking survival time: $seconds seconds");
 
     final newlyUnlocked = <Achievement>[];
@@ -170,7 +167,9 @@ class AchievementService {
 
     // 2️⃣ Sync to Play Games (translation layer)
     if (PlayGamesService.instance.isSignedIn) {
-      log('[ACHIEVEMENT SERVICE] PlayGames signed in: ${PlayGamesService.instance.isSignedIn}');
+      log(
+        '[ACHIEVEMENT SERVICE] PlayGames signed in: ${PlayGamesService.instance.isSignedIn}',
+      );
       for (final achievement in newlyUnlocked) {
         // Skip debug-only achievements
         if (achievement.id.startsWith('debug_')) continue;
@@ -183,13 +182,9 @@ class AchievementService {
             showsCompletionBanner: true,
           );
 
-          await gs.Achievements.unlock(
-            achievement: gsAchievement,
-          );
+          await gs.Achievements.unlock(achievement: gsAchievement);
 
-          log(
-            '[ACHIEVEMENT SERVICE] Synced to Play Games: ${achievement.id}',
-          );
+          log('[ACHIEVEMENT SERVICE] Synced to Play Games: ${achievement.id}');
         } catch (e) {
           log(
             '[ACHIEVEMENT SERVICE] Play Games unlock failed for ${achievement.id}: $e',
@@ -216,6 +211,31 @@ class AchievementService {
       }
     }
     return null;
+  }
+
+  /// ===============================
+  /// SYNC FROM PLAY GAMES
+  /// ===============================
+  Future<void> syncFromPlayGames() async {
+    if (!PlayGamesService.instance.isSignedIn) return;
+
+    try {
+      final achievements = await gs.Achievements.loadAchievements();
+
+      if (achievements == null) return;
+
+      for (final achievement in achievements) {
+        if (achievement.unlocked) {
+          _unlockedCache.add(achievement.id);
+        }
+      }
+
+      await _box.put(_unlockedKey, _unlockedCache.toList());
+
+      log('[ACHIEVEMENT SERVICE] Synced achievements from Play Games');
+    } catch (e) {
+      log('[ACHIEVEMENT SERVICE] Play Games sync failed: $e');
+    }
   }
 
   /// ===============================
