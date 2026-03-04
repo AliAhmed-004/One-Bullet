@@ -22,9 +22,6 @@ class PlayGamesService {
     try {
       await _attemptSilentSignIn();
       _isInitialized = true;
-
-      // Sync achievements from Play Games on startup if signed in.
-      await AchievementService.instance.syncFromPlayGames();
     } catch (e) {
       // We don't crash the game because of Play Games.
       _isInitialized = true;
@@ -39,6 +36,9 @@ class PlayGamesService {
 
       _isSignedIn = true; // ← THIS WAS MISSING
       log('[PLAY GAMES SERVICE] Silent sign-in successful: $result');
+
+      // Sync achievements from Play Games on startup if signed in.
+      await AchievementService.instance.syncFromPlayGames();
     } catch (e) {
       log('[PLAY GAMES SERVICE] Silent sign-in failed: $e');
       _isSignedIn = false;
