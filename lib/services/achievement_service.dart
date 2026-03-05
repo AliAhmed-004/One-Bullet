@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:hive/hive.dart';
 import 'package:games_services/games_services.dart' as gs;
 import 'package:one_bullet/services/play_games_service.dart';
@@ -214,30 +213,6 @@ class AchievementService {
       }
     }
     return null;
-  }
-
-  /// ===============================
-  /// SYNC FROM PLAY GAMES
-  /// ===============================
-  Future<void> syncFromPlayGames() async {
-    if (!PlayGamesService.instance.isSignedIn) return;
-
-    try {
-      final achievements = await gs.Achievements.loadAchievements();
-
-      if (achievements == null) return;
-
-      for (final achievement in achievements) {
-        if (achievement.unlocked) {
-          _unlockedLocalCache.add(achievement.id);
-        }
-      }
-
-      await _box.put(_unlockedKey, _unlockedLocalCache.toList());
-      print('[ACHIEVEMENT SERVICE] Synced achievements from Play Games');
-    } catch (e) {
-      print('[ACHIEVEMENT SERVICE] Play Games sync failed: $e');
-    }
   }
 
   /// ===============================

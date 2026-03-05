@@ -128,12 +128,14 @@ class _SettingsOverlayState extends State<SettingsOverlay>
           ),
 
           const SizedBox(height: 18),
-          _AnimatedButton(
-            label: "Sign in to Play Games",
-            onTap: _signInToPlayGames,
-          ),
+          if (!PlayGamesService.instance.isSignedIn) ...[
+            _AnimatedButton(
+              label: "Sign in to Play Games",
+              onTap: _signInToPlayGames,
+            ),
 
-          const SizedBox(height: 32),
+            const SizedBox(height: 32),
+          ],
 
           _AnimatedButton(label: "Close", onTap: _close),
           const SizedBox(height: 8),

@@ -56,4 +56,19 @@ class PlayGamesService {
       return false;
     }
   }
+
+  /// show achievements
+  Future<void> showAchievements() async {
+    if (!_isSignedIn) {
+      print('[PLAY GAMES SERVICE] Cannot show achievements: not signed in');
+      return;
+    }
+
+    try {
+      await GamesServices.showAchievements();
+      print('[PLAY GAMES SERVICE] Show achievements successful');
+    } catch (e) {
+      print('[PLAY GAMES SERVICE] Show achievements failed: $e');
+    }
+  }
 }

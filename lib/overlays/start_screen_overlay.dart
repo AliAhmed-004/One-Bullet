@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
+import 'package:one_bullet/services/play_games_service.dart';
 import 'package:one_bullet/services/score_service.dart';
 
 /// Start screen overlay displayed when the game begins.
@@ -44,14 +45,8 @@ class StartScreenOverlay extends StatelessWidget {
                             size: titleFontSize * 0.56,
                           ),
                           tooltip: 'Achievements',
-                          onPressed: () {
-                            game.overlays.add(
-                              OneBulletGame.achievementsOverlayId,
-                            );
-                            game.overlays.remove(
-                              OneBulletGame.startScreenOverlayId,
-                            );
-                          },
+                          onPressed: () =>
+                              PlayGamesService.instance.showAchievements(),
                         ),
                         const SizedBox(width: 8),
                         IconButton(
@@ -162,7 +157,9 @@ class StartScreenOverlay extends StatelessWidget {
                             vertical: isSmallScreen ? 12 : 14,
                           ),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.secondaryContainer,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.secondaryContainer,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
