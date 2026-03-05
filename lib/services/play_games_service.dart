@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:games_services/games_services.dart';
 
 class PlayGamesService {
@@ -14,7 +15,7 @@ class PlayGamesService {
   /// Initialize Play Games Services.
   /// Call this once during app startup.
   Future<void> initialize() async {
-    print('[PLAY GAMES SERVICE] Initializing Play Games Services...');
+    debugPrint('[PLAY GAMES SERVICE] Initializing Play Games Services...');
     if (_isInitialized) return;
 
     try {
@@ -28,30 +29,30 @@ class PlayGamesService {
   }
 
   Future<void> _attemptSilentSignIn() async {
-    print('[PLAY GAMES SERVICE] Attempting silent sign-in...');
+    debugPrint('[PLAY GAMES SERVICE] Attempting silent sign-in...');
     try {
       final result = await GameAuth.signIn();
 
       _isSignedIn = true;
-      print('[PLAY GAMES SERVICE] Silent sign-in successful: $result');
-      print('Play Games signed in: ${PlayGamesService.instance.isSignedIn}');
+      debugPrint('[PLAY GAMES SERVICE] Silent sign-in successful: $result');
+      debugPrint('Play Games signed in: ${PlayGamesService.instance.isSignedIn}');
       // Note: Achievement sync is deferred to OneBulletGame.onLoad() to ensure main thread context
     } catch (e) {
-      print('[PLAY GAMES SERVICE] Silent sign-in failed: $e');
+      debugPrint('[PLAY GAMES SERVICE] Silent sign-in failed: $e');
       _isSignedIn = false;
     }
   }
 
   Future<bool> signIn() async {
-    print('[PLAY GAMES SERVICE] Attempting manual sign-in...');
+    debugPrint('[PLAY GAMES SERVICE] Attempting manual sign-in...');
     try {
       final result = await GameAuth.signIn();
 
       _isSignedIn = true; // ← ALSO HERE
-      print('[PLAY GAMES SERVICE] Manual sign-in successful: $result');
+      debugPrint('[PLAY GAMES SERVICE] Manual sign-in successful: $result');
       return true;
     } catch (e) {
-      print('[PLAY GAMES SERVICE] Manual sign-in failed: $e');
+      debugPrint('[PLAY GAMES SERVICE] Manual sign-in failed: $e');
       _isSignedIn = false;
       return false;
     }
@@ -60,15 +61,15 @@ class PlayGamesService {
   /// show achievements
   Future<void> showAchievements() async {
     if (!_isSignedIn) {
-      print('[PLAY GAMES SERVICE] Cannot show achievements: not signed in');
+      debugPrint('[PLAY GAMES SERVICE] Cannot show achievements: not signed in');
       return;
     }
 
     try {
       await GamesServices.showAchievements();
-      print('[PLAY GAMES SERVICE] Show achievements successful');
+      debugPrint('[PLAY GAMES SERVICE] Show achievements successful');
     } catch (e) {
-      print('[PLAY GAMES SERVICE] Show achievements failed: $e');
+      debugPrint('[PLAY GAMES SERVICE] Show achievements failed: $e');
     }
   }
 }

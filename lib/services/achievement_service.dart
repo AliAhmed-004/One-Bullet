@@ -102,7 +102,7 @@ class AchievementService {
   /// ===============================
 
   Future<void> init() async {
-    print('[ACHIEVEMENT SERVICE] Initializing');
+    debugPrint('[ACHIEVEMENT SERVICE] Initializing');
 
     _timeAchievements = kSurvivalAchievements.toList()
       ..sort((a, b) => a.requiredSeconds.compareTo(b.requiredSeconds));
@@ -113,7 +113,7 @@ class AchievementService {
   /// ===============================
 
   Future<List<Achievement>> checkAndUnlockForSurvivalTime(int seconds) async {
-    print('[ACHIEVEMENT SERVICE] Checking survival time: $seconds');
+    debugPrint('[ACHIEVEMENT SERVICE] Checking survival time: $seconds');
 
     final unlocked = <Achievement>[];
 
@@ -129,7 +129,7 @@ class AchievementService {
     _sessionUnlocked.addAll(unlocked.map((a) => a.id));
 
     if (!PlayGamesService.instance.isSignedIn) {
-      print('[ACHIEVEMENT SERVICE] Play Games not signed in');
+      debugPrint('[ACHIEVEMENT SERVICE] Play Games not signed in');
       return unlocked;
     }
 

@@ -100,16 +100,16 @@ class AdService {
 
     if (Platform.isAndroid || Platform.isIOS) {
       await MobileAds.instance.initialize();
-      print('AdService: Mobile Ads SDK initialized');
+      debugPrint('AdService: Mobile Ads SDK initialized');
     } else {
-      print('AdService: Mobile Ads SDK not initialized - unsupported platform');
+      debugPrint('AdService: Mobile Ads SDK not initialized - unsupported platform');
     }
 
     // Start loading ads immediately
     _loadInterstitialAd();
     _loadRewardedAd();
 
-    print('AdService: Mobile Ads SDK initialized');
+    debugPrint('AdService: Mobile Ads SDK initialized');
   }
 
   // Configures ad request settings (e.g., content rating, child-directed treatment).
@@ -154,7 +154,7 @@ class AdService {
                 },
                 onAdFailedToShowFullScreenContent: (ad, error) {
                   if (kDebugMode) {
-                    print('AdService: Failed to show ad: $error');
+                    debugPrint('AdService: Failed to show ad: $error');
                   }
                   ad.dispose();
                   _isInterstitialLoaded = false;
@@ -164,12 +164,12 @@ class AdService {
               );
 
           if (kDebugMode) {
-            print('AdService: Interstitial ad loaded');
+            debugPrint('AdService: Interstitial ad loaded');
           }
         },
         onAdFailedToLoad: (error) {
           if (kDebugMode) {
-            print('AdService: Failed to load interstitial: $error');
+            debugPrint('AdService: Failed to load interstitial: $error');
           }
           _isInterstitialLoaded = false;
 
@@ -191,12 +191,12 @@ class AdService {
           _isRewardedLoaded = true;
 
           if (kDebugMode) {
-            print('AdService: Rewarded ad loaded');
+            debugPrint('AdService: Rewarded ad loaded');
           }
         },
         onAdFailedToLoad: (error) {
           if (kDebugMode) {
-            print('AdService: Failed to load rewarded ad: $error');
+            debugPrint('AdService: Failed to load rewarded ad: $error');
           }
           _isRewardedLoaded = false;
 
@@ -219,14 +219,14 @@ class AdService {
     VoidCallback? onAdDismissedWithoutReward,
   }) {
     if (kDebugMode) {
-      print('AdService: showRewardedAd() called');
-      print('AdService: isRewardedAdReady=$isRewardedAdReady');
-      print('AdService: _rewardedAd=$_rewardedAd');
+      debugPrint('AdService: showRewardedAd() called');
+      debugPrint('AdService: isRewardedAdReady=$isRewardedAdReady');
+      debugPrint('AdService: _rewardedAd=$_rewardedAd');
     }
 
     if (!isRewardedAdReady) {
       if (kDebugMode) {
-        print('AdService: No rewarded ad loaded - calling dismissed callback');
+        debugPrint('AdService: No rewarded ad loaded - calling dismissed callback');
       }
       onAdDismissedWithoutReward?.call();
       return;
@@ -247,7 +247,7 @@ class AdService {
     _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
       onAdShowedFullScreenContent: (ad) {
         if (kDebugMode) {
-          print('AdService: onAdShowedFullScreenContent - ad is now visible');
+          debugPrint('AdService: onAdShowedFullScreenContent - ad is now visible');
         }
         // Optimistically set pending reward to true when ad starts showing.
         // This handles cases where onUserEarnedReward fires after onAdDismissed
@@ -255,13 +255,13 @@ class AdService {
         // the user explicitly skips or the ad fails.
         _pendingReward = true;
         if (kDebugMode) {
-          print('AdService: _pendingReward set to true (optimistic)');
+          debugPrint('AdService: _pendingReward set to true (optimistic)');
         }
       },
       onAdDismissedFullScreenContent: (ad) {
         if (kDebugMode) {
-          print('AdService: onAdDismissedFullScreenContent called');
-          print('AdService: _pendingReward=$_pendingReward');
+          debugPrint('AdService: onAdDismissedFullScreenContent called');
+          debugPrint('AdService: _pendingReward=$_pendingReward');
         }
         ad.dispose();
         _isRewardedLoaded = false;
@@ -278,26 +278,26 @@ class AdService {
 
         if (_pendingReward) {
           if (kDebugMode) {
-            print('AdService: Reward was earned! Calling earnedCallback');
+            debugPrint('AdService: Reward was earned! Calling earnedCallback');
           }
           _pendingReward = false;
           // Small delay to ensure UI transition is smooth
           Future.delayed(const Duration(milliseconds: 100), () {
             if (kDebugMode) {
-              print('AdService: Executing earnedCallback after delay');
+              debugPrint('AdService: Executing earnedCallback after delay');
             }
             earnedCallback?.call();
           });
         } else {
           if (kDebugMode) {
-            print('AdService: No reward earned, calling dismissedCallback');
+            debugPrint('AdService: No reward earned, calling dismissedCallback');
           }
           dismissedCallback?.call();
         }
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
         if (kDebugMode) {
-          print('AdService: onAdFailedToShowFullScreenContent: $error');
+          debugPrint('AdService: onAdFailedToShowFullScreenContent: $error');
         }
         ad.dispose();
         _isRewardedLoaded = false;
@@ -311,31 +311,31 @@ class AdService {
     );
 
     if (kDebugMode) {
-      print('AdService: About to call _rewardedAd!.show()');
+      debugPrint('AdService: About to call _rewardedAd!.show()');
     }
 
     // Show the ad with reward callback
     _rewardedAd!.show(
       onUserEarnedReward: (ad, reward) {
         if (kDebugMode) {
-          print('========================================');
-          print('AdService: onUserEarnedReward CALLED!');
-          print('AdService: reward.amount=${reward.amount}');
-          print('AdService: reward.type=${reward.type}');
-          print('========================================');
+          debugPrint('========================================');
+          debugPrint('AdService: onUserEarnedReward CALLED!');
+          debugPrint('AdService: reward.amount=${reward.amount}');
+          debugPrint('AdService: reward.type=${reward.type}');
+          debugPrint('========================================');
         }
         // Confirm that reward was earned. This is redundant with the optimistic
         // approach in onAdShowedFullScreenContent, but kept for correctness
         // when the callback does fire properly.
         _pendingReward = true;
         if (kDebugMode) {
-          print('AdService: _pendingReward confirmed as $_pendingReward');
+          debugPrint('AdService: _pendingReward confirmed as $_pendingReward');
         }
       },
     );
 
     if (kDebugMode) {
-      print('AdService: _rewardedAd!.show() has been called');
+      debugPrint('AdService: _rewardedAd!.show() has been called');
     }
   }
 
@@ -367,12 +367,12 @@ class AdService {
       _onInterstitialDismissedCallback = onDismissed;
       _interstitialAd!.show();
       if (kDebugMode) {
-        print('AdService: Showing interstitial ad');
+        debugPrint('AdService: Showing interstitial ad');
       }
       return true;
     } else {
       if (kDebugMode) {
-        print('AdService: No ad loaded to show');
+        debugPrint('AdService: No ad loaded to show');
       }
       // Try to load one for next time
       _onInterstitialDismissedCallback = null;
