@@ -32,9 +32,6 @@ class OneBulletGame extends FlameGame
   /// Overlay ID for the start screen.
   static const String startScreenOverlayId = 'startScreen';
 
-  /// Overlay ID for achievement unlock announcements.
-  static const String achievementUnlockedOverlayId = 'achievementUnlocked';
-
   /// Overlay ID for the game over screen.
   static const String gameOverOverlayId = 'gameOver';
 
@@ -302,90 +299,102 @@ class OneBulletGame extends FlameGame
     _deflectors.remove(deflector);
   }
 
+  /// Duration to wait for death animation before showing ad/overlay.
+  static const Duration _deathAnimationDuration = Duration(milliseconds: 1200);
+
   /// Called when the player is hit by the bullet.
   Future<void> onPlayerDeath() async {
     if (_isGameOver) return;
     if (player == null) return;
 
-    /// 🔥 Freeze game immediately
+    // Mark game over but DON'T pause - let death animation play
     _isGameOver = true;
-    pauseEngine();
-    SoundService.stopAll();
 
     final playerPosition = player!.position.clone();
     const playerColor = Colors.blue;
 
-    /// Remove player from world instantly
+    // Remove player from world instantly
     player!.removeFromParent();
 
     final secondsSurvived = survivalTime.value.inSeconds;
 
-    /// Check rewards + score in parallel
-    final achievementFuture = AchievementService.instance
-        .checkAndUnlockForSurvivalTime(secondsSurvived);
+    // Check achievements (but don't unlock yet - we'll do that after game over shows)
+    lastUnlockedAchievements = AchievementService.instance
+        .getAchievementsForSurvivalTime(secondsSurvived);
 
-    final highScoreFuture = Future.value(
-      ScoreService.checkAndSaveHighScore(survivalTime.value),
-    );
+    // Check high score
+    isNewHighScore = ScoreService.checkAndSaveHighScore(survivalTime.value);
 
-    final results = await Future.wait([achievementFuture, highScoreFuture]);
-
-    lastUnlockedAchievements = results[0] as List<Achievement>;
-    isNewHighScore = results[1] as bool;
-
-    /// Spawn death effects
+    // Spawn death effect fragments
     final fragments = PlayerDeathEffect.createFragments(
       position: playerPosition,
       color: playerColor,
       fragmentCount: 14,
       baseSpeed: 300.0,
     );
-
     world.addAll(fragments);
 
-    /// Play SFX
+    // Play death SFX
     if (isNewHighScore) {
       SoundService.playHighScore();
     } else {
       SoundService.playPlayerDeath();
     }
 
-    /// Ad + Reward Flow
+    // Wait for death animation to complete, then show ad/game over
+    _gameOverTimer?.cancel();
+    _gameOverTimer = Timer(_deathAnimationDuration, () {
+      _onDeathAnimationComplete(secondsSurvived);
+    });
+  }
+
+  /// Called after death animation completes. Shows ad if available, then game over.
+  void _onDeathAnimationComplete(int secondsSurvived) {
+    // Now pause the engine since animation is done
+    pauseEngine();
+    SoundService.stopAll();
+
+    // Try to show interstitial ad
     final showedInterstitial = AdService.onPlayerDeath(
       secondsSurvived,
       onInterstitialDismissed: () {
+        // Small delay after ad dismissal for smoother transition
         Future.delayed(
-          const Duration(milliseconds: 400),
-          _showPostDeathOverlayFlow,
+          const Duration(milliseconds: 200),
+          _showGameOverAndUnlockAchievements,
         );
       },
     );
 
-    /// If no ad was shown, continue directly
+    // If no ad was shown, go directly to game over
     if (!showedInterstitial) {
-      _gameOverTimer?.cancel();
-      _gameOverTimer = Timer(
-        const Duration(milliseconds: 300),
-        _showPostDeathOverlayFlow,
-      );
+      _showGameOverAndUnlockAchievements();
     }
   }
 
-  void _showPostDeathOverlayFlow() {
+  /// Shows game over overlay and triggers Play Games achievement unlock.
+  void _showGameOverAndUnlockAchievements() {
     if (!_isGameOver) return;
 
     _gameOverTimer?.cancel();
     _gameOverTimer = null;
 
+    // Ensure engine is paused and sounds stopped
     pauseEngine();
     SoundService.stopAll();
 
+    // Hide HUD and show game over overlay
     overlays.remove(gameHudOverlayId);
+    overlays.add(gameOverOverlayId);
 
+    // Now unlock achievements with Play Games (native popup will show over game over screen)
     if (lastUnlockedAchievements.isNotEmpty) {
-      overlays.add(achievementUnlockedOverlayId);
-    } else {
-      overlays.add(gameOverOverlayId);
+      // Small delay to let game over overlay render first
+      Future.delayed(const Duration(milliseconds: 300), () {
+        AchievementService.instance.unlockAchievements(
+          lastUnlockedAchievements,
+        );
+      });
     }
   }
 
@@ -423,7 +432,6 @@ class OneBulletGame extends FlameGame
     overlays.remove(pauseOverlayId);
     overlays.remove(gameHudOverlayId);
     overlays.remove(settingsOverlayId);
-    overlays.remove(achievementUnlockedOverlayId);
     overlays.remove(gameOverOverlayId);
 
     // Stop all active sound effects before teardown
@@ -473,7 +481,6 @@ class OneBulletGame extends FlameGame
     _gameOverTimer = null;
 
     // Hide game over overlay
-    overlays.remove(achievementUnlockedOverlayId);
     overlays.remove(gameOverOverlayId);
 
     // Stop all active sound effects before teardown
@@ -518,7 +525,6 @@ class OneBulletGame extends FlameGame
     _isGameOver = false;
 
     // Hide game over overlay
-    overlays.remove(achievementUnlockedOverlayId);
     overlays.remove(gameOverOverlayId);
 
     // Respawn the player at the center of the arena (skip aim indicator since bullet is in play)

@@ -112,28 +112,38 @@ class AchievementService {
   /// SURVIVAL CHECK
   /// ===============================
 
-  Future<List<Achievement>> checkAndUnlockForSurvivalTime(int seconds) async {
+  /// Checks which achievements the player has earned for the given survival time.
+  /// Does NOT unlock them with Play Games - call [unlockAchievements] separately.
+  List<Achievement> getAchievementsForSurvivalTime(int seconds) {
     debugPrint('[ACHIEVEMENT SERVICE] Checking survival time: $seconds');
 
-    final unlocked = <Achievement>[];
+    final earned = <Achievement>[];
 
     for (final achievement in _timeAchievements) {
       if (seconds >= achievement.requiredSeconds &&
           !_sessionUnlocked.contains(achievement.id)) {
-        unlocked.add(achievement);
+        earned.add(achievement);
       }
     }
 
-    if (unlocked.isEmpty) return [];
+    // Mark as session-unlocked to prevent duplicate popups
+    _sessionUnlocked.addAll(earned.map((a) => a.id));
 
-    _sessionUnlocked.addAll(unlocked.map((a) => a.id));
+    return earned;
+  }
+
+  /// Unlocks the given achievements with Play Games Services.
+  /// Call this after the Game Over overlay is shown so the native popup
+  /// appears at the right time.
+  Future<void> unlockAchievements(List<Achievement> achievements) async {
+    if (achievements.isEmpty) return;
 
     if (!PlayGamesService.instance.isSignedIn) {
       debugPrint('[ACHIEVEMENT SERVICE] Play Games not signed in');
-      return unlocked;
+      return;
     }
 
-    for (final achievement in unlocked) {
+    for (final achievement in achievements) {
       if (achievement.id.startsWith('debug_')) continue;
 
       try {
@@ -155,8 +165,6 @@ class AchievementService {
         );
       }
     }
-
-    return unlocked;
   }
 
   /// ===============================
