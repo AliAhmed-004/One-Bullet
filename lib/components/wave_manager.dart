@@ -27,7 +27,7 @@ class WaveConfig {
 
   /// Interval in seconds between deflector spawns (null = no spawning).
   final double? deflectorSpawnInterval;
-  
+
   /// Number of deflectors to spawn per interval.
   final int deflectorsPerSpawn;
 }
@@ -54,58 +54,58 @@ class WaveManager extends Component {
 
   /// Wave configurations - tuned for challenging but fair progression.
   static const List<WaveConfig> waves = [
-    // Wave 1: Brief warm-up, deflectors start immediately
+    // Wave 1: Pure learning
     WaveConfig(
       waveNumber: 1,
-      duration: 10.0,
+      duration: 20.0,
+      startSpeed: 340,
+      endSpeed: 380,
+      deflectorSpawnInterval: 7.0,
+    ),
+
+    // Wave 2: Introduce mild pressure
+    WaveConfig(
+      waveNumber: 2,
+      duration: 25.0,
       startSpeed: 380,
       endSpeed: 420,
+      deflectorSpawnInterval: 6.0,
+    ),
+
+    // Wave 3: First real chaos moment
+    WaveConfig(
+      waveNumber: 3,
+      duration: 30.0,
+      startSpeed: 420,
+      endSpeed: 480,
       deflectorSpawnInterval: 5.0,
     ),
 
-    // Wave 2: Speed ramps up, more deflectors
-    WaveConfig(
-      waveNumber: 2,
-      duration: 12.0,
-      startSpeed: 420,
-      endSpeed: 480,
-      deflectorSpawnInterval: 4.0,
-    ),
-
-    // Wave 3: Getting challenging
-    WaveConfig(
-      waveNumber: 3,
-      duration: 15.0,
-      startSpeed: 480,
-      endSpeed: 550,
-      deflectorSpawnInterval: 4.0,
-    ),
-
-    // Wave 4: Fast and chaotic
+    // Wave 4: Skill check
     WaveConfig(
       waveNumber: 4,
-      duration: 18.0,
-      startSpeed: 550,
-      endSpeed: 620,
-      deflectorSpawnInterval: 3.5,
+      duration: 40.0,
+      startSpeed: 480,
+      endSpeed: 550,
+      deflectorSpawnInterval: 4.5,
     ),
 
-    // Wave 5: Very fast, frequent deflectors
+    // Wave 5: Real difficulty
     WaveConfig(
       waveNumber: 5,
-      duration: 20.0,
-      startSpeed: 620,
-      endSpeed: 700,
-      deflectorSpawnInterval: 3.0,
+      duration: 60.0,
+      startSpeed: 550,
+      endSpeed: 620,
+      deflectorSpawnInterval: 4.0,
     ),
 
-    // Wave 6: Endurance mode - max speed, constant pressure, double deflectors
+    // Wave 6: Endurance mode
     WaveConfig(
       waveNumber: 6,
       duration: double.infinity,
-      startSpeed: 700,
-      endSpeed: 800,
-      deflectorSpawnInterval: 2.5,
+      startSpeed: 620,
+      endSpeed: 750,
+      deflectorSpawnInterval: 3.5,
       deflectorsPerSpawn: 2,
     ),
   ];
@@ -167,7 +167,7 @@ class WaveManager extends Component {
     currentSpeed.value = waves[0].startSpeed;
     isWarningActive.value = false;
   }
-  
+
   @override
   void onRemove() {
     // Dispose ValueNotifiers to prevent memory leaks

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/services/ad_service.dart';
+import 'package:one_bullet/services/death_message_service.dart';
 import 'package:one_bullet/services/score_service.dart';
 
 class GameOverOverlay extends StatefulWidget {
@@ -19,10 +20,17 @@ class _GameOverOverlayState extends State<GameOverOverlay>
   late final AnimationController _controller;
   late final Animation<double> _fade;
   late final Animation<double> _scale;
+  late final DeathMessageResult _deathMessage;
 
   @override
   void initState() {
     super.initState();
+
+    // Get contextual death message based on survival time
+    final survivalSeconds = widget.game.survivalTime.value.inSeconds;
+    _deathMessage = DeathMessageService.instance.getDeathMessage(
+      survivalSeconds,
+    );
 
     _controller = AnimationController(
       vsync: this,
@@ -110,7 +118,12 @@ class _GameOverOverlayState extends State<GameOverOverlay>
               color: Theme.of(context).colorScheme.errorContainer,
             ),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 12),
+
+          // Death message - contextual based on achievement proximity
+          _buildDeathMessage(),
+
+          const SizedBox(height: 20),
 
           Text(
             'Time Survived',
@@ -133,6 +146,12 @@ class _GameOverOverlayState extends State<GameOverOverlay>
               color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
+
+          // Next achievement progress indicator
+          if (_deathMessage.secondsToNextAchievement != null) ...[
+            const SizedBox(height: 16),
+            _buildNextAchievementSection(),
+          ],
 
           if (isNewRecord) ...[
             const SizedBox(height: 18),
@@ -198,6 +217,169 @@ class _GameOverOverlayState extends State<GameOverOverlay>
             icon: Icons.home,
             accentColor: Theme.of(context).colorScheme.primary,
             onTap: widget.game.returnToMenu,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds the contextual death message widget.
+  Widget _buildDeathMessage() {
+    final Color messageColor;
+    final IconData? icon;
+
+    switch (_deathMessage.type) {
+      case DeathMessageType.nearMiss:
+        // Infuriating red/orange - you were SO close
+        messageColor = Colors.deepOrangeAccent;
+        icon = Icons.local_fire_department;
+      case DeathMessageType.almostThere:
+        // Encouraging amber - keep trying
+        messageColor = Colors.amberAccent;
+        icon = Icons.trending_up;
+      case DeathMessageType.sarcastic:
+        // Playful blue/gray - lighthearted
+        messageColor = Theme.of(
+          context,
+        ).colorScheme.onSurface.withValues(alpha: 0.7);
+        icon = null;
+      case DeathMessageType.champion:
+        // Respectful gold - you've earned it
+        messageColor = Colors.amber;
+        icon = Icons.workspace_premium;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Column(
+        children: [
+          // Main message
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, color: messageColor, size: 16),
+                const SizedBox(width: 6),
+              ],
+              Flexible(
+                child: Text(
+                  _deathMessage.message,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontStyle: FontStyle.italic,
+                    color: messageColor,
+                    fontWeight: _deathMessage.type == DeathMessageType.nearMiss
+                        ? FontWeight.w600
+                        : FontWeight.normal,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds the "Next Achievement" progress section.
+  Widget _buildNextAchievementSection() {
+    final secondsLeft = _deathMessage.secondsToNextAchievement!;
+    final achievementTitle = _deathMessage.nextAchievementTitle!;
+    final survivalSeconds = widget.game.survivalTime.value.inSeconds;
+
+    // Find the achievement's required seconds from the service
+    final requiredSeconds = secondsLeft + survivalSeconds;
+
+    // Calculate progress percentage
+    final progress = (survivalSeconds / requiredSeconds).clamp(0.0, 1.0);
+
+    // Color based on proximity
+    final Color accentColor;
+    final String proximityText;
+
+    if (secondsLeft <= 10) {
+      accentColor = Colors.deepOrangeAccent;
+      proximityText = 'SO CLOSE!';
+    } else if (secondsLeft <= 20) {
+      accentColor = Colors.amberAccent;
+      proximityText = 'Almost there!';
+    } else {
+      accentColor = Theme.of(
+        context,
+      ).colorScheme.primary.withValues(alpha: 0.7);
+      proximityText = 'Next target';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: accentColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: accentColor.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        children: [
+          // Header row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                proximityText,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1,
+                  color: accentColor,
+                ),
+              ),
+              Text(
+                '${secondsLeft}s to go',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: accentColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Achievement name
+          Text(
+            achievementTitle,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // Progress bar
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 6,
+              backgroundColor: accentColor.withValues(alpha: 0.15),
+              valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+            ),
+          ),
+          const SizedBox(height: 4),
+
+          // Progress text
+          Text(
+            '${survivalSeconds}s / ${requiredSeconds}s',
+            style: TextStyle(
+              fontSize: 10,
+              fontFamily: 'monospace',
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
           ),
         ],
       ),
