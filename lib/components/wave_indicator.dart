@@ -32,6 +32,17 @@ class WaveIndicator extends PositionComponent {
   /// Flash timer.
   double _flashTimer = 0;
 
+  /// Cached paints to avoid per-frame allocations.
+  late final Paint _bgPaint;
+  late final Paint _borderPaint;
+
+  /// Cached TextPaint for wave number (style updated only when needed).
+  late TextPaint _numberPaint;
+
+  /// Track last flash state to avoid unnecessary style rebuilds.
+  bool _lastIsFlashing = false;
+  double _lastFlashProgress = -1;
+
   @override
   Future<void> onLoad() async {
     await super.onLoad();
@@ -42,6 +53,19 @@ class WaveIndicator extends PositionComponent {
         fontWeight: FontWeight.w500,
         color: Colors.white.withValues(alpha: 0.7),
         letterSpacing: 1,
+        decoration: TextDecoration.none,
+      ),
+    );
+
+    _bgPaint = Paint();
+    _borderPaint = Paint()..style = PaintingStyle.stroke;
+
+    _numberPaint = TextPaint(
+      style: const TextStyle(
+        fontSize: 28,
+        fontWeight: FontWeight.bold,
+        color: Colors.white,
+        letterSpacing: 2,
         decoration: TextDecoration.none,
       ),
     );
@@ -103,23 +127,16 @@ class WaveIndicator extends PositionComponent {
   void render(Canvas canvas) {
     super.render(canvas);
 
-    // Calculate flash color
-    final flashColor = _isFlashing
-        ? Color.lerp(Colors.orange, Colors.red, _flashProgress)!
-        : Colors.cyan;
+    // Quantize flash progress to reduce style rebuilds (10 steps).
+    final quantizedProgress = (_flashProgress * 10).round() / 10;
+    final needsStyleUpdate = _isFlashing != _lastIsFlashing ||
+        (_isFlashing && quantizedProgress != _lastFlashProgress);
 
-    // Background container
-    final bgPaint = Paint()
-      ..color = flashColor.withValues(
-        alpha: _isFlashing ? 0.3 + _flashProgress * 0.2 : 0.15,
-      );
-
-    final borderPaint = Paint()
-      ..color = flashColor.withValues(
-        alpha: _isFlashing ? 0.8 + _flashProgress * 0.2 : 0.5,
-      )
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = _isFlashing ? 2 + _flashProgress : 2;
+    if (needsStyleUpdate) {
+      _lastIsFlashing = _isFlashing;
+      _lastFlashProgress = quantizedProgress;
+      _updatePaintStyles(quantizedProgress);
+    }
 
     // Container dimensions
     const containerWidth = 120.0;
@@ -138,33 +155,14 @@ class WaveIndicator extends PositionComponent {
       const Radius.circular(8),
     );
 
-    canvas.drawRRect(rect, bgPaint);
-    canvas.drawRRect(rect, borderPaint);
+    canvas.drawRRect(rect, _bgPaint);
+    canvas.drawRRect(rect, _borderPaint);
 
     // "WAVE" label
     _labelPaint.render(canvas, 'WAVE', Vector2(0, -12), anchor: Anchor.center);
 
-    // Wave number with color based on state
-    final numberStyle = TextStyle(
-      fontSize: 28,
-      fontWeight: FontWeight.bold,
-      color: _isFlashing
-          ? Color.lerp(Colors.orange, Colors.red, _flashProgress)
-          : Colors.white,
-      letterSpacing: 2,
-      decoration: TextDecoration.none,
-      shadows: _isFlashing
-          ? [
-              Shadow(
-                color: Colors.orange.withValues(alpha: 0.8),
-                blurRadius: 10 + _flashProgress * 10,
-              ),
-            ]
-          : null,
-    );
-
-    final numberPaint = TextPaint(style: numberStyle);
-    numberPaint.render(
+    // Wave number
+    _numberPaint.render(
       canvas,
       '$_waveNumber',
       Vector2(0, 10),
@@ -172,5 +170,44 @@ class WaveIndicator extends PositionComponent {
     );
 
     canvas.restore();
+  }
+
+  /// Updates cached paint styles based on flash state.
+  void _updatePaintStyles(double flashProgress) {
+    final flashColor = _isFlashing
+        ? Color.lerp(Colors.orange, Colors.red, flashProgress)!
+        : Colors.cyan;
+
+    _bgPaint.color = flashColor.withValues(
+      alpha: _isFlashing ? 0.3 + flashProgress * 0.2 : 0.15,
+    );
+
+    _borderPaint
+      ..color = flashColor.withValues(
+        alpha: _isFlashing ? 0.8 + flashProgress * 0.2 : 0.5,
+      )
+      ..strokeWidth = _isFlashing ? 2 + flashProgress : 2;
+
+    final numberColor = _isFlashing
+        ? Color.lerp(Colors.orange, Colors.red, flashProgress)!
+        : Colors.white;
+
+    _numberPaint = TextPaint(
+      style: TextStyle(
+        fontSize: 28,
+        fontWeight: FontWeight.bold,
+        color: numberColor,
+        letterSpacing: 2,
+        decoration: TextDecoration.none,
+        shadows: _isFlashing
+            ? [
+                Shadow(
+                  color: Colors.orange.withValues(alpha: 0.8),
+                  blurRadius: 10 + flashProgress * 10,
+                ),
+              ]
+            : null,
+      ),
+    );
   }
 }
