@@ -146,11 +146,11 @@ class AchievementService {
 
         await gs.Achievements.unlock(achievement: gsAchievement);
 
-        print(
+        debugPrint(
           '[ACHIEVEMENT SERVICE] Play Games unlock sent: ${achievement.id}',
         );
       } catch (e) {
-        print(
+        debugPrint(
           '[ACHIEVEMENT SERVICE] Play Games unlock failed: ${achievement.id}',
         );
       }

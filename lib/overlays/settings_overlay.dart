@@ -1,9 +1,7 @@
 import 'dart:developer';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
-import 'package:one_bullet/services/achievement_service.dart';
 import 'package:one_bullet/services/play_games_service.dart';
 import 'package:one_bullet/services/settings_service.dart';
 
