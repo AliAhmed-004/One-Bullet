@@ -1,15 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
 import 'package:games_services/games_services.dart' as gs;
 import 'package:one_bullet/services/play_games_service.dart';
 
 /// ===============================
-/// ACHIEVEMENT DEFINITIONS (Domain Layer)
+/// ACHIEVEMENT DEFINITIONS
 /// ===============================
 
 abstract class Achievement {
-  final String id; // Play Games ID (or local debug ID)
+  final String id;
   final String title;
   final IconData icon;
 
@@ -32,7 +31,7 @@ class TimeAchievement extends Achievement {
 }
 
 /// ===============================
-/// ACHIEVEMENTS LIST
+/// ACHIEVEMENT LIST
 /// ===============================
 
 const List<TimeAchievement> kSurvivalAchievements = [
@@ -92,135 +91,84 @@ class AchievementService {
   static final AchievementService instance = AchievementService._internal();
   factory AchievementService() => instance;
 
-  static const String _boxName = 'achievements';
-  static const String _unlockedKey = 'unlocked';
-
-  late final Box _box;
-
-  final Set<String> _unlockedLocalCache = {};
-
-  late final Map<String, Achievement> _achievementMap;
   late final List<TimeAchievement> _timeAchievements;
 
-  int get unlockedCount => _unlockedLocalCache.length;
+  /// Debug-only in-memory session cache
+  /// prevents duplicate popups during one run
+  final Set<String> _sessionUnlocked = {};
 
   /// ===============================
   /// INIT
   /// ===============================
 
   Future<void> init() async {
-    print("[ACHIEVEMENT SERVICE] Initializing...");
-
-    _box = Hive.isBoxOpen(_boxName)
-        ? Hive.box(_boxName)
-        : await Hive.openBox(_boxName);
-
-    final stored = _box.get(_unlockedKey);
-    if (stored is List) {
-      _unlockedLocalCache
-        ..clear()
-        ..addAll(stored.cast<String>());
-    }
-
-    _achievementMap = {for (final a in kAllAchievements) a.id: a};
+    print('[ACHIEVEMENT SERVICE] Initializing');
 
     _timeAchievements = kSurvivalAchievements.toList()
       ..sort((a, b) => a.requiredSeconds.compareTo(b.requiredSeconds));
-
-    print(
-      '[ACHIEVEMENT SERVICE] Loaded locally unlocked achievements: $_unlockedLocalCache',
-    );
   }
 
   /// ===============================
-  /// GETTERS
-  /// ===============================
-
-  Set<String> getUnlockedIds() => Set.unmodifiable(_unlockedLocalCache);
-
-  Achievement? getAchievementById(String id) => _achievementMap[id];
-
-  List<Achievement> getAllAchievements() => List.unmodifiable(kAllAchievements);
-
-  bool isUnlocked(String id) => _unlockedLocalCache.contains(id);
-
-  /// ===============================
-  /// SURVIVAL TIME CHECK
+  /// SURVIVAL CHECK
   /// ===============================
 
   Future<List<Achievement>> checkAndUnlockForSurvivalTime(int seconds) async {
-    print("[ACHIEVEMENT SERVICE] Checking survival time: $seconds seconds");
+    print('[ACHIEVEMENT SERVICE] Checking survival time: $seconds');
 
-    final newlyUnlocked = <Achievement>[];
+    final unlocked = <Achievement>[];
 
     for (final achievement in _timeAchievements) {
       if (seconds >= achievement.requiredSeconds &&
-          !_unlockedLocalCache.contains(achievement.id)) {
-        newlyUnlocked.add(achievement);
+          !_sessionUnlocked.contains(achievement.id)) {
+        unlocked.add(achievement);
       }
     }
 
-    if (newlyUnlocked.isEmpty) return [];
+    if (unlocked.isEmpty) return [];
 
-    // 1️⃣ Save locally (source of truth)
-    _unlockedLocalCache.addAll(newlyUnlocked.map((a) => a.id));
-    await _box.put(_unlockedKey, _unlockedLocalCache.toList());
-    // 2️⃣ Sync to Play Games (translation layer)
-    if (PlayGamesService.instance.isSignedIn) {
-      print(
-        '[ACHIEVEMENT SERVICE] PlayGames signed in: ${PlayGamesService.instance.isSignedIn}',
-      );
-      for (final achievement in newlyUnlocked) {
-        // Skip debug-only achievements
-        if (achievement.id.startsWith('debug_')) continue;
+    _sessionUnlocked.addAll(unlocked.map((a) => a.id));
 
-        try {
-          final gsAchievement = gs.Achievement(
-            androidID: achievement.id,
-            iOSID: achievement.id,
-            percentComplete: 100,
-            showsCompletionBanner: true,
-          );
+    if (!PlayGamesService.instance.isSignedIn) {
+      print('[ACHIEVEMENT SERVICE] Play Games not signed in');
+      return unlocked;
+    }
 
-          await gs.Achievements.unlock(achievement: gsAchievement);
+    for (final achievement in unlocked) {
+      if (achievement.id.startsWith('debug_')) continue;
 
-          print(
-            '[ACHIEVEMENT SERVICE] Synced to Play Games: ${achievement.id}',
-          );
-        } catch (e) {
-          print(
-            '[ACHIEVEMENT SERVICE] Play Games unlock failed for ${achievement.id}: $e',
-          );
-        }
+      try {
+        final gsAchievement = gs.Achievement(
+          androidID: achievement.id,
+          iOSID: achievement.id,
+          percentComplete: 100,
+          showsCompletionBanner: true,
+        );
+
+        await gs.Achievements.unlock(achievement: gsAchievement);
+
+        print(
+          '[ACHIEVEMENT SERVICE] Play Games unlock sent: ${achievement.id}',
+        );
+      } catch (e) {
+        print(
+          '[ACHIEVEMENT SERVICE] Play Games unlock failed: ${achievement.id}',
+        );
       }
     }
 
-    print(
-      "[ACHIEVEMENT SERVICE] Newly unlocked: ${newlyUnlocked.map((a) => a.id).toList()}",
-    );
-
-    return newlyUnlocked;
+    return unlocked;
   }
 
   /// ===============================
-  /// NEXT TARGET
+  /// NEXT TARGET (UI hint)
   /// ===============================
 
-  TimeAchievement? getNextLockedTimeAchievement() {
+  TimeAchievement? getNextTarget(int seconds) {
     for (final achievement in _timeAchievements) {
-      if (!_unlockedLocalCache.contains(achievement.id)) {
+      if (seconds < achievement.requiredSeconds) {
         return achievement;
       }
     }
     return null;
-  }
-
-  /// ===============================
-  /// DEBUG / RESET
-  /// ===============================
-
-  Future<void> resetAll() async {
-    _unlockedLocalCache.clear();
-    await _box.put(_unlockedKey, <String>[]);
   }
 }

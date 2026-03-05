@@ -466,15 +466,6 @@ class OneBulletGame extends FlameGame
     super.onRemove();
   }
 
-  /// Called by the achievement overlay once its animation has completed.
-  void onAchievementOverlayComplete() {
-    overlays.remove(achievementUnlockedOverlayId);
-
-    if (_isGameOver) {
-      overlays.add(gameOverOverlayId);
-    }
-  }
-
   /// Restarts the game.
   void restart() {
     // Cancel any pending game over timer

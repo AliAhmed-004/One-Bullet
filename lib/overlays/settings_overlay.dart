@@ -139,20 +139,9 @@ class _SettingsOverlayState extends State<SettingsOverlay>
 
           _AnimatedButton(label: "Close", onTap: _close),
           const SizedBox(height: 8),
-
-          if (kDebugMode)
-            _AnimatedButton(
-              label: "Reset Achievements",
-              onTap: _resetAchievements,
-            ),
         ],
       ),
     );
-  }
-
-  void _resetAchievements() async {
-    await AchievementService.instance.resetAll();
-    log("[SETTINGS OVERLAY] Achievements have been reset.");
   }
 
   Widget _buildSettingsRow({
