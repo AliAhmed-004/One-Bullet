@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -101,16 +100,16 @@ class AdService {
 
     if (Platform.isAndroid || Platform.isIOS) {
       await MobileAds.instance.initialize();
-      log('AdService: Mobile Ads SDK initialized');
+      print('AdService: Mobile Ads SDK initialized');
     } else {
-      log('AdService: Mobile Ads SDK not initialized - unsupported platform');
+      print('AdService: Mobile Ads SDK not initialized - unsupported platform');
     }
 
     // Start loading ads immediately
     _loadInterstitialAd();
     _loadRewardedAd();
 
-    log('AdService: Mobile Ads SDK initialized');
+    print('AdService: Mobile Ads SDK initialized');
   }
 
   // Configures ad request settings (e.g., content rating, child-directed treatment).

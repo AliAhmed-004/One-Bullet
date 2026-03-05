@@ -116,8 +116,7 @@ class OneBulletGame extends FlameGame
   Future<void> onLoad() async {
     await super.onLoad();
 
-    // Initialize achievements (must be before any achievement logic)
-    await AchievementService().init();
+    // Note: AchievementService is initialized in main.dart before Play Games
 
     // Load all sound effects
     await SoundService.init();

@@ -1,7 +1,5 @@
 import 'dart:async';
-import 'dart:developer';
 import 'package:games_services/games_services.dart';
-import 'package:one_bullet/services/achievement_service.dart';
 
 class PlayGamesService {
   PlayGamesService._internal();
@@ -16,7 +14,7 @@ class PlayGamesService {
   /// Initialize Play Games Services.
   /// Call this once during app startup.
   Future<void> initialize() async {
-    log('[PLAY GAMES SERVICE] Initializing Play Games Services...');
+    print('[PLAY GAMES SERVICE] Initializing Play Games Services...');
     if (_isInitialized) return;
 
     try {
@@ -30,31 +28,30 @@ class PlayGamesService {
   }
 
   Future<void> _attemptSilentSignIn() async {
-    log('[PLAY GAMES SERVICE] Attempting silent sign-in...');
+    print('[PLAY GAMES SERVICE] Attempting silent sign-in...');
     try {
       final result = await GameAuth.signIn();
 
-      _isSignedIn = true; // ← THIS WAS MISSING
-      log('[PLAY GAMES SERVICE] Silent sign-in successful: $result');
-
-      // Sync achievements from Play Games on startup if signed in.
-      await AchievementService.instance.syncFromPlayGames();
+      _isSignedIn = true;
+      print('[PLAY GAMES SERVICE] Silent sign-in successful: $result');
+      print('Play Games signed in: ${PlayGamesService.instance.isSignedIn}');
+      // Note: Achievement sync is deferred to OneBulletGame.onLoad() to ensure main thread context
     } catch (e) {
-      log('[PLAY GAMES SERVICE] Silent sign-in failed: $e');
+      print('[PLAY GAMES SERVICE] Silent sign-in failed: $e');
       _isSignedIn = false;
     }
   }
 
   Future<bool> signIn() async {
-    log('[PLAY GAMES SERVICE] Attempting manual sign-in...');
+    print('[PLAY GAMES SERVICE] Attempting manual sign-in...');
     try {
       final result = await GameAuth.signIn();
 
       _isSignedIn = true; // ← ALSO HERE
-      log('[PLAY GAMES SERVICE] Manual sign-in successful: $result');
+      print('[PLAY GAMES SERVICE] Manual sign-in successful: $result');
       return true;
     } catch (e) {
-      log('[PLAY GAMES SERVICE] Manual sign-in failed: $e');
+      print('[PLAY GAMES SERVICE] Manual sign-in failed: $e');
       _isSignedIn = false;
       return false;
     }

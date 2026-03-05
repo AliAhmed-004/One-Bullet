@@ -1,6 +1,6 @@
-import 'dart:developer';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:hive/hive.dart';
 import 'package:games_services/games_services.dart' as gs;
 import 'package:one_bullet/services/play_games_service.dart';
@@ -98,19 +98,19 @@ class AchievementService {
 
   late final Box _box;
 
-  final Set<String> _unlockedCache = {};
+  final Set<String> _unlockedLocalCache = {};
 
   late final Map<String, Achievement> _achievementMap;
   late final List<TimeAchievement> _timeAchievements;
 
-  int get unlockedCount => _unlockedCache.length;
+  int get unlockedCount => _unlockedLocalCache.length;
 
   /// ===============================
   /// INIT
   /// ===============================
 
   Future<void> init() async {
-    log("[ACHIEVEMENT SERVICE] Initializing...");
+    print("[ACHIEVEMENT SERVICE] Initializing...");
 
     _box = Hive.isBoxOpen(_boxName)
         ? Hive.box(_boxName)
@@ -118,7 +118,7 @@ class AchievementService {
 
     final stored = _box.get(_unlockedKey);
     if (stored is List) {
-      _unlockedCache
+      _unlockedLocalCache
         ..clear()
         ..addAll(stored.cast<String>());
     }
@@ -128,33 +128,35 @@ class AchievementService {
     _timeAchievements = kSurvivalAchievements.toList()
       ..sort((a, b) => a.requiredSeconds.compareTo(b.requiredSeconds));
 
-    log('[ACHIEVEMENT SERVICE] Loaded unlocked: $_unlockedCache');
+    print(
+      '[ACHIEVEMENT SERVICE] Loaded locally unlocked achievements: $_unlockedLocalCache',
+    );
   }
 
   /// ===============================
   /// GETTERS
   /// ===============================
 
-  Set<String> getUnlockedIds() => Set.unmodifiable(_unlockedCache);
+  Set<String> getUnlockedIds() => Set.unmodifiable(_unlockedLocalCache);
 
   Achievement? getAchievementById(String id) => _achievementMap[id];
 
   List<Achievement> getAllAchievements() => List.unmodifiable(kAllAchievements);
 
-  bool isUnlocked(String id) => _unlockedCache.contains(id);
+  bool isUnlocked(String id) => _unlockedLocalCache.contains(id);
 
   /// ===============================
   /// SURVIVAL TIME CHECK
   /// ===============================
 
   Future<List<Achievement>> checkAndUnlockForSurvivalTime(int seconds) async {
-    log("[ACHIEVEMENT SERVICE] Checking survival time: $seconds seconds");
+    print("[ACHIEVEMENT SERVICE] Checking survival time: $seconds seconds");
 
     final newlyUnlocked = <Achievement>[];
 
     for (final achievement in _timeAchievements) {
       if (seconds >= achievement.requiredSeconds &&
-          !_unlockedCache.contains(achievement.id)) {
+          !_unlockedLocalCache.contains(achievement.id)) {
         newlyUnlocked.add(achievement);
       }
     }
@@ -162,12 +164,11 @@ class AchievementService {
     if (newlyUnlocked.isEmpty) return [];
 
     // 1️⃣ Save locally (source of truth)
-    _unlockedCache.addAll(newlyUnlocked.map((a) => a.id));
-    await _box.put(_unlockedKey, _unlockedCache.toList());
-
+    _unlockedLocalCache.addAll(newlyUnlocked.map((a) => a.id));
+    await _box.put(_unlockedKey, _unlockedLocalCache.toList());
     // 2️⃣ Sync to Play Games (translation layer)
     if (PlayGamesService.instance.isSignedIn) {
-      log(
+      print(
         '[ACHIEVEMENT SERVICE] PlayGames signed in: ${PlayGamesService.instance.isSignedIn}',
       );
       for (final achievement in newlyUnlocked) {
@@ -184,16 +185,18 @@ class AchievementService {
 
           await gs.Achievements.unlock(achievement: gsAchievement);
 
-          log('[ACHIEVEMENT SERVICE] Synced to Play Games: ${achievement.id}');
+          print(
+            '[ACHIEVEMENT SERVICE] Synced to Play Games: ${achievement.id}',
+          );
         } catch (e) {
-          log(
+          print(
             '[ACHIEVEMENT SERVICE] Play Games unlock failed for ${achievement.id}: $e',
           );
         }
       }
     }
 
-    log(
+    print(
       "[ACHIEVEMENT SERVICE] Newly unlocked: ${newlyUnlocked.map((a) => a.id).toList()}",
     );
 
@@ -206,7 +209,7 @@ class AchievementService {
 
   TimeAchievement? getNextLockedTimeAchievement() {
     for (final achievement in _timeAchievements) {
-      if (!_unlockedCache.contains(achievement.id)) {
+      if (!_unlockedLocalCache.contains(achievement.id)) {
         return achievement;
       }
     }
@@ -226,15 +229,14 @@ class AchievementService {
 
       for (final achievement in achievements) {
         if (achievement.unlocked) {
-          _unlockedCache.add(achievement.id);
+          _unlockedLocalCache.add(achievement.id);
         }
       }
 
-      await _box.put(_unlockedKey, _unlockedCache.toList());
-
-      log('[ACHIEVEMENT SERVICE] Synced achievements from Play Games');
+      await _box.put(_unlockedKey, _unlockedLocalCache.toList());
+      print('[ACHIEVEMENT SERVICE] Synced achievements from Play Games');
     } catch (e) {
-      log('[ACHIEVEMENT SERVICE] Play Games sync failed: $e');
+      print('[ACHIEVEMENT SERVICE] Play Games sync failed: $e');
     }
   }
 
@@ -243,7 +245,7 @@ class AchievementService {
   /// ===============================
 
   Future<void> resetAll() async {
-    _unlockedCache.clear();
+    _unlockedLocalCache.clear();
     await _box.put(_unlockedKey, <String>[]);
   }
 }

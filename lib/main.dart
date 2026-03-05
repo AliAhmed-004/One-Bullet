@@ -11,6 +11,7 @@ import 'package:one_bullet/overlays/pause_overlay.dart';
 import 'package:one_bullet/overlays/settings_overlay.dart';
 import 'package:one_bullet/overlays/start_screen_overlay.dart';
 import 'package:one_bullet/services/play_games_service.dart';
+import 'package:one_bullet/services/achievement_service.dart';
 import 'package:one_bullet/themes.dart';
 
 import 'package:one_bullet/services/ad_service.dart';
@@ -32,7 +33,10 @@ void main() async {
   // Initialize settings service
   await SettingsService.init();
 
-  // Initialize Play Games Services
+  // Initialize achievements (must be before Play Games for sync to work)
+  await AchievementService.instance.init();
+
+  // Initialize Play Games Services (will sync achievements if signed in)
   await PlayGamesService.instance.initialize();
 
   Flame.device.fullScreen();
