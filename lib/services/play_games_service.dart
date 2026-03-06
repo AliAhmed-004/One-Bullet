@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:games_services/games_services.dart';
+import 'package:one_bullet/services/achievement_service.dart';
 
 class PlayGamesService {
   PlayGamesService._internal();
@@ -35,8 +36,12 @@ class PlayGamesService {
 
       _isSignedIn = true;
       debugPrint('[PLAY GAMES SERVICE] Silent sign-in successful: $result');
-      debugPrint('Play Games signed in: ${PlayGamesService.instance.isSignedIn}');
-      // Note: Achievement sync is deferred to OneBulletGame.onLoad() to ensure main thread context
+      debugPrint(
+        'Play Games signed in: ${PlayGamesService.instance.isSignedIn}',
+      );
+
+      // Sync unlocked achievements from Play Games (fire-and-forget)
+      AchievementService.instance.syncUnlockedAchievements();
     } catch (e) {
       debugPrint('[PLAY GAMES SERVICE] Silent sign-in failed: $e');
       _isSignedIn = false;
@@ -48,8 +53,12 @@ class PlayGamesService {
     try {
       final result = await GameAuth.signIn();
 
-      _isSignedIn = true; // ← ALSO HERE
+      _isSignedIn = true;
       debugPrint('[PLAY GAMES SERVICE] Manual sign-in successful: $result');
+
+      // Sync unlocked achievements from Play Games (fire-and-forget)
+      AchievementService.instance.syncUnlockedAchievements();
+
       return true;
     } catch (e) {
       debugPrint('[PLAY GAMES SERVICE] Manual sign-in failed: $e');
@@ -61,7 +70,9 @@ class PlayGamesService {
   /// show achievements
   Future<void> showAchievements() async {
     if (!_isSignedIn) {
-      debugPrint('[PLAY GAMES SERVICE] Cannot show achievements: not signed in');
+      debugPrint(
+        '[PLAY GAMES SERVICE] Cannot show achievements: not signed in',
+      );
       return;
     }
 
