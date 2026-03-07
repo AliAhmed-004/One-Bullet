@@ -1,61 +1,87 @@
 # Copilot & AI Agent Instructions for One Bullet Game
 
-Welcome to the One Bullet codebase! This guide is for AI coding agents (Copilot, Cursor, Claude, etc.) to maximize productivity and maintain project conventions.
-
 ## Project Overview
-- **Type:** Cross-platform 2D survival game built with Flutter & Flame
-- **Core Loop:** Player fires a single bullet that bounces forever; survive as long as possible
-- **Key Files:**
-  - `lib/one_bullet_game.dart`: Main game logic, state, and loop
-  - `lib/components/`: Player, bullet, deflectors, wave manager, UI overlays
-  - `lib/services/`: Sound, settings, and other utilities
-  - `assets/`: Images and audio for game elements
+Cross-platform 2D survival game (Flutter + Flame). Player fires a single bullet that bounces forever; survive as long as possible.
 
-## Architecture & Patterns
-- **Component System:** Uses Flame's ECS-like `Component` model. Each entity (player, bullet, deflector) is a `Component` subclass.
-- **Game State:** Managed in `OneBulletGame` (see `lib/one_bullet_game.dart`). Avoid global state; use game instance references.
-- **Wave Progression:** Controlled by `WaveManager` (`lib/components/wave_manager.dart`). Bullet speed and deflector spawn rates scale per wave.
-- **Cross-Platform Input:**
-  - Mobile: Virtual joystick (bottom screen), tap to fire
-  - Desktop: WASD/Arrow keys, mouse click to fire
-  - See overlays and input handling in `lib/overlays/` and `lib/components/player.dart`
-- **Performance:**
-  - Minimize `Vector2` temporaries in hot paths (see `docs/flame_performance_audit.md`)
-  - Cache `Paint`/`Path` objects in `onLoad` for render-heavy components
-  - Cap active deflectors to avoid unbounded collision checks
-- **Audio:** Use pooled SFX playback for short sounds; avoid per-play `AudioPlayer` allocations
+## Architecture
 
-## Developer Workflows
-- **Build:** `flutter run` for dev, `flutter build <platform>` for release
-- **Assets:** Add to `assets/` and update `pubspec.yaml` under `assets:`
-- **Testing:** Manual playtesting is primary; no automated tests yet
-- **Performance Audit:** See `docs/flame_performance_audit.md` for optimization strategies
+### Core Files
+- `lib/one_bullet_game.dart` - Main game class, state management, overlay routing, deflector spawning
+- `lib/components/wave_manager.dart` - Wave progression config (`WaveConfig`), speed ramping, deflector spawn timing
+- `lib/components/bullet.dart` - Bounce physics, trail rendering, speed adjustments via `setSpeed()`
+- `lib/components/player.dart` - Movement (keyboard + joystick), aim indicator, collision detection
 
-## Project-Specific Conventions
-- **No global singletons** (except for Flame/Game root)
-- **Prefer composition over inheritance** for new game features
-- **All gameplay logic should be frame-rate independent** (use `dt` in updates)
-- **UI overlays** (start, game over, etc.) live in `lib/overlays/`
-- **High scores** are stored locally via Hive; no network or analytics
+### Component Pattern
+All game entities extend Flame `Component`. Key callbacks:
+```dart
+@override Future<void> onLoad() async { /* init hitboxes, cache paints */ }
+@override void onMount() { _gameRef = findGame() as OneBulletGame; } // cache once
+@override void update(double dt) { /* frame-rate independent logic */ }
+@override void render(Canvas canvas) { /* use cached Paint/Path only */ }
+```
 
-## Integration & Dependencies
-- **Flutter** (main UI/game framework)
-- **Flame** (game engine)
-- **Hive** (local storage)
-- **Vibration** (haptic feedback)
-- **Audio**: Use `audioplayers` or `AudioPool` for SFX
+### State Flow
+1. `OneBulletGame` manages overlays via string IDs (`startScreenOverlayId`, `gameOverOverlayId`, etc.)
+2. Game state: `_hasStarted`, `_isGameOver`, `_isPaused` flags control update logic
+3. Bullet fires → `WaveManager.start()` → callbacks: `onWaveChange`, `onSpeedChange`, `onSpawnDeflectors`
+4. Player death → `onPlayerDeath()` → shows death effect → delayed overlay transition
 
-## Examples
-- **Adding a new obstacle:**
-  - Create a new `Component` in `lib/components/`
-  - Register and spawn via `WaveManager` or `OneBulletGame`
-- **Optimizing a render loop:**
-  - Move `Paint`/`Path` creation to `onLoad`
-  - Avoid per-frame allocations in `render()`
+### Services (all in `lib/services/`)
+- `SoundService` - Static methods, throttled SFX playback with `_maxActivePlayers` cap
+- `AchievementService` - Play Games integration, time-based achievements
+- `AdService` - Rewarded ads for "continue" feature
+- `ScoreService` - Hive-based local high score persistence
 
-## References
-- [README.md](../README.md): Game design, features, and controls
-- [docs/flame_performance_audit.md](../docs/flame_performance_audit.md): Performance best practices
+## Performance Rules (Critical)
+Read `docs/flame_performance_audit.md` for full context. Key rules:
 
----
-**When in doubt, check `lib/one_bullet_game.dart` and `docs/flame_performance_audit.md` for canonical patterns.**
+1. **Cache Paint/Path in `onLoad`**, never create in `render()`:
+```dart
+late final Paint _bodyPaint;
+@override Future<void> onLoad() async {
+  _bodyPaint = Paint()..color = Colors.brown;
+}
+```
+
+2. **Avoid Vector2 temporaries** in hot paths:
+```dart
+// BAD: position += _velocity * dt;
+// GOOD:
+position.x += _velocity.x * dt;
+position.y += _velocity.y * dt;
+```
+
+3. **Deflector cap**: `_maxActiveDeflectors = 16` prevents collision system overload
+4. **SFX throttling**: Use `minIntervalMs` parameter in `_playSfx()` for frequent sounds
+
+## Conventions
+- **No global singletons** - access game via `findGame()` cached in `onMount()`
+- **All timing uses `dt`** - never use wall clock for gameplay logic
+- **Overlays** are Flutter widgets in `lib/overlays/`, registered in `main.dart`
+- **Achievements** defined as constants in `lib/services/achievement_service.dart`
+
+## Developer Workflow
+```bash
+flutter run                    # dev mode
+flutter build apk --release    # Android release
+flutter build ios --release    # iOS release
+```
+No automated tests - manual playtesting is primary.
+
+## Adding New Features
+
+**New obstacle type:**
+1. Create component in `lib/components/` extending `PositionComponent with CollisionCallbacks`
+2. Add hitbox in `onLoad()`, cache paints
+3. Spawn from `OneBulletGame._onSpawnDeflectors()` or new callback in `WaveManager`
+
+**New wave mechanic:**
+1. Modify `WaveConfig` in `wave_manager.dart`
+2. Add callback in `WaveManager` constructor, wire in `OneBulletGame._initializeGame()`
+
+## Key Dependencies
+- `flame: ^1.34.0` - Game engine
+- `flame_audio: ^2.11.13` - Sound via `FlameAudio.play()`
+- `hive_flutter` - Local storage for scores
+- `games_services` - Play Games achievements/leaderboards
+- `vibration` - Haptic feedback (check `Vibration.hasVibrator()` first)

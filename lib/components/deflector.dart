@@ -233,7 +233,24 @@ class DeflectorFragment extends PositionComponent {
          position: position,
          size: Vector2.all(fragmentSize),
          anchor: Anchor.center,
-       );
+       ) {
+    // Initialize paints and path immediately in constructor to avoid
+    // synchronous work in onLoad() that causes frame drops when many
+    // fragments spawn at once.
+    _fillPaint = Paint()..style = PaintingStyle.fill;
+    _borderPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    
+    // Pre-compute the fragment path (shape doesn't change)
+    final halfSize = fragmentSize / 2;
+    _fragmentPath = Path()
+      ..moveTo(halfSize * 0.2, halfSize * 0.1)
+      ..lineTo(halfSize * 1.8, halfSize * 0.3)
+      ..lineTo(halfSize * 1.6, halfSize * 1.7)
+      ..lineTo(halfSize * 0.4, halfSize * 1.5)
+      ..close();
+  }
 
   /// Velocity of the fragment.
   final Vector2 velocity;
@@ -269,26 +286,6 @@ class DeflectorFragment extends PositionComponent {
   late final Path _fragmentPath;
 
   @override
-  Future<void> onLoad() async {
-    await super.onLoad();
-    
-    // Initialize cached paints
-    _fillPaint = Paint()..style = PaintingStyle.fill;
-    _borderPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-    
-    // Pre-compute the fragment path (shape doesn't change)
-    final halfSize = fragmentSize / 2;
-    _fragmentPath = Path()
-      ..moveTo(halfSize * 0.2, halfSize * 0.1)
-      ..lineTo(halfSize * 1.8, halfSize * 0.3)
-      ..lineTo(halfSize * 1.6, halfSize * 1.7)
-      ..lineTo(halfSize * 0.4, halfSize * 1.5)
-      ..close();
-  }
-
-  @override
   void update(double dt) {
     super.update(dt);
 
@@ -307,8 +304,9 @@ class DeflectorFragment extends PositionComponent {
     // Apply friction
     velocity.scale(friction);
 
-    // Move fragment
-    position += velocity * dt;
+    // Move fragment (avoid temporary Vector2 allocation)
+    position.x += velocity.x * dt;
+    position.y += velocity.y * dt;
 
     // Rotate fragment
     angle += rotationSpeed * dt;
