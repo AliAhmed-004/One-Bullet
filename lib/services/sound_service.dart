@@ -5,14 +5,20 @@ class SoundService {
   static AudioPlayer? waveWarningPlayer;
   static final List<AudioPlayer> _activePlayers = [];
 
+  /// Tracks when each player was added (ms). Used for TTL-based pruning
+  /// as a fallback when onPlayerComplete or PlayerState are unreliable on Android.
+  static final Map<AudioPlayer, int> _playerAddedMs = {};
+
   /// Last timestamp (ms) each SFX was played, used for throttling.
   static final Map<String, int> _lastSfxPlayMs = {};
 
   /// Limit concurrent one-shot players to reduce audio churn under stress.
-  static const int _maxActivePlayers = 24;
+  static const int _maxActivePlayers = 32;
+
+  /// All SFX are short clips; 5 s TTL safely covers the longest one.
+  static const int _playerTtlMs = 5000;
 
   static Future<void> init() async {
-    // Preload sound effects
     await FlameAudio.audioCache.loadAll([
       'deflector_break.wav',
       'bullet_bounce.wav',
@@ -40,7 +46,9 @@ class SoundService {
       player.stop();
     }
     _activePlayers.clear();
-    _lastSfxPlayMs.clear();
+    _playerAddedMs.clear();
+    // Do NOT clear _lastSfxPlayMs — preserving throttle history prevents a
+    // burst of re-triggering immediately after a restart/menu transition.
     waveWarningPlayer = null;
   }
 
@@ -57,6 +65,23 @@ class SoundService {
       return;
     }
 
+    // Prune finished players. Two strategies because both onPlayerComplete and
+    // PlayerState are unreliable for short clips on Android:
+    //   1. State check  — fast path when state IS updated correctly.
+    //   2. TTL eviction — removes any player older than _playerTtlMs regardless.
+    _activePlayers.removeWhere((p) {
+      if (p.state == PlayerState.stopped || p.state == PlayerState.completed) {
+        _playerAddedMs.remove(p);
+        return true;
+      }
+      if (nowMs - (_playerAddedMs[p] ?? nowMs) > _playerTtlMs) {
+        _playerAddedMs.remove(p);
+        p.stop();
+        return true;
+      }
+      return false;
+    });
+
     // Enforce an upper bound to prevent runaway player creation.
     if (_activePlayers.length >= _maxActivePlayers) {
       return;
@@ -65,10 +90,12 @@ class SoundService {
     _lastSfxPlayMs[file] = nowMs;
 
     final player = await FlameAudio.play(file, volume: volume);
+    _playerAddedMs[player] = nowMs;
     _activePlayers.add(player);
 
     player.onPlayerComplete.listen((_) {
       _activePlayers.remove(player);
+      _playerAddedMs.remove(player);
     });
   }
 
@@ -94,7 +121,14 @@ class SoundService {
 
   static Future<void> playWaveWarning() async {
     if (!SettingsService.soundEnabled.value) return;
-    if (waveWarningPlayer != null) return;
+    // Guard against double-play, but check PlayerState rather than just
+    // non-null — onPlayerComplete may never fire on Android, leaving
+    // waveWarningPlayer non-null even after the audio finished.
+    if (waveWarningPlayer?.state == PlayerState.playing) return;
+    if (waveWarningPlayer != null) {
+      _activePlayers.remove(waveWarningPlayer);
+      waveWarningPlayer = null;
+    }
 
     waveWarningPlayer = await FlameAudio.play('wave_warning.wav', volume: 0.6);
     _activePlayers.add(waveWarningPlayer!);
