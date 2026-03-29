@@ -11,6 +11,8 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 ///
 /// Also provides rewarded ads for the "Continue" feature.
 class AdService {
+  static bool get _supportsAds => Platform.isAndroid || Platform.isIOS;
+
   // ===== Interstitial Ads =====
   static InterstitialAd? _interstitialAd;
   static bool _isInterstitialLoaded = false;
@@ -93,27 +95,30 @@ class AdService {
     _isRewardedLoaded = false;
 
     // Reset state
-    _pendingReward = false;
+    _pendingReward = false; 
     _onRewardEarnedCallback = null;
     _onAdDismissedWithoutRewardCallback = null;
     _deathCount = 0;
 
-    if (Platform.isAndroid || Platform.isIOS) {
-      await MobileAds.instance.initialize();
-      debugPrint('AdService: Mobile Ads SDK initialized');
-    } else {
+    if (!_supportsAds) {
       debugPrint('AdService: Mobile Ads SDK not initialized - unsupported platform');
+      return;
     }
+
+    await MobileAds.instance.initialize();
+    debugPrint('AdService: Mobile Ads SDK initialized');
 
     // Start loading ads immediately
     _loadInterstitialAd();
     _loadRewardedAd();
-
-    debugPrint('AdService: Mobile Ads SDK initialized');
   }
 
   // Configures ad request settings (e.g., content rating, child-directed treatment).
   static void setupAds() {
+    if (!_supportsAds) {
+      return;
+    }
+
     MobileAds.instance.updateRequestConfiguration(
       RequestConfiguration(
         maxAdContentRating: MaxAdContentRating.t,
@@ -218,6 +223,11 @@ class AdService {
     required VoidCallback onRewardEarned,
     VoidCallback? onAdDismissedWithoutReward,
   }) {
+    if (!_supportsAds) {
+      onAdDismissedWithoutReward?.call();
+      return;
+    }
+
     if (kDebugMode) {
       debugPrint('AdService: showRewardedAd() called');
       debugPrint('AdService: isRewardedAdReady=$isRewardedAdReady');
@@ -346,6 +356,10 @@ class AdService {
     int survivalTimeSeconds, {
     VoidCallback? onInterstitialDismissed,
   }) {
+    if (!_supportsAds) {
+      return false;
+    }
+
     _deathCount++;
 
     final bool hadGoodRun = survivalTimeSeconds >= _goodRunThresholdSeconds;
@@ -363,6 +377,10 @@ class AdService {
   /// Shows the interstitial ad if one is loaded.
   /// Returns true if an ad was shown.
   static bool _showInterstitialAd({VoidCallback? onDismissed}) {
+    if (!_supportsAds) {
+      return false;
+    }
+
     if (_isInterstitialLoaded && _interstitialAd != null) {
       _onInterstitialDismissedCallback = onDismissed;
       _interstitialAd!.show();

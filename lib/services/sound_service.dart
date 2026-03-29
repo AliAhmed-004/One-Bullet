@@ -1,9 +1,11 @@
 import 'package:flame_audio/flame_audio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:one_bullet/services/settings_service.dart';
 
 class SoundService {
   static AudioPlayer? waveWarningPlayer;
   static final List<AudioPlayer> _activePlayers = [];
+  static bool _audioBackendAvailable = true;
 
   /// Tracks when each player was added (ms). Used for TTL-based pruning
   /// as a fallback when onPlayerComplete or PlayerState are unreliable on Android.
@@ -19,14 +21,20 @@ class SoundService {
   static const int _playerTtlMs = 5000;
 
   static Future<void> init() async {
-    await FlameAudio.audioCache.loadAll([
-      'deflector_break.wav',
-      'bullet_bounce.wav',
-      'bullet_fire.wav',
-      'player_death.wav',
-      'high_score.wav',
-      'wave_warning.wav',
-    ]);
+    try {
+      await FlameAudio.audioCache.loadAll([
+        'deflector_break.wav',
+        'bullet_bounce.wav',
+        'bullet_fire.wav',
+        'player_death.wav',
+        'high_score.wav',
+        'wave_warning.wav',
+      ]);
+      _audioBackendAvailable = true;
+    } catch (e) {
+      _audioBackendAvailable = false;
+      debugPrint('SoundService: audio backend unavailable during init: $e');
+    }
   }
 
   static void pauseAll() {
@@ -57,7 +65,7 @@ class SoundService {
     required double volume,
     int minIntervalMs = 0,
   }) async {
-    if (!SettingsService.soundEnabled.value) return;
+    if (!SettingsService.soundEnabled.value || !_audioBackendAvailable) return;
 
     final nowMs = DateTime.now().millisecondsSinceEpoch;
     final previousMs = _lastSfxPlayMs[file] ?? 0;
@@ -89,14 +97,19 @@ class SoundService {
 
     _lastSfxPlayMs[file] = nowMs;
 
-    final player = await FlameAudio.play(file, volume: volume);
-    _playerAddedMs[player] = nowMs;
-    _activePlayers.add(player);
+    try {
+      final player = await FlameAudio.play(file, volume: volume);
+      _playerAddedMs[player] = nowMs;
+      _activePlayers.add(player);
 
-    player.onPlayerComplete.listen((_) {
-      _activePlayers.remove(player);
-      _playerAddedMs.remove(player);
-    });
+      player.onPlayerComplete.listen((_) {
+        _activePlayers.remove(player);
+        _playerAddedMs.remove(player);
+      });
+    } catch (e) {
+      _audioBackendAvailable = false;
+      debugPrint('[SoundService]: failed to play SFX "$file": $e');
+    }
   }
 
   static void playDeflectorBreak() {
@@ -120,7 +133,7 @@ class SoundService {
   }
 
   static Future<void> playWaveWarning() async {
-    if (!SettingsService.soundEnabled.value) return;
+    if (!SettingsService.soundEnabled.value || !_audioBackendAvailable) return;
     // Guard against double-play, but check PlayerState rather than just
     // non-null — onPlayerComplete may never fire on Android, leaving
     // waveWarningPlayer non-null even after the audio finished.
@@ -130,12 +143,17 @@ class SoundService {
       waveWarningPlayer = null;
     }
 
-    waveWarningPlayer = await FlameAudio.play('wave_warning.wav', volume: 0.6);
-    _activePlayers.add(waveWarningPlayer!);
+    try {
+      waveWarningPlayer = await FlameAudio.play('wave_warning.wav', volume: 0.6);
+      _activePlayers.add(waveWarningPlayer!);
 
-    waveWarningPlayer!.onPlayerComplete.listen((_) {
-      _activePlayers.remove(waveWarningPlayer);
-      waveWarningPlayer = null;
-    });
+      waveWarningPlayer!.onPlayerComplete.listen((_) {
+        _activePlayers.remove(waveWarningPlayer);
+        waveWarningPlayer = null;
+      });
+    } catch (e) {
+      _audioBackendAvailable = false;
+      debugPrint('[SoundService]: failed to play wave warning: $e');
+    }
   }
 }

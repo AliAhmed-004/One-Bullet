@@ -1,5 +1,6 @@
 import 'package:flame/flame.dart';
 import 'package:flame/game.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:one_bullet/one_bullet_game.dart';
@@ -16,17 +17,24 @@ import 'package:one_bullet/services/ad_service.dart';
 import 'package:one_bullet/services/score_service.dart';
 import 'package:one_bullet/services/settings_service.dart';
 
+bool get _isMobilePlatform =>
+    !kIsWeb &&
+    (defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS);
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Hive for high score storage
   await ScoreService.init();
 
-  // Initialize Google Mobile Ads SDK
-  AdService.init();
+  if (_isMobilePlatform) {
+    // Initialize Google Mobile Ads SDK
+    AdService.init();
 
-  // Set up ad configurations
-  AdService.setupAds();
+    // Set up ad configurations
+    AdService.setupAds();
+  }
 
   // Initialize settings service
   await SettingsService.init();
@@ -35,7 +43,9 @@ void main() async {
   await AchievementService.instance.init();
 
   // Initialize Play Games Services (will sync achievements if signed in)
-  await PlayGamesService.instance.initialize();
+  if (_isMobilePlatform) {
+    await PlayGamesService.instance.initialize();
+  }
 
   Flame.device.fullScreen();
   Flame.device.setPortrait();
