@@ -41,7 +41,7 @@ class StartScreenOverlay extends StatelessWidget {
                         IconButton(
                           icon: Icon(
                             Icons.emoji_events,
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.secondary,
                             size: titleFontSize * 0.56,
                           ),
                           tooltip: 'Achievements',
@@ -52,7 +52,7 @@ class StartScreenOverlay extends StatelessWidget {
                         IconButton(
                           icon: Icon(
                             Icons.settings,
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.secondary,
                             size: titleFontSize * 0.6,
                           ),
                           onPressed: () {
@@ -115,7 +115,9 @@ class StartScreenOverlay extends StatelessWidget {
                             vertical: 10,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.4),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.secondary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
                               color: Colors.amber.withValues(alpha: 0.3),
@@ -184,7 +186,7 @@ class StartScreenOverlay extends StatelessWidget {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.2),
+                          color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Column(
