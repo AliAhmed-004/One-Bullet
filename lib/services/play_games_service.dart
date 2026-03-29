@@ -67,6 +67,23 @@ class PlayGamesService {
     }
   }
 
+  // show leaderboards
+  Future<void> showLeaderboards() async {
+    if (!_isSignedIn) {
+      debugPrint(
+        '[PLAY GAMES SERVICE] Cannot show leaderboards: not signed in',
+      );
+      return;
+    }
+
+    try {
+      await GamesServices.showLeaderboards();
+      debugPrint('[PLAY GAMES SERVICE] Show leaderboards successful');
+    } catch (e) {
+      debugPrint('[PLAY GAMES SERVICE] Show leaderboards failed: $e');
+    }
+  }
+
   /// show achievements
   Future<void> showAchievements() async {
     if (!_isSignedIn) {

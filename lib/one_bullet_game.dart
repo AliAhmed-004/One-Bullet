@@ -322,8 +322,10 @@ class OneBulletGame extends FlameGame
     lastUnlockedAchievements = AchievementService.instance
         .getAchievementsForSurvivalTime(secondsSurvived);
 
-    // Check high score
-    isNewHighScore = ScoreService.checkAndSaveHighScore(survivalTime.value);
+    // Check high score (local save only; leaderboard sync happens later)
+    isNewHighScore = ScoreService.checkAndSaveHighScoreLocally(
+      survivalTime.value,
+    );
 
     // Spawn death effect fragments
     final fragments = PlayerDeathEffect.createFragments(
@@ -387,7 +389,7 @@ class OneBulletGame extends FlameGame
     overlays.remove(gameHudOverlayId);
     overlays.add(gameOverOverlayId);
 
-    // Now unlock achievements with Play Games (native popup will show over game over screen)
+    // Now unlock achievements and sync leaderboard (native popups will show over game over screen)
     if (lastUnlockedAchievements.isNotEmpty) {
       // Small delay to let game over overlay render first
       Future.delayed(const Duration(milliseconds: 300), () {
@@ -395,6 +397,11 @@ class OneBulletGame extends FlameGame
           lastUnlockedAchievements,
         );
       });
+    }
+
+    // Save high score to leaderboard asynchronously (non-blocking)
+    if (isNewHighScore) {
+      ScoreService.saveScoreToGooglePlayGames(survivalTime.value);
     }
   }
 

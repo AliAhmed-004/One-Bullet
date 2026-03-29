@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
+import 'package:games_services/games_services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:one_bullet/services/play_games_service.dart';
 
 /// Service for managing high scores using Hive local storage.
 class ScoreService {
@@ -21,15 +25,37 @@ class ScoreService {
     highScore.value = Duration(milliseconds: savedMilliseconds);
   }
 
-  /// Checks if the given score is a new high score and saves it if so.
+  /// Checks if the given score is a new high score and saves it locally only.
+  /// This is fast and non-blocking. Leaderboard sync happens separately.
   /// Returns true if it's a new record.
-  static bool checkAndSaveHighScore(Duration score) {
+  static bool checkAndSaveHighScoreLocally(Duration score) {
     if (score > highScore.value) {
       highScore.value = score;
-      _box?.put(_highScoreKey, score.inMilliseconds);
+      final box = _box;
+      if (box != null) {
+        // Fire-and-forget local save; Hive is fast enough
+        unawaited(box.put(_highScoreKey, score.inMilliseconds));
+      }
       return true;
     }
     return false;
+  }
+
+  static Future<void> saveScoreToGooglePlayGames(Duration score) async {
+    if (!PlayGamesService.instance.isSignedIn) {
+      return;
+    }
+
+    try {
+      await Leaderboards.submitScore(
+        score: Score(
+          androidLeaderboardID: 'CgkIvLXzppUPEAIQBw',
+          value: score.inMilliseconds,
+        ),
+      );
+    } catch (e) {
+      debugPrint('[SCORE SERVICE] Failed to submit leaderboard score: $e');
+    }
   }
 
   /// Formats a duration as MM:SS string.

@@ -34,10 +34,20 @@ class StartScreenOverlay extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Settings & Achievements Buttons (top-right corner)
+                    // Settings, High Score & Achievements Buttons (top-right corner)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
+                        IconButton(
+                          icon: Icon(
+                            Icons.leaderboard,
+                            color: Theme.of(context).colorScheme.secondary,
+                            size: titleFontSize * 0.56,
+                          ),
+                          tooltip: 'Leaderboard',
+                          onPressed: () =>
+                              PlayGamesService.instance.showLeaderboards(),
+                        ),
                         IconButton(
                           icon: Icon(
                             Icons.emoji_events,
@@ -186,7 +196,9 @@ class StartScreenOverlay extends StatelessWidget {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.3),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.secondary.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Column(
