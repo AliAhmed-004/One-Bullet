@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:games_services/games_services.dart';
 import 'package:one_bullet/one_bullet_game.dart';
@@ -14,14 +15,24 @@ class LeaderboardsOverlay extends StatefulWidget {
   State<LeaderboardsOverlay> createState() => _LeaderboardsOverlayState();
 }
 
+enum _ConnectionState {
+  connected,
+  disconnected,
+  unknown,
+}
+
 class _LeaderboardsOverlayState extends State<LeaderboardsOverlay>
     with SingleTickerProviderStateMixin {
   bool _isLoading = true;
+  bool _hasError = false;
+  String _errorMessage = '';
   final List<LeaderboardScoreData> _scores = [];
+  _ConnectionState _connectionState = _ConnectionState.unknown;
 
   late final AnimationController _controller;
   late final Animation<double> _fade;
   late final Animation<double> _scale;
+  late final Connectivity _connectivity;
 
   @override
   void initState() {
@@ -38,8 +49,66 @@ class _LeaderboardsOverlayState extends State<LeaderboardsOverlay>
       end: 1.0,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
 
+    _connectivity = Connectivity();
     _controller.forward();
-    _loadLeaderboards();
+    _setupConnectivityListener();
+    _checkConnectivityAndLoad();
+  }
+
+  Future<void> _checkConnectivityAndLoad() async {
+    final result = await _connectivity.checkConnectivity();
+    final isConnected = result.contains(ConnectivityResult.mobile) ||
+        result.contains(ConnectivityResult.wifi) ||
+        result.contains(ConnectivityResult.ethernet);
+
+    if (mounted) {
+      setState(() {
+        _connectionState = isConnected
+            ? _ConnectionState.connected
+            : _ConnectionState.disconnected;
+      });
+
+      if (isConnected) {
+        _loadLeaderboards();
+      } else {
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+          _errorMessage = 'No internet connection';
+        });
+      }
+    }
+  }
+
+  void _setupConnectivityListener() {
+    _connectivity.onConnectivityChanged.listen((result) {
+      final isConnected = result.contains(ConnectivityResult.mobile) ||
+          result.contains(ConnectivityResult.wifi) ||
+          result.contains(ConnectivityResult.ethernet);
+
+      if (mounted) {
+        setState(() {
+          _connectionState = isConnected
+              ? _ConnectionState.connected
+              : _ConnectionState.disconnected;
+        });
+
+        // Auto-load when connection is restored
+        if (isConnected && _hasError && _connectionState == _ConnectionState.connected) {
+          _resetAndLoad();
+        }
+      }
+    });
+  }
+
+  Future<void> _resetAndLoad() async {
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+      _errorMessage = '';
+      _scores.clear();
+    });
+    await _loadLeaderboards();
   }
 
   @override
@@ -50,6 +119,23 @@ class _LeaderboardsOverlayState extends State<LeaderboardsOverlay>
 
   // Load leaderboards data from Play Games Services.
   Future<void> _loadLeaderboards() async {
+    // Check connectivity before attempting to load
+    final connectivityResult = await _connectivity.checkConnectivity();
+    final isConnected = connectivityResult.contains(ConnectivityResult.mobile) ||
+        connectivityResult.contains(ConnectivityResult.wifi) ||
+        connectivityResult.contains(ConnectivityResult.ethernet);
+
+    if (!isConnected) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+          _errorMessage = 'No internet connection';
+        });
+      }
+      return;
+    }
+
     try {
       // Fetch LeaderboardScoreData
       final fetchedScores = await PlayGamesService.instance
@@ -59,6 +145,7 @@ class _LeaderboardsOverlayState extends State<LeaderboardsOverlay>
         if (fetchedScores.isEmpty) {
           setState(() {
             _isLoading = false;
+            _hasError = false;
           });
           return;
         }
@@ -67,12 +154,15 @@ class _LeaderboardsOverlayState extends State<LeaderboardsOverlay>
           _scores.clear();
           _scores.addAll(fetchedScores);
           _isLoading = false;
+          _hasError = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
+          _hasError = true;
+          _errorMessage = 'Failed to load leaderboards: $e';
         });
       }
       debugPrint('Error loading leaderboards: $e');
@@ -144,6 +234,10 @@ class _LeaderboardsOverlayState extends State<LeaderboardsOverlay>
   }
 
   Widget _buildContent() {
+    if (_hasError) {
+      return _buildErrorState();
+    }
+
     if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
@@ -206,6 +300,74 @@ class _LeaderboardsOverlayState extends State<LeaderboardsOverlay>
           ),
         );
       },
+    );
+  }
+
+  Widget _buildErrorState() {
+    final isNoInternet = _errorMessage.contains('No internet connection');
+
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isNoInternet ? Icons.cloud_off : Icons.error_outline,
+            color: Colors.orangeAccent,
+            size: 48,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _errorMessage,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 24),
+          if (isNoInternet)
+            Text(
+              _connectionState == _ConnectionState.disconnected
+                  ? 'Waiting for connection...'
+                  : 'Please check your connection',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white54,
+                fontSize: 13,
+              ),
+            )
+          else
+            GestureDetector(
+              onTap: _resetAndLoad,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.orange.withValues(alpha: 0.4),
+                  ),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.refresh, color: Colors.orange, size: 18),
+                    SizedBox(width: 8),
+                    Text(
+                      'Retry',
+                      style: TextStyle(
+                        color: Colors.orange,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
