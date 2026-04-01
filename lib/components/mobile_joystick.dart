@@ -1,21 +1,17 @@
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
-import 'package:one_bullet/components/player.dart';
 
 /// A mobile joystick that appears when the user drags in the activation
 /// zone. Controls the player's movement direction.
 class MobileJoystick extends PositionComponent with DragCallbacks {
   MobileJoystick({
-    required Player player,
     required bool Function(Vector2 position) isInActivationZone,
     required VoidCallback onMovementStart,
-  }) : _player = player,
-       _isInActivationZone = isInActivationZone,
-       _onMovementStart = onMovementStart;
-
-  /// Reference to the player to control.
-  Player _player;
+    required void Function(Vector2 input) onInputChanged,
+  }) : _isInActivationZone = isInActivationZone,
+       _onMovementStart = onMovementStart,
+       _onInputChanged = onInputChanged;
 
   /// Callback to determine if a screen position is in the joystick activation zone.
   final bool Function(Vector2 position) _isInActivationZone;
@@ -23,10 +19,8 @@ class MobileJoystick extends PositionComponent with DragCallbacks {
   /// Callback for when player starts moving via joystick drag.
   final VoidCallback _onMovementStart;
 
-  /// Updates the player reference (used when player respawns after continue).
-  void updatePlayer(Player newPlayer) {
-    _player = newPlayer;
-  }
+  /// Callback for movement direction updates from the joystick.
+  final void Function(Vector2 input) _onInputChanged;
 
   /// Radius of the joystick base circle.
   static const double baseRadius = 60.0;
@@ -124,14 +118,14 @@ class MobileJoystick extends PositionComponent with DragCallbacks {
       _direction
         ..setFrom(_offset)
         ..normalize();
-      _player.setMovementDirection(_direction);
+      _onInputChanged(_direction);
 
       if (!_hasMovementInCurrentDrag) {
         _hasMovementInCurrentDrag = true;
         _onMovementStart();
       }
     } else {
-      _player.stopMovement();
+      _onInputChanged(Vector2.zero());
     }
   }
 
@@ -147,11 +141,11 @@ class MobileJoystick extends PositionComponent with DragCallbacks {
     _deactivate();
   }
 
-  /// Deactivates the joystick and stops player movement.
+  /// Deactivates the joystick and clears movement input.
   void _deactivate() {
     _isActive = false;
     _hasMovementInCurrentDrag = false;
-    _player.stopMovement();
+    _onInputChanged(Vector2.zero());
   }
 
   @override

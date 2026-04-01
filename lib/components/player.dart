@@ -1,13 +1,12 @@
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:one_bullet/components/aim_indicator.dart';
 import 'package:one_bullet/components/bullet.dart';
 import 'package:one_bullet/one_bullet_game.dart';
 
 /// The Player component - a circle that the user controls.
-class Player extends CircleComponent with KeyboardHandler, CollisionCallbacks {
+class Player extends CircleComponent with CollisionCallbacks {
   Player({required super.position, Color? color, this.skipAimIndicator = false})
     : super(
         anchor: Anchor.center,
@@ -41,27 +40,6 @@ class Player extends CircleComponent with KeyboardHandler, CollisionCallbacks {
 
   /// Returns the current aim direction from the indicator.
   Vector2 get aimDirection => aimIndicator?.aimDirection ?? Vector2(0, -1);
-
-  /// Current movement direction (normalized or zero).
-  /// This can be set by keyboard input OR joystick input.
-  final Vector2 _movementDirection = Vector2.zero();
-
-  /// Getter for movement direction (useful for external joystick control).
-  Vector2 get movementDirection => _movementDirection;
-
-  /// Set movement direction externally (e.g., from a joystick).
-  /// The vector should be normalized or have magnitude <= 1.
-  void setMovementDirection(Vector2 direction) {
-    _movementDirection.setFrom(direction);
-  }
-
-  /// Stops player movement without allocating a new vector.
-  void stopMovement() {
-    _movementDirection.setZero();
-  }
-
-  // Track which keys are currently pressed
-  final Set<LogicalKeyboardKey> _keysPressed = {};
   
   /// Cached reference to the game (avoid findGame() each frame).
   OneBulletGame? _gameRef;
@@ -99,16 +77,12 @@ class Player extends CircleComponent with KeyboardHandler, CollisionCallbacks {
     }
   }
 
-  @override
-  void update(double dt) {
-    super.update(dt);
-
-    // Calculate movement based on direction and speed
-    if (_movementDirection.length2 > 0) {
-      position.addScaled(_movementDirection, speed * dt);
+  /// Moves the player using normalized (or zero) input from the game.
+  void move(Vector2 input, double dt) {
+    if (input.length2 > 0) {
+      position.addScaled(input, speed * dt);
     }
 
-    // Clamp player position to stay within game bounds
     _clampToGameBounds();
   }
 
@@ -121,47 +95,5 @@ class Player extends CircleComponent with KeyboardHandler, CollisionCallbacks {
 
     position.x = position.x.clamp(bounds.left, bounds.right);
     position.y = position.y.clamp(bounds.top, bounds.bottom);
-  }
-
-  @override
-  bool onKeyEvent(KeyEvent event, Set<LogicalKeyboardKey> keysPressed) {
-    _keysPressed.clear();
-    _keysPressed.addAll(keysPressed);
-
-    // Update movement direction based on pressed keys
-    _updateMovementFromKeyboard();
-
-    return false; // Allow other components to also handle the event
-  }
-
-  /// Updates the movement direction based on currently pressed keys.
-  void _updateMovementFromKeyboard() {
-    // Reset direction
-    _movementDirection.setZero();
-
-    // Check for horizontal movement (A/D or Left/Right arrows)
-    if (_keysPressed.contains(LogicalKeyboardKey.keyA) ||
-        _keysPressed.contains(LogicalKeyboardKey.arrowLeft)) {
-      _movementDirection.x -= 1;
-    }
-    if (_keysPressed.contains(LogicalKeyboardKey.keyD) ||
-        _keysPressed.contains(LogicalKeyboardKey.arrowRight)) {
-      _movementDirection.x += 1;
-    }
-
-    // Check for vertical movement (W/S or Up/Down arrows)
-    if (_keysPressed.contains(LogicalKeyboardKey.keyW) ||
-        _keysPressed.contains(LogicalKeyboardKey.arrowUp)) {
-      _movementDirection.y -= 1;
-    }
-    if (_keysPressed.contains(LogicalKeyboardKey.keyS) ||
-        _keysPressed.contains(LogicalKeyboardKey.arrowDown)) {
-      _movementDirection.y += 1;
-    }
-
-    // Normalize diagonal movement so it's not faster
-    if (_movementDirection.length > 0) {
-      _movementDirection.normalize();
-    }
   }
 }

@@ -45,8 +45,14 @@ class StartScreenOverlay extends StatelessWidget {
                             size: titleFontSize * 0.56,
                           ),
                           tooltip: 'Leaderboard',
-                          onPressed: () =>
-                              PlayGamesService.instance.showLeaderboards(),
+                          onPressed: () {
+                            game.overlays.add(
+                              OneBulletGame.leaderboardsOverlayId,
+                            );
+                            game.overlays.remove(
+                              OneBulletGame.startScreenOverlayId,
+                            );
+                          },
                         ),
                         IconButton(
                           icon: Icon(
@@ -55,8 +61,9 @@ class StartScreenOverlay extends StatelessWidget {
                             size: titleFontSize * 0.56,
                           ),
                           tooltip: 'Achievements',
-                          onPressed: () =>
-                              PlayGamesService.instance.showAchievements(),
+                          onPressed: () {
+                            PlayGamesService.instance.showAchievements();
+                          },
                         ),
                         const SizedBox(width: 8),
                         IconButton(

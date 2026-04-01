@@ -66,7 +66,9 @@ class PlayGamesService {
 
   Future<bool> signIn() async {
     if (!_supportsPlayGames) {
-      debugPrint('[PLAY GAMES SERVICE] Sign-in skipped on unsupported platform');
+      debugPrint(
+        '[PLAY GAMES SERVICE] Sign-in skipped on unsupported platform',
+      );
       return false;
     }
 
@@ -109,6 +111,55 @@ class PlayGamesService {
       debugPrint('[PLAY GAMES SERVICE] Show leaderboards successful');
     } catch (e) {
       debugPrint('[PLAY GAMES SERVICE] Show leaderboards failed: $e');
+    }
+  }
+
+  // Load leaderboard scores (for internal use, not UI)
+  Future<List<LeaderboardScoreData>> loadLeaderboardScores({
+    int maxResults = 10,
+  }) async {
+    if (!_supportsPlayGames) {
+      debugPrint(
+        '[PLAY GAMES SERVICE] Cannot load leaderboard scores: unsupported platform',
+      );
+      return [];
+    }
+
+    if (!_isSignedIn) {
+      debugPrint(
+        '[PLAY GAMES SERVICE] Cannot load leaderboard scores: not signed in',
+      );
+      return [];
+    }
+
+    try {
+      final scores = await GamesServices.loadLeaderboardScores(
+        maxResults: maxResults,
+        androidLeaderboardID: "CgkIvLXzppUPEAIQBw",
+        timeScope: TimeScope.allTime,
+        scope: PlayerScope.global,
+      );
+
+      if (scores == null) {
+        debugPrint(
+          '[PLAY GAMES SERVICE] Load leaderboard scores returned null ',
+        );
+        return [];
+      }
+
+      debugPrint(
+        '[PLAY GAMES SERVICE] Load leaderboard scores successful: ${scores.length} scores loaded',
+      );
+
+      if (scores.isEmpty) {
+        debugPrint('[PLAY GAMES SERVICE] No scores found for leaderboard ');
+        return [];
+      }
+
+      return scores;
+    } catch (e) {
+      debugPrint('[PLAY GAMES SERVICE] Load leaderboard scores failed: $e');
+      return [];
     }
   }
 

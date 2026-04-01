@@ -3,7 +3,9 @@ import 'dart:math' as math;
 
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:one_bullet/components/arena_boundary.dart';
 import 'package:one_bullet/components/bullet.dart';
 import 'package:one_bullet/components/deflector.dart';
@@ -16,14 +18,16 @@ import 'package:one_bullet/services/score_service.dart';
 import 'package:one_bullet/services/sound_service.dart';
 import 'package:one_bullet/services/achievement_service.dart';
 
+enum ControlMode { player, bot }
+
 /// The main game class for One Bullet.
 ///
-/// Uses HasKeyboardHandlerComponents to enable keyboard input for components.
+/// Uses KeyboardEvents to capture movement/debug key input at game level.
 /// Uses TapCallbacks to handle tap-to-fire mechanic.
 /// Uses HasCollisionDetection for bullet-player collision.
 class OneBulletGame extends FlameGame
     with
-        HasKeyboardHandlerComponents,
+    KeyboardEvents,
         DragCallbacks,
         TapCallbacks,
         HasCollisionDetection {
@@ -47,6 +51,9 @@ class OneBulletGame extends FlameGame
   /// Overlay ID to show the full achievements list.
   static const String achievementsOverlayId = 'achievements';
 
+  /// Overlay ID to show the leaderboards.
+  static const String leaderboardsOverlayId = 'leaderboards';
+
   /// Height reserved for the HUD at the top of the screen.
   static const double hudHeight = 125.0;
 
@@ -64,6 +71,20 @@ class OneBulletGame extends FlameGame
 
   /// Reference to the wave manager.
   WaveManager? waveManager;
+
+  /// Active control source for player movement.
+  ControlMode controlMode = ControlMode.player;
+
+  /// Optional recording mode to keep captures clean and deterministic.
+  bool isRecordingMode = false;
+
+  /// Bot tuning parameters.
+  double dangerRadius = 90;
+  double predictionTime = 0.8;
+  double panicRandomness = 0.3;
+  double mistakeChance = 0.05;
+  double idleSpeed = 0.6;
+  double botFireDelaySeconds = 2.5;
 
   /// Timer for delayed game over screen (cancellable).
   Timer? _gameOverTimer;
@@ -109,6 +130,34 @@ class OneBulletGame extends FlameGame
   /// List of currently unlocked achievement IDs (cached for quick access).
   List<Achievement> lastUnlockedAchievements = [];
 
+  /// Player input collected from keyboard.
+  final Vector2 _keyboardInput = Vector2.zero();
+
+  /// Player input collected from mobile joystick.
+  final Vector2 _joystickInput = Vector2.zero();
+
+  /// Reused vector for merged player input.
+  final Vector2 _movementInput = Vector2.zero();
+
+  /// Reused vector for bot output.
+  final Vector2 _botInput = Vector2.zero();
+
+  /// Reused vector for predicted bullet position.
+  final Vector2 _botFutureBulletPos = Vector2.zero();
+
+  /// Reused vector for panic direction.
+  final Vector2 _botPanicDirection = Vector2.zero();
+
+  /// Reused vector for randomness added to panic movement.
+  final Vector2 _botRandomness = Vector2.zero();
+
+  /// Reused vector for delayed bot decisions.
+  final Vector2 _botDelayedInput = Vector2.zero();
+
+  double _botTime = 0;
+  double _botReactionDelayRemaining = 0;
+  double _botFireDelayRemaining = 0;
+
   @override
   Future<void> onLoad() async {
     await super.onLoad();
@@ -140,6 +189,14 @@ class OneBulletGame extends FlameGame
     isNewHighScore = false;
     _elapsedSeconds = 0;
     survivalTime.value = Duration.zero;
+    _keyboardInput.setZero();
+    _joystickInput.setZero();
+    _movementInput.setZero();
+    _botInput.setZero();
+    _botDelayedInput.setZero();
+    _botReactionDelayRemaining = 0;
+    _botFireDelayRemaining = botFireDelaySeconds;
+    _botTime = 0;
 
     // Create and add the player at the center of the arena
     // Offset slightly down to account for HUD space
@@ -149,9 +206,9 @@ class OneBulletGame extends FlameGame
 
     // Add the mobile joystick (renders in screen space, not world space)
     joystick = MobileJoystick(
-      player: player!,
       isInActivationZone: _isInArena,
       onMovementStart: _onPlayerMovementStart,
+      onInputChanged: _setJoystickInput,
     );
     camera.viewport.add(joystick!);
 
@@ -176,6 +233,16 @@ class OneBulletGame extends FlameGame
   void update(double dt) {
     super.update(dt);
 
+    if (_hasStarted && !_isGameOver && !_isPaused && player != null) {
+      final input = getMovementInput(dt);
+      player!.move(input, dt);
+
+      // Preserve "move to fire" behavior through the centralized input path.
+      if (!player!.hasFired && input.length2 > 0 && _canAutoFire(dt)) {
+        _fireBullet();
+      }
+    }
+
     if (_hasStarted && !_isGameOver && !_isPaused && player?.hasFired == true) {
       _elapsedSeconds += dt;
       _uiUpdateAccumulator += dt;
@@ -191,8 +258,34 @@ class OneBulletGame extends FlameGame
   }
 
   @override
+  KeyEventResult onKeyEvent(
+    KeyEvent event,
+    Set<LogicalKeyboardKey> keysPressed,
+  ) {
+    _updateKeyboardInput(keysPressed);
+
+    if (event is KeyDownEvent && kDebugMode) {
+      if (event.logicalKey == LogicalKeyboardKey.keyB) {
+        toggleBotMode();
+        return KeyEventResult.handled;
+      }
+
+      if (event.logicalKey == LogicalKeyboardKey.keyR) {
+        isRecordingMode = !isRecordingMode;
+        return KeyEventResult.handled;
+      }
+    }
+
+    return KeyEventResult.ignored;
+  }
+
+  @override
   void onTapDown(TapDownEvent event) {
     super.onTapDown(event);
+
+    if (controlMode == ControlMode.bot) {
+      return;
+    }
 
     // Don't fire if game not started, game over, or already fired.
     if (!_hasStarted || _isGameOver || player == null || player!.hasFired) {
@@ -205,11 +298,163 @@ class OneBulletGame extends FlameGame
 
   /// Called when player starts moving via joystick.
   void _onPlayerMovementStart() {
+    if (controlMode == ControlMode.bot) return;
+
     if (!_hasStarted || _isGameOver || player == null || player!.hasFired) {
       return;
     }
 
     _fireBullet();
+  }
+
+  /// Merges control sources into a single movement vector.
+  Vector2 getMovementInput(double dt) {
+    if (controlMode == ControlMode.bot) {
+      return getBotInput(dt);
+    }
+
+    _movementInput
+      ..setFrom(_keyboardInput)
+      ..add(_joystickInput);
+
+    if (_movementInput.length2 > 1) {
+      _movementInput.normalize();
+    }
+
+    return _movementInput;
+  }
+
+  /// Returns bot-generated movement input for cinematic dodging.
+  Vector2 getBotInput(double dt) {
+    _botTime += dt;
+
+    if (player == null) {
+      _botInput.setZero();
+      return _botInput;
+    }
+
+    if (_botReactionDelayRemaining > 0) {
+      _botReactionDelayRemaining -= dt;
+      _botInput.setFrom(_botDelayedInput);
+      return _botInput;
+    }
+
+    final hasLiveBullet = bullet != null && player!.hasFired;
+    if (!hasLiveBullet) {
+      _setIdleBotInput();
+      return _botInput;
+    }
+
+    _botFutureBulletPos
+      ..setFrom(bullet!.position)
+      ..addScaled(bullet!.velocity, predictionTime);
+
+    final distanceToFuturePos = player!.position.distanceTo(_botFutureBulletPos);
+    if (distanceToFuturePos > dangerRadius) {
+      _setIdleBotInput();
+      return _botInput;
+    }
+
+    _botPanicDirection
+      ..setFrom(player!.position)
+      ..sub(_botFutureBulletPos);
+
+    if (_botPanicDirection.length2 < 0.0001) {
+      _botPanicDirection
+        ..setValues(_rng.nextDouble() * 2 - 1, _rng.nextDouble() * 2 - 1)
+        ..normalize();
+    }
+
+    _botRandomness
+      ..setValues(_rng.nextDouble() * 2 - 1, _rng.nextDouble() * 2 - 1)
+      ..scale(panicRandomness);
+
+    _botInput
+      ..setFrom(_botPanicDirection)
+      ..add(_botRandomness);
+
+    if (_botInput.length2 > 0) {
+      _botInput.normalize();
+    }
+
+    if (_rng.nextDouble() < mistakeChance) {
+      _botInput.scale(-1);
+    }
+
+    // Optional reaction delay to avoid machine-perfect inputs.
+    _botDelayedInput.setFrom(_botInput);
+    _botReactionDelayRemaining = 0.03 + _rng.nextDouble() * 0.09;
+
+    return _botInput;
+  }
+
+  /// Debug-only toggle for bot control mode.
+  void toggleBotMode() {
+    if (!kDebugMode) return;
+
+    controlMode =
+        (controlMode == ControlMode.player) ? ControlMode.bot : ControlMode.player;
+
+    if (controlMode == ControlMode.bot && player?.hasFired == false) {
+      _botFireDelayRemaining = botFireDelaySeconds;
+    }
+  }
+
+  bool _canAutoFire(double dt) {
+    if (controlMode != ControlMode.bot) {
+      return true;
+    }
+
+    if (_botFireDelayRemaining <= 0) {
+      return true;
+    }
+
+    _botFireDelayRemaining -= dt;
+    return _botFireDelayRemaining <= 0;
+  }
+
+  void _setIdleBotInput() {
+    _botInput.setValues(
+      math.sin(_botTime * 0.9),
+      math.cos(_botTime * 0.7 + 1.2),
+    );
+
+    if (_botInput.length2 > 0) {
+      _botInput.normalize();
+    }
+
+    _botInput.scale(idleSpeed);
+    _botDelayedInput.setFrom(_botInput);
+    _botReactionDelayRemaining = 0;
+  }
+
+  void _setJoystickInput(Vector2 input) {
+    _joystickInput.setFrom(input);
+  }
+
+  void _updateKeyboardInput(Set<LogicalKeyboardKey> keysPressed) {
+    _keyboardInput.setZero();
+
+    if (keysPressed.contains(LogicalKeyboardKey.keyA) ||
+        keysPressed.contains(LogicalKeyboardKey.arrowLeft)) {
+      _keyboardInput.x -= 1;
+    }
+    if (keysPressed.contains(LogicalKeyboardKey.keyD) ||
+        keysPressed.contains(LogicalKeyboardKey.arrowRight)) {
+      _keyboardInput.x += 1;
+    }
+    if (keysPressed.contains(LogicalKeyboardKey.keyW) ||
+        keysPressed.contains(LogicalKeyboardKey.arrowUp)) {
+      _keyboardInput.y -= 1;
+    }
+    if (keysPressed.contains(LogicalKeyboardKey.keyS) ||
+        keysPressed.contains(LogicalKeyboardKey.arrowDown)) {
+      _keyboardInput.y += 1;
+    }
+
+    if (_keyboardInput.length2 > 0) {
+      _keyboardInput.normalize();
+    }
   }
 
   /// Returns true if a screen-space point is inside the arena.
@@ -538,9 +783,6 @@ class OneBulletGame extends FlameGame
     final playerStartY = hudHeight / 2;
     player = Player(position: Vector2(0, playerStartY), skipAimIndicator: true);
     world.add(player!);
-
-    // Update joystick reference to new player
-    joystick?.updatePlayer(player!);
 
     // Show HUD
     overlays.add(gameHudOverlayId);

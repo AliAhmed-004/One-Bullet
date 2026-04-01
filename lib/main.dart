@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/overlays/game_hud_overlay.dart';
 import 'package:one_bullet/overlays/game_over_overlay.dart';
+import 'package:one_bullet/overlays/leaderboards_overlay.dart';
 import 'package:one_bullet/overlays/pause_overlay.dart';
 import 'package:one_bullet/overlays/settings_overlay.dart';
 import 'package:one_bullet/overlays/start_screen_overlay.dart';
@@ -76,6 +77,8 @@ class OneBullet extends StatelessWidget {
               GameOverOverlay(game: game),
           OneBulletGame.settingsOverlayId: (context, game) =>
               SettingsOverlay(game: game),
+          OneBulletGame.leaderboardsOverlayId: (context, game) =>
+              LeaderboardsOverlay(game: game),
         },
       ),
     );
