@@ -86,7 +86,7 @@ class Bullet extends SpriteComponent with CollisionCallbacks {
     // === Spawn directly from the visual tail of the bullet ===
     // Use half the sprite width to ensure it's at the back edge
     final spawnPosition = position - dir * (size.x * 0.6);
-    
+
     // Optional: tiny perpendicular jitter for a more natural "fiery" look
     // final perp = Vector2(-dir.y, dir.x);
     // spawnPosition.addScaled(perp, (_rng.nextDouble() - 0.5) * 3.0);
@@ -268,7 +268,7 @@ class FireParticle extends CircleComponent {
     // Fade out
     final opacity = (life / 0.6).clamp(0.0, 1.0);
     paint = Paint()
-      ..color = _baseColor.withOpacity(opacity)
+      ..color = _baseColor.withValues(alpha: opacity)
       ..blendMode = BlendMode.screen;
 
     // Gentle random jitter for fire-like effect
