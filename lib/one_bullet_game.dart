@@ -26,11 +26,7 @@ enum ControlMode { player, bot }
 /// Uses TapCallbacks to handle tap-to-fire mechanic.
 /// Uses HasCollisionDetection for bullet-player collision.
 class OneBulletGame extends FlameGame
-    with
-    KeyboardEvents,
-        DragCallbacks,
-        TapCallbacks,
-        HasCollisionDetection {
+    with KeyboardEvents, DragCallbacks, TapCallbacks, HasCollisionDetection {
   OneBulletGame({super.children});
 
   /// Overlay ID for the start screen.
@@ -349,7 +345,9 @@ class OneBulletGame extends FlameGame
       ..setFrom(bullet!.position)
       ..addScaled(bullet!.velocity, predictionTime);
 
-    final distanceToFuturePos = player!.position.distanceTo(_botFutureBulletPos);
+    final distanceToFuturePos = player!.position.distanceTo(
+      _botFutureBulletPos,
+    );
     if (distanceToFuturePos > dangerRadius) {
       _setIdleBotInput();
       return _botInput;
@@ -392,8 +390,9 @@ class OneBulletGame extends FlameGame
   void toggleBotMode() {
     if (!kDebugMode) return;
 
-    controlMode =
-        (controlMode == ControlMode.player) ? ControlMode.bot : ControlMode.player;
+    controlMode = (controlMode == ControlMode.player)
+        ? ControlMode.bot
+        : ControlMode.player;
 
     if (controlMode == ControlMode.bot && player?.hasFired == false) {
       _botFireDelayRemaining = botFireDelaySeconds;
@@ -471,29 +470,26 @@ class OneBulletGame extends FlameGame
     );
   }
 
-  /// Fires the bullet in the current aim direction.
   void _fireBullet() {
     if (player == null || player!.hasFired) return;
 
-    // Get the aim direction from the player's aim indicator
-    final aimDirection = player!.aimDirection;
+    final aimDir = player!.aimDirection.normalized();
 
-    // Calculate bullet spawn position (at the edge of the player + offset)
-    final spawnOffset = aimDirection * (player!.radius + 15);
-    final spawnPosition = player!.position + spawnOffset;
+    final indicator = player!.aimIndicator;
 
-    // Create and add the bullet with initial wave speed
+    if (indicator == null) return;
+
+    final spawnPosition = indicator.absolutePosition.clone();
+
     bullet = Bullet(
       position: spawnPosition,
-      direction: aimDirection,
+      direction: aimDir,
       speed: WaveManager.waves[0].startSpeed,
     );
+
     world.add(bullet!);
 
-    // Mark player as having fired
     player!.markAsFired();
-
-    // Start the wave system
     waveManager?.start();
   }
 
