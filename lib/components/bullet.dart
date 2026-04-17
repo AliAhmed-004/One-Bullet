@@ -18,7 +18,7 @@ class Bullet extends SpriteComponent with CollisionCallbacks {
     this.speed = 400.0,
   }) : _velocity = _applyLaunchImperfection(direction.normalized() * speed),
        _currentSpeed = speed,
-       super(position: position, size: Vector2(32, 16), anchor: Anchor.center);
+       super(position: position, size: Vector2(20, 12), anchor: Anchor.center);
 
   final double speed;
   double _currentSpeed;
