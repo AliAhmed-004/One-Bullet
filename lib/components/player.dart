@@ -29,8 +29,6 @@ class Player extends PositionComponent with CollisionCallbacks {
 
   // Visual parts
   late CircleComponent _body;
-  late CircleComponent _head;
-  late CircleComponent _core;
 
   @override
   Future<void> onLoad() async {
@@ -43,29 +41,18 @@ class Player extends PositionComponent with CollisionCallbacks {
       paint: Paint()..color = const Color(0xFF1565C0), // deep blue
     );
 
-    // HEAD (direction indicator)
-    _head = CircleComponent(
-      radius: 6,
-      position: Vector2(0, -12),
-      anchor: Anchor.center,
-      paint: Paint()..color = Colors.white,
-    );
-
-    // CORE (subtle glow / identity anchor)
-    _core = CircleComponent(
-      radius: 4,
-      anchor: Anchor.center,
-      paint: Paint()
-        ..color = Colors.cyanAccent
-        ..blendMode = BlendMode.screen,
-    );
-
+    // Position the visual body at the center of the Player's bounding
+    // box (Player uses size Vector2.all(40)), and attach the hitbox
+    // to the body so rendering, collision, and logical position align.
+    _body.position.setValues(size.x / 2, size.y / 2);
     add(_body);
-    add(_core);
-    add(_head);
 
-    // Collision (still circular for sanity)
-    add(CircleHitbox(radius: 14));
+    // Collision (still circular for sanity) - attach the hitbox to the
+    // `Player` itself so `Player.onCollision` callbacks are invoked.
+    final hitbox = CircleHitbox(radius: 14);
+    hitbox.anchor = Anchor.center;
+    hitbox.position.setValues(size.x / 2, size.y / 2);
+    add(hitbox);
 
     if (!skipAimIndicator) {
       aimIndicator = AimIndicator(orbitRadius: 45);
@@ -77,17 +64,6 @@ class Player extends PositionComponent with CollisionCallbacks {
   void onMount() {
     super.onMount();
     _gameRef = findGame() as OneBulletGame?;
-  }
-
-  @override
-  void update(double dt) {
-    super.update(dt);
-
-    // Rotate player to match aim direction (this is what makes it feel alive)
-    final dir = aimDirection;
-    if (!dir.isZero()) {
-      _head.angle = dir.angleToSigned(Vector2(1, 0));
-    }
   }
 
   @override

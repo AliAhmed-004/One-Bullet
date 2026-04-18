@@ -68,12 +68,23 @@ class AimIndicator extends PositionComponent {
   void onMount() {
     super.onMount();
 
-    // Get the parent's radius to calculate the orbit center
-    // Child coordinates start at top-left of parent's bounding box,
-    // so we need to offset to the visual center
+    // Compute the orbit center based on the visual center of the parent.
+    // The `AimIndicator` is added to the `Player` (a `PositionComponent`),
+    // whose visual body is centered in its bounding box. Use the parent's
+    // size or child radius when available so the indicator orbits the
+    // visual center instead of the parent's top-left.
     final parentComponent = parent;
     if (parentComponent is CircleComponent) {
+      // Parent is directly a CircleComponent (rare case)
       _orbitCenter = Vector2.all(parentComponent.radius);
+    } else if (parentComponent is PositionComponent) {
+      // Parent is most likely the `Player` with an explicit size.
+      _orbitCenter = Vector2(
+        parentComponent.size.x / 2,
+        parentComponent.size.y / 2,
+      );
+    } else {
+      _orbitCenter = Vector2.zero();
     }
   }
 

@@ -460,6 +460,11 @@ class OneBulletGame extends FlameGame
   bool _isInArena(Vector2 canvasPosition) {
     if (arenaBoundary == null) return false;
 
+    // Convert canvas/screen position to world coordinates. Previously
+    // this used a non-existent `camera.screenToWorld` helper which
+    // caused a compile error on some Flame versions. The manual
+    // subtraction below matches the game's current coordinate setup
+    // where the world origin is centered on the screen.
     final worldPosition = Vector2(
       canvasPosition.x - (size.x / 2),
       canvasPosition.y - (size.y / 2),
