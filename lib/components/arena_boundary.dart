@@ -1,61 +1,44 @@
+import 'dart:math' as math;
+
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
-/// Visual boundary/arena that shows the playable area.
-/// This component draws a border around the play area.
 class ArenaBoundary extends PositionComponent with HasGameReference {
   ArenaBoundary({
     required this.topPadding,
     this.bottomPadding = 8,
     this.sidePadding = 8,
-    this.borderColor = Colors.white24,
+    this.borderColor = const Color(0xFF64B5F6),
     this.borderWidth = 2,
   });
 
-  /// Padding from the top of the screen (for HUD).
   final double topPadding;
-
-  /// Padding from the bottom of the screen.
   final double bottomPadding;
-
-  /// Padding from the sides of the screen.
   final double sidePadding;
-
-  /// Color of the arena border.
   final Color borderColor;
-
-  /// Width of the border stroke.
   final double borderWidth;
 
-  /// The calculated arena bounds (in world coordinates).
-  /// Other components can use this to stay within bounds.
   Rect _arenaBounds = Rect.zero;
-
-  /// Whether bounds have been initialized.
   bool _boundsInitialized = false;
 
-  /// Cached paints to avoid per-frame allocations.
   late final Paint _borderPaint;
   late final Paint _accentPaint;
-  late final Paint _glowPaint;
+  late final Paint _sparkPaint;
 
-  /// Track last wave for color updates
-  int _lastWave = -1;
+  final List<_SparkParticle> _sparks = [];
+  final math.Random _random = math.Random();
 
-  /// Gets the arena bounds in world coordinates.
   Rect get bounds {
     _ensureBoundsInitialized();
     return _arenaBounds;
   }
 
-  /// Ensures bounds are calculated (fallback if onGameResize hasn't been called).
   void _ensureBoundsInitialized() {
     if (!_boundsInitialized && isMounted) {
       _updateBounds(game.size);
     }
   }
 
-  /// Gets the arena bounds with an inset (for objects with radius).
   Rect getBoundsWithInset(double inset) {
     _ensureBoundsInitialized();
     return Rect.fromLTRB(
@@ -76,16 +59,15 @@ class ArenaBoundary extends PositionComponent with HasGameReference {
       ..strokeWidth = borderWidth;
 
     _accentPaint = Paint()
-      ..color = Colors.white38
+      ..color = borderColor.withValues(alpha: 0.7)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3
       ..strokeCap = StrokeCap.round;
 
-    _glowPaint = Paint()
+    _sparkPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 6;
+      ..strokeCap = StrokeCap.round;
 
-    // Initialize bounds immediately when mounted
     _updateBounds(game.size);
   }
 
@@ -96,10 +78,8 @@ class ArenaBoundary extends PositionComponent with HasGameReference {
   }
 
   void _updateBounds(Vector2 gameSize) {
-    // Avoid updating with zero size
     if (gameSize.x == 0 || gameSize.y == 0) return;
 
-    // Calculate arena bounds in world coordinates (camera centered at 0,0)
     final halfWidth = gameSize.x / 2;
     final halfHeight = gameSize.y / 2;
 
@@ -109,120 +89,168 @@ class ArenaBoundary extends PositionComponent with HasGameReference {
       halfWidth - sidePadding,
       halfHeight - bottomPadding,
     );
+
     _boundsInitialized = true;
+  }
+
+  /// Call this whenever bullet hits a wall
+  void addImpactSparks({
+    required Vector2 position,
+    required Vector2 wallNormal,
+    required int wave,
+  }) {
+    final sparkCount = _getSparkCount(wave);
+    final sparkColor = _getSparkColor(wave);
+
+    final baseSize = wave <= 2
+        ? 4.0
+        : wave <= 4
+        ? 3.0
+        : 2.2;
+
+    for (int i = 0; i < sparkCount; i++) {
+      // CORE FIX: emit outward from wall normal
+      final direction = wallNormal.clone()..normalize();
+
+      // cone spread around normal
+      final angle = (_random.nextDouble() - 0.5) * 1.2;
+      direction.rotate(angle);
+
+      final speed = 80 + _random.nextDouble() * (60 + wave * 10);
+
+      _sparks.add(
+        _SparkParticle(
+          position: position.clone(),
+          velocity: direction * speed,
+          life: 0.25 + _random.nextDouble() * 0.2,
+          maxLife: 0.25 + _random.nextDouble() * 0.2,
+          color: sparkColor,
+          size: baseSize + _random.nextDouble() * 2.5,
+        ),
+      );
+    }
+  }
+
+  int _getSparkCount(int wave) {
+    if (wave <= 2) return 5;
+    if (wave <= 4) return 7;
+    return 10;
+  }
+
+  Color _getSparkColor(int wave) {
+    if (wave <= 2) {
+      return const Color.fromARGB(255, 255, 158, 158);
+    } else if (wave <= 4) {
+      return const Color.fromARGB(255, 254, 119, 66);
+    } else {
+      return const Color.fromARGB(255, 255, 2, 2);
+    }
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+
+    for (final spark in _sparks) {
+      spark.life -= dt;
+      spark.position += spark.velocity * dt;
+      spark.velocity *= 0.94;
+    }
+
+    _sparks.removeWhere((s) => s.life <= 0);
   }
 
   @override
   void render(Canvas canvas) {
     super.render(canvas);
 
-    // The arena bounds are already in world coordinates
-    // and this component is in the world, so we draw directly
-    final renderRect = _arenaBounds;
+    final rect = _arenaBounds;
 
-    // Update colors based on current wave
-    final gameRef = findGame();
-    final waveNumber = (gameRef as dynamic).waveManager?.currentWave.value ?? 1;
-    _updateColorsForWave(waveNumber);
-
-    // Draw glow effect (subtle shadow/glow behind border)
-    final rrect = RRect.fromRectAndRadius(renderRect, const Radius.circular(8));
-    canvas.drawRRect(rrect, _glowPaint);
-
-    // Draw rounded rectangle border
-    canvas.drawRRect(rrect, _borderPaint);
-
-    // Optional: Add corner accents for a more stylized look
-    _drawCornerAccents(canvas, renderRect);
+    canvas.drawRect(rect, _borderPaint);
+    _drawCornerAccents(canvas, rect);
+    _drawSparks(canvas);
   }
 
-  /// Updates border colors based on the current wave.
-  void _updateColorsForWave(int wave) {
-    if (_lastWave == wave) return; // Skip if already updated for this wave
+  void _drawSparks(Canvas canvas) {
+    for (final spark in _sparks) {
+      final alpha = (spark.life / spark.maxLife).clamp(0.0, 1.0);
 
-    _lastWave = wave;
+      _sparkPaint
+        ..color = spark.color.withValues(alpha: alpha)
+        ..strokeWidth = spark.size;
 
-    final (borderColor, glowColor) = _getWaveBorderColors(wave);
+      final end = spark.position.toOffset();
+      final start = (spark.position - spark.velocity.normalized() * 6)
+          .toOffset();
 
-    _borderPaint.color = borderColor;
-    _glowPaint.color = glowColor.withValues(alpha: 0.4); // Semi-transparent glow
-    _accentPaint.color = borderColor.withValues(alpha: 0.7);
-  }
-
-  /// Returns the (border, glow) colors for a given wave.
-  (Color, Color) _getWaveBorderColors(int wave) {
-    const Color lightCyan = Color(0xFF00D4FF);
-    const Color softPurple = Color(0xFF7B68EE);
-    const Color warmAmber = Color(0xFFFFB700);
-
-    final clampedWave = wave.clamp(1, 6);
-
-    switch (clampedWave) {
-      case 1:
-      case 2:
-        // Calm waves: cyan border with cyan glow
-        return (lightCyan, lightCyan);
-      case 3:
-      case 4:
-        // Rising waves: purple accent
-        return (softPurple, softPurple);
-      case 5:
-      case 6:
-      default:
-        // Intense waves: warm amber/gold
-        return (warmAmber, warmAmber);
+      canvas.drawLine(start, end, _sparkPaint);
     }
   }
 
   void _drawCornerAccents(Canvas canvas, Rect rect) {
-    const accentLength = 20.0;
+    const len = 20.0;
 
-    // Top-left corner
+    // corners (unchanged, still clean and minimal)
     canvas.drawLine(
-      Offset(rect.left, rect.top + accentLength),
+      Offset(rect.left, rect.top + len),
       Offset(rect.left, rect.top),
       _accentPaint,
     );
     canvas.drawLine(
       Offset(rect.left, rect.top),
-      Offset(rect.left + accentLength, rect.top),
+      Offset(rect.left + len, rect.top),
       _accentPaint,
     );
 
-    // Top-right corner
     canvas.drawLine(
-      Offset(rect.right - accentLength, rect.top),
+      Offset(rect.right - len, rect.top),
       Offset(rect.right, rect.top),
       _accentPaint,
     );
     canvas.drawLine(
       Offset(rect.right, rect.top),
-      Offset(rect.right, rect.top + accentLength),
+      Offset(rect.right, rect.top + len),
       _accentPaint,
     );
 
-    // Bottom-left corner
     canvas.drawLine(
-      Offset(rect.left, rect.bottom - accentLength),
+      Offset(rect.left, rect.bottom - len),
       Offset(rect.left, rect.bottom),
       _accentPaint,
     );
     canvas.drawLine(
       Offset(rect.left, rect.bottom),
-      Offset(rect.left + accentLength, rect.bottom),
+      Offset(rect.left + len, rect.bottom),
       _accentPaint,
     );
 
-    // Bottom-right corner
     canvas.drawLine(
-      Offset(rect.right - accentLength, rect.bottom),
+      Offset(rect.right - len, rect.bottom),
       Offset(rect.right, rect.bottom),
       _accentPaint,
     );
     canvas.drawLine(
       Offset(rect.right, rect.bottom),
-      Offset(rect.right, rect.bottom - accentLength),
+      Offset(rect.right, rect.bottom - len),
       _accentPaint,
     );
   }
+}
+
+class _SparkParticle {
+  _SparkParticle({
+    required this.position,
+    required this.velocity,
+    required this.life,
+    required this.maxLife,
+    required this.color,
+    required this.size,
+  });
+
+  Vector2 position;
+  Vector2 velocity;
+  double life;
+  double maxLife;
+  Color color;
+  double size;
 }

@@ -147,28 +147,44 @@ class Bullet extends SpriteComponent with CollisionCallbacks {
   void _handleWallBounce() {
     if (_gameRef == null || _gameRef!.arenaBoundary == null) return;
 
-    final bounds = _gameRef!.arenaBoundary!.getBoundsWithInset(size.x / 2);
+    final arena = _gameRef!.arenaBoundary!;
+    final bounds = arena.getBoundsWithInset(size.x / 2);
 
     bool bounced = false;
+
+    Vector2? impactPosition;
+    Vector2? impactNormal;
 
     if (position.x <= bounds.left) {
       position.x = bounds.left;
       _velocity.x = _velocity.x.abs();
+
       bounced = true;
+      impactPosition = position.clone();
+      impactNormal = Vector2(1, 0); // wall pushes right
     } else if (position.x >= bounds.right) {
       position.x = bounds.right;
       _velocity.x = -_velocity.x.abs();
+
       bounced = true;
+      impactPosition = position.clone();
+      impactNormal = Vector2(-1, 0); // wall pushes left
     }
 
     if (position.y <= bounds.top) {
       position.y = bounds.top;
       _velocity.y = _velocity.y.abs();
+
       bounced = true;
+      impactPosition = position.clone();
+      impactNormal = Vector2(0, 1); // wall pushes down
     } else if (position.y >= bounds.bottom) {
       position.y = bounds.bottom;
       _velocity.y = -_velocity.y.abs();
+
       bounced = true;
+      impactPosition = position.clone();
+      impactNormal = Vector2(0, -1); // wall pushes up
     }
 
     if (bounced) {
@@ -176,8 +192,17 @@ class Bullet extends SpriteComponent with CollisionCallbacks {
 
       if (timeSinceLastEffect >= _bounceEffectCooldown) {
         _lastBounceEffectTime = _elapsedTime;
+
         SoundService.playBulletBounce();
         _triggerHaptics();
+      }
+
+      if (impactPosition != null && impactNormal != null) {
+        arena.addImpactSparks(
+          position: impactPosition,
+          wallNormal: impactNormal,
+          wave: _gameRef!.waveManager?.currentWave.value ?? 1,
+        );
       }
 
       _applyBounceDeviation();
