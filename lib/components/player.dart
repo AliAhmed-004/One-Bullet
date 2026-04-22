@@ -55,7 +55,7 @@ class Player extends PositionComponent with CollisionCallbacks {
     add(hitbox);
 
     if (!skipAimIndicator) {
-      aimIndicator = AimIndicator(orbitRadius: 45);
+      aimIndicator = AimIndicator(orbitRadius: 28);
       add(aimIndicator!);
     }
   }

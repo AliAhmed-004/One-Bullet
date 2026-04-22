@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:one_bullet/components/arena_boundary.dart';
 import 'package:one_bullet/components/bullet.dart';
 import 'package:one_bullet/components/deflector.dart';
+import 'package:one_bullet/components/game_background.dart';
 import 'package:one_bullet/components/mobile_joystick.dart';
 import 'package:one_bullet/components/player.dart';
 import 'package:one_bullet/components/player_death_effect.dart';
@@ -55,6 +56,9 @@ class OneBulletGame extends FlameGame
 
   /// Reference to the arena boundary.
   ArenaBoundary? arenaBoundary;
+
+  /// Reference to the game background.
+  GameBackground? gameBackground;
 
   /// Reference to the player for easy access.
   Player? player;
@@ -168,6 +172,10 @@ class OneBulletGame extends FlameGame
     arenaBoundary = ArenaBoundary(topPadding: hudHeight);
     await world.add(arenaBoundary!);
 
+    // Add the dynamic background (renders behind all game elements)
+    gameBackground = GameBackground();
+    add(gameBackground!);
+
     // Show start screen and pause the game
     overlays.add(startScreenOverlayId);
     pauseEngine();
@@ -193,6 +201,9 @@ class OneBulletGame extends FlameGame
     _botReactionDelayRemaining = 0;
     _botFireDelayRemaining = botFireDelaySeconds;
     _botTime = 0;
+
+    // Reset the background so grid and colors render properly on new game
+    gameBackground?.reset();
 
     // Create and add the player at the center of the arena
     // Offset slightly down to account for HUD space

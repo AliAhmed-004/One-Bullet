@@ -37,6 +37,10 @@ class ArenaBoundary extends PositionComponent with HasGameReference {
   /// Cached paints to avoid per-frame allocations.
   late final Paint _borderPaint;
   late final Paint _accentPaint;
+  late final Paint _glowPaint;
+
+  /// Track last wave for color updates
+  int _lastWave = -1;
 
   /// Gets the arena bounds in world coordinates.
   Rect get bounds {
@@ -77,6 +81,10 @@ class ArenaBoundary extends PositionComponent with HasGameReference {
       ..strokeWidth = 3
       ..strokeCap = StrokeCap.round;
 
+    _glowPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 6;
+
     // Initialize bounds immediately when mounted
     _updateBounds(game.size);
   }
@@ -112,12 +120,58 @@ class ArenaBoundary extends PositionComponent with HasGameReference {
     // and this component is in the world, so we draw directly
     final renderRect = _arenaBounds;
 
-    // Draw rounded rectangle border
+    // Update colors based on current wave
+    final gameRef = findGame();
+    final waveNumber = (gameRef as dynamic).waveManager?.currentWave.value ?? 1;
+    _updateColorsForWave(waveNumber);
+
+    // Draw glow effect (subtle shadow/glow behind border)
     final rrect = RRect.fromRectAndRadius(renderRect, const Radius.circular(8));
+    canvas.drawRRect(rrect, _glowPaint);
+
+    // Draw rounded rectangle border
     canvas.drawRRect(rrect, _borderPaint);
 
     // Optional: Add corner accents for a more stylized look
     _drawCornerAccents(canvas, renderRect);
+  }
+
+  /// Updates border colors based on the current wave.
+  void _updateColorsForWave(int wave) {
+    if (_lastWave == wave) return; // Skip if already updated for this wave
+
+    _lastWave = wave;
+
+    final (borderColor, glowColor) = _getWaveBorderColors(wave);
+
+    _borderPaint.color = borderColor;
+    _glowPaint.color = glowColor.withValues(alpha: 0.4); // Semi-transparent glow
+    _accentPaint.color = borderColor.withValues(alpha: 0.7);
+  }
+
+  /// Returns the (border, glow) colors for a given wave.
+  (Color, Color) _getWaveBorderColors(int wave) {
+    const Color lightCyan = Color(0xFF00D4FF);
+    const Color softPurple = Color(0xFF7B68EE);
+    const Color warmAmber = Color(0xFFFFB700);
+
+    final clampedWave = wave.clamp(1, 6);
+
+    switch (clampedWave) {
+      case 1:
+      case 2:
+        // Calm waves: cyan border with cyan glow
+        return (lightCyan, lightCyan);
+      case 3:
+      case 4:
+        // Rising waves: purple accent
+        return (softPurple, softPurple);
+      case 5:
+      case 6:
+      default:
+        // Intense waves: warm amber/gold
+        return (warmAmber, warmAmber);
+    }
   }
 
   void _drawCornerAccents(Canvas canvas, Rect rect) {

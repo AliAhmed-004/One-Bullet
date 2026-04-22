@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:games_services/games_services.dart';
 import 'package:one_bullet/services/achievement_service.dart';
 
