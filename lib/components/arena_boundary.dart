@@ -10,6 +10,8 @@ class ArenaBoundary extends PositionComponent with HasGameReference {
     this.sidePadding = 8,
     this.borderColor = const Color(0xFF64B5F6),
     this.borderWidth = 2,
+    this.horizontalPadding = 16,
+    this.verticalPadding = 12,
   });
 
   final double topPadding;
@@ -17,13 +19,33 @@ class ArenaBoundary extends PositionComponent with HasGameReference {
   final double sidePadding;
   final Color borderColor;
   final double borderWidth;
+  final double horizontalPadding;
+  final double verticalPadding;
 
   Rect _arenaBounds = Rect.zero;
   bool _boundsInitialized = false;
 
   late final Paint _borderPaint;
+  late final Paint _outerGlowPaint;
+  late final Paint _innerFillPaint;
   late final Paint _accentPaint;
   late final Paint _sparkPaint;
+  late final Paint _wallImpactPaint;
+
+  static const double _waveHeatSmoothing = 1.8;
+  static const double _impactPulseDecay = 5.2;
+  static const double _wallEnergyDecay = 4.6;
+  static const double _breathingHz = 0.24;
+
+  double _time = 0;
+  double _waveHeatTarget = 0.1;
+  double _waveHeatCurrent = 0.1;
+  double _impactPulse = 0;
+
+  double _leftWallEnergy = 0;
+  double _rightWallEnergy = 0;
+  double _topWallEnergy = 0;
+  double _bottomWallEnergy = 0;
 
   final List<_SparkParticle> _sparks = [];
   final math.Random _random = math.Random();
@@ -53,18 +75,21 @@ class ArenaBoundary extends PositionComponent with HasGameReference {
   Future<void> onLoad() async {
     await super.onLoad();
 
-    _borderPaint = Paint()
-      ..color = borderColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = borderWidth;
+    _borderPaint = Paint()..style = PaintingStyle.stroke;
+
+    _outerGlowPaint = Paint()..style = PaintingStyle.stroke;
+
+    _innerFillPaint = Paint()..style = PaintingStyle.fill;
 
     _accentPaint = Paint()
-      ..color = borderColor.withValues(alpha: 0.7)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
       ..strokeCap = StrokeCap.round;
 
     _sparkPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    _wallImpactPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
@@ -84,24 +109,26 @@ class ArenaBoundary extends PositionComponent with HasGameReference {
     final halfHeight = gameSize.y / 2;
 
     _arenaBounds = Rect.fromLTRB(
-      -halfWidth + sidePadding,
-      -halfHeight + topPadding,
-      halfWidth - sidePadding,
-      halfHeight - bottomPadding,
+      -halfWidth + sidePadding + horizontalPadding,
+      -halfHeight + topPadding + verticalPadding,
+      halfWidth - sidePadding - horizontalPadding,
+      halfHeight - bottomPadding - verticalPadding,
     );
 
     _boundsInitialized = true;
   }
 
-  /// Call this whenever bullet hits a wall
   void addImpactSparks({
     required Vector2 position,
     required Vector2 wallNormal,
     required int wave,
   }) {
-    final sparkCount = _getSparkCount(wave);
-    final sparkColor = _getSparkColor(wave);
+    _setWaveHeatTargetFromWave(wave);
+    _impactPulse = (_impactPulse + 0.24).clamp(0.0, 1.0);
 
+    // _registerWallImpact(wallNormal: wallNormal, impactPosition: position);
+
+    final sparkCount = _getSparkCount(wave);
     final baseSize = wave <= 2
         ? 4.0
         : wave <= 4
@@ -109,21 +136,26 @@ class ArenaBoundary extends PositionComponent with HasGameReference {
         : 2.2;
 
     for (int i = 0; i < sparkCount; i++) {
-      // CORE FIX: emit outward from wall normal
       final direction = wallNormal.clone()..normalize();
 
-      // cone spread around normal
       final angle = (_random.nextDouble() - 0.5) * 1.2;
       direction.rotate(angle);
 
       final speed = 80 + _random.nextDouble() * (60 + wave * 10);
+      final life = 0.25 + _random.nextDouble() * 0.2;
+
+      final sparkColor = Color.lerp(
+        const Color(0xFFFFC58F),
+        const Color(0xFFFF4938),
+        _random.nextDouble() * _waveHeatCurrent,
+      )!;
 
       _sparks.add(
         _SparkParticle(
           position: position.clone(),
           velocity: direction * speed,
-          life: 0.25 + _random.nextDouble() * 0.2,
-          maxLife: 0.25 + _random.nextDouble() * 0.2,
+          life: life,
+          maxLife: life,
           color: sparkColor,
           size: baseSize + _random.nextDouble() * 2.5,
         ),
@@ -137,24 +169,116 @@ class ArenaBoundary extends PositionComponent with HasGameReference {
     return 10;
   }
 
-  Color _getSparkColor(int wave) {
-    if (wave <= 2) {
-      return const Color.fromARGB(255, 255, 158, 158);
-    } else if (wave <= 4) {
-      return const Color.fromARGB(255, 254, 119, 66);
-    } else {
-      return const Color.fromARGB(255, 255, 2, 2);
-    }
+  void _setWaveHeatTargetFromWave(int wave) {
+    final normalized = ((wave - 1) / 5.0).clamp(0.0, 1.0);
+    _waveHeatTarget = 0.1 + (normalized * 0.82);
+  }
+
+  // void _registerWallImpact({
+  //   required Vector2 wallNormal,
+  //   required Vector2 impactPosition,
+  // }) {
+  //   if (wallNormal.x > 0.5) {
+  //     _leftWallEnergy = 1.0;
+  //     _leftImpactY = impactPosition.y;
+  //     return;
+  //   }
+
+  //   if (wallNormal.x < -0.5) {
+  //     _rightWallEnergy = 1.0;
+  //     _rightImpactY = impactPosition.y;
+  //     return;
+  //   }
+
+  //   if (wallNormal.y > 0.5) {
+  //     _topWallEnergy = 1.0;
+  //     _topImpactX = impactPosition.x;
+  //     return;
+  //   }
+
+  //   if (wallNormal.y < -0.5) {
+  //     _bottomWallEnergy = 1.0;
+  //     _bottomImpactX = impactPosition.x;
+  //   }
+  // }
+
+  void _updateReactiveState(double dt) {
+    _time += dt;
+
+    final heatLerp = (dt * _waveHeatSmoothing).clamp(0.0, 1.0);
+    _waveHeatCurrent += (_waveHeatTarget - _waveHeatCurrent) * heatLerp;
+
+    _impactPulse = (_impactPulse - dt * _impactPulseDecay).clamp(0.0, 1.0);
+
+    _leftWallEnergy = (_leftWallEnergy - dt * _wallEnergyDecay).clamp(0.0, 1.0);
+    _rightWallEnergy = (_rightWallEnergy - dt * _wallEnergyDecay).clamp(
+      0.0,
+      1.0,
+    );
+    _topWallEnergy = (_topWallEnergy - dt * _wallEnergyDecay).clamp(0.0, 1.0);
+    _bottomWallEnergy = (_bottomWallEnergy - dt * _wallEnergyDecay).clamp(
+      0.0,
+      1.0,
+    );
+  }
+
+  void _updateVisualPaints() {
+    final breathing = 0.5 + 0.5 * math.sin(_time * 2 * math.pi * _breathingHz);
+
+    final heat = (_waveHeatCurrent + (_impactPulse * 0.18) + (breathing * 0.04))
+        .clamp(0.0, 1.0);
+
+    final border = Color.lerp(
+      const Color(0xFF6A8598),
+      const Color(0xFFE05E4D),
+      heat,
+    )!;
+
+    final accent = Color.lerp(
+      const Color(0xFF9DB9CA),
+      const Color(0xFFFF9679),
+      heat,
+    )!;
+
+    _innerFillPaint.color = Color.lerp(
+      const Color(0xFF0D1822),
+      const Color(0xFF261515),
+      heat,
+    )!.withValues(alpha: 0.18);
+
+    _outerGlowPaint
+      ..color = border.withValues(alpha: 0.10 + heat * 0.08)
+      ..strokeWidth = 8 + (heat * 2);
+
+    _borderPaint
+      ..color = border.withValues(alpha: 0.9)
+      ..strokeWidth = 3.2 + heat + (_impactPulse * 0.6);
+
+    _accentPaint
+      ..color = accent.withValues(alpha: 0.75)
+      ..strokeWidth = 3;
+
+    _wallImpactPaint
+      ..color = Color.lerp(
+        const Color(0xFFFFB176),
+        const Color(0xFFFF5340),
+        heat,
+      )!
+      ..strokeWidth = 4 + heat * 2;
   }
 
   @override
   void update(double dt) {
     super.update(dt);
 
+    _updateReactiveState(dt);
+
+    final friction = math.pow(0.94, dt * 60).toDouble();
+
     for (final spark in _sparks) {
       spark.life -= dt;
       spark.position += spark.velocity * dt;
-      spark.velocity *= 0.94;
+      spark.velocity *= friction;
     }
 
     _sparks.removeWhere((s) => s.life <= 0);
@@ -164,12 +288,66 @@ class ArenaBoundary extends PositionComponent with HasGameReference {
   void render(Canvas canvas) {
     super.render(canvas);
 
+    _updateVisualPaints();
+
     final rect = _arenaBounds;
 
+    canvas.drawRect(rect, _innerFillPaint);
+    canvas.drawRect(rect.inflate(2), _outerGlowPaint);
     canvas.drawRect(rect, _borderPaint);
+
+    // _drawWallImpactAccents(canvas, rect);
     _drawCornerAccents(canvas, rect);
     _drawSparks(canvas);
   }
+
+  // void _drawWallImpactAccents(Canvas canvas, Rect rect) {
+
+  //   const len = 48.0;
+  //   if (_leftWallEnergy > 0) {
+  //     _wallImpactPaint.color = _wallImpactPaint.color.withValues(
+  //       alpha: _leftWallEnergy * 0.6,
+  //     );
+  //     canvas.drawLine(
+  //       Offset(rect.left, _leftImpactY - len),
+  //       Offset(rect.left, _leftImpactY + len),
+  //       _wallImpactPaint,
+  //     );
+  //   }
+
+  //   if (_rightWallEnergy > 0) {
+  //     _wallImpactPaint.color = _wallImpactPaint.color.withValues(
+  //       alpha: _rightWallEnergy * 0.6,
+  //     );
+  //     canvas.drawLine(
+  //       Offset(rect.right, _rightImpactY - len),
+  //       Offset(rect.right, _rightImpactY + len),
+  //       _wallImpactPaint,
+  //     );
+  //   }
+
+  //   if (_topWallEnergy > 0) {
+  //     _wallImpactPaint.color = _wallImpactPaint.color.withValues(
+  //       alpha: _topWallEnergy * 0.6,
+  //     );
+  //     canvas.drawLine(
+  //       Offset(_topImpactX - len, rect.top),
+  //       Offset(_topImpactX + len, rect.top),
+  //       _wallImpactPaint,
+  //     );
+  //   }
+
+  //   if (_bottomWallEnergy > 0) {
+  //     _wallImpactPaint.color = _wallImpactPaint.color.withValues(
+  //       alpha: _bottomWallEnergy * 0.6,
+  //     );
+  //     canvas.drawLine(
+  //       Offset(_bottomImpactX - len, rect.bottom),
+  //       Offset(_bottomImpactX + len, rect.bottom),
+  //       _wallImpactPaint,
+  //     );
+  //   }
+  // }
 
   void _drawSparks(Canvas canvas) {
     for (final spark in _sparks) {
@@ -180,8 +358,12 @@ class ArenaBoundary extends PositionComponent with HasGameReference {
         ..strokeWidth = spark.size;
 
       final end = spark.position.toOffset();
-      final start = (spark.position - spark.velocity.normalized() * 6)
-          .toOffset();
+
+      final speed = spark.velocity.length;
+      final dirX = speed > 0.001 ? spark.velocity.x / speed : 0.0;
+      final dirY = speed > 0.001 ? spark.velocity.y / speed : 0.0;
+
+      final start = Offset(end.dx - dirX * 6, end.dy - dirY * 6);
 
       canvas.drawLine(start, end, _sparkPaint);
     }
@@ -190,7 +372,6 @@ class ArenaBoundary extends PositionComponent with HasGameReference {
   void _drawCornerAccents(Canvas canvas, Rect rect) {
     const len = 20.0;
 
-    // corners (unchanged, still clean and minimal)
     canvas.drawLine(
       Offset(rect.left, rect.top + len),
       Offset(rect.left, rect.top),
