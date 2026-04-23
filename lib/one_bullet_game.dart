@@ -205,7 +205,6 @@ class OneBulletGame extends FlameGame
     // Reset background state for a fresh run while keeping the component mounted.
     gameBackground?.setWave(1);
 
-
     // Create and add the player at the center of the arena
     // Offset slightly down to account for HUD space
     final playerStartY = hudHeight / 2;
@@ -730,9 +729,7 @@ class OneBulletGame extends FlameGame
 
     // Remove game components except arena boundary and persistent background.
     world.removeAll(
-      world.children.where(
-        (c) => c is! ArenaBoundary && c is! GameBackground,
-      ),
+      world.children.where((c) => c is! ArenaBoundary && c is! GameBackground),
     );
     camera.viewport.removeAll(
       camera.viewport.children.whereType<MobileJoystick>(),
@@ -783,9 +780,7 @@ class OneBulletGame extends FlameGame
 
     // Remove game components except arena boundary and persistent background.
     world.removeAll(
-      world.children.where(
-        (c) => c is! ArenaBoundary && c is! GameBackground,
-      ),
+      world.children.where((c) => c is! ArenaBoundary && c is! GameBackground),
     );
     camera.viewport.removeAll(
       camera.viewport.children.whereType<MobileJoystick>(),
