@@ -16,12 +16,13 @@ class Bullet extends SpriteComponent with CollisionCallbacks {
   Bullet({
     required Vector2 position,
     required Vector2 direction,
-    this.speed = 400.0,
+    double speed = 400.0,
   }) : _velocity = _applyLaunchImperfection(direction.normalized() * speed),
+       _baseSpeed = speed,
        _currentSpeed = speed,
        super(position: position, size: Vector2(20, 12), anchor: Anchor.center);
 
-  final double speed;
+  double _baseSpeed;
   double _currentSpeed;
   final Vector2 _velocity;
 
@@ -52,6 +53,13 @@ class Bullet extends SpriteComponent with CollisionCallbacks {
   Vector2 get velocity => _velocity;
   double get currentSpeed => _currentSpeed;
 
+  double _environmentHeat = 0.1;
+  double _heatVisual = 0.1;
+
+  void setEnvironmentHeat(double heat) {
+    _environmentHeat = heat.clamp(0.0, 1.0);
+  }
+
   void setThreatLevel(double threat) {
     _threatLevel = threat.clamp(0.0, 1.0);
   }
@@ -75,9 +83,12 @@ class Bullet extends SpriteComponent with CollisionCallbacks {
   }
 
   void setSpeed(double newSpeed) {
-    if (newSpeed == _currentSpeed) return;
+    if (newSpeed == _baseSpeed) return;
 
-    _currentSpeed = newSpeed;
+    _baseSpeed = newSpeed;
+
+    final dynamicSpeed = _baseSpeed * (1 + _heatVisual * 0.08);
+    _currentSpeed = dynamicSpeed;
     _velocity.normalize();
     _velocity.scale(_currentSpeed);
   }
@@ -95,28 +106,18 @@ class Bullet extends SpriteComponent with CollisionCallbacks {
     final game = _gameRef;
     if (game == null || _currentSpeed <= 0) return;
 
-    // Direction of travel
     final dir = _velocity.normalized();
 
-    // === Spawn directly from the visual tail of the bullet ===
-    // Use half the sprite width to ensure it's at the back edge
     final spawnPosition = position - dir * (size.x * 0.6);
 
-    // Optional: tiny perpendicular jitter for a more natural "fiery" look
-    // final perp = Vector2(-dir.y, dir.x);
-    // spawnPosition.addScaled(perp, (_rng.nextDouble() - 0.5) * 3.0);
-
-    final color = getTrailColor(
-      game.waveManager!.currentWave.value,
-      _currentSpeed,
-      _currentSpeed, // maxSpeed is the same as currentSpeed here
-    );
+    final color = getTrailColor(_heatVisual);
 
     game.world.add(
       FireParticle(
         position: spawnPosition,
         velocity: _velocity.clone(),
         color: color,
+        heat: _heatVisual,
       ),
     );
   }
@@ -144,16 +145,26 @@ class Bullet extends SpriteComponent with CollisionCallbacks {
     super.update(dt);
 
     final smoothing = (dt * 8).clamp(0.0, 1.0);
+
     _threatVisual += (_threatLevel - _threatVisual) * smoothing;
     _proximityVisual += (_proximityLevel - _proximityVisual) * smoothing;
+    _heatVisual += (_environmentHeat - _heatVisual) * smoothing;
 
-    // === Move the bullet FIRST ===
+    // subtle heat shimmer scaling
+    final heatScale = 1 + (_heatVisual * 0.12);
+    size.setValues(20 * heatScale, 12 * (1 + _heatVisual * 0.06));
+
+    // slight heat-driven speed aggression
+    final dynamicSpeed = _baseSpeed * (1 + _heatVisual * 0.08);
+
+    _velocity.normalize();
+    _velocity.scale(dynamicSpeed);
+    _currentSpeed = dynamicSpeed;
+
     position += _velocity * dt;
 
-    // Update angle based on new position/velocity
     angle = math.atan2(_velocity.y, _velocity.x);
 
-    // === Then spawn trail at the NEW position ===
     _trailTimer += dt;
     if (_trailTimer > 0.02) {
       _spawnTrail();
@@ -172,17 +183,31 @@ class Bullet extends SpriteComponent with CollisionCallbacks {
   }
 
   void _renderThreatHalo(Canvas canvas) {
-    if (_threatVisual < 0.05) return;
+    if (_threatVisual < 0.05 && _heatVisual < 0.05) return;
 
     final center = Offset(size.x / 2, size.y / 2);
-    final radius = 20 + (_threatVisual * 30) + (_proximityVisual * 14);
+
+    final radius =
+        22 +
+        (_threatVisual * 28) +
+        (_proximityVisual * 16) +
+        (_heatVisual * 12);
+
     final haloColor = Color.lerp(
-      const Color(0xFFFFB24A),
-      const Color(0xFFFF2E2E),
-      _proximityVisual,
+      const Color(0xFFFFC46B),
+      const Color(0xFFFF3B1F),
+      _heatVisual,
     )!;
-    final coreAlpha = (0.14 + (_threatVisual * 0.16) + (_proximityVisual * 0.16)).clamp(0.0, 0.55);
-    final midAlpha = (0.06 + (_threatVisual * 0.08) + (_proximityVisual * 0.08)).clamp(0.0, 0.35);
+
+    final coreAlpha =
+        (0.16 +
+                (_threatVisual * 0.14) +
+                (_proximityVisual * 0.12) +
+                (_heatVisual * 0.10))
+            .clamp(0.0, 0.55);
+
+    final midAlpha = (0.06 + (_threatVisual * 0.08) + (_heatVisual * 0.06))
+        .clamp(0.0, 0.30);
 
     final gradient = ui.Gradient.radial(
       center,
@@ -320,12 +345,14 @@ class Bullet extends SpriteComponent with CollisionCallbacks {
 class FireParticle extends CircleComponent {
   FireParticle({
     required Vector2 position,
-    required this.velocity, // keep for color/speed reference if needed
+    required this.velocity,
     required Color color,
+    required double heat,
   }) : _baseColor = color,
+       _heat = heat,
        super(
          position: position,
-         radius: 2 + _rng.nextDouble() * 3,
+         radius: 2.2 + _rng.nextDouble() * 2.8 + heat * 1.2,
          anchor: Anchor.center,
          paint: Paint()
            ..color = color
@@ -333,9 +360,10 @@ class FireParticle extends CircleComponent {
        );
 
   final Color _baseColor;
-  final Vector2 velocity; // we can keep it, but not use for movement
+  final Vector2 velocity;
+  final double _heat;
 
-  double life = 0.6; // slightly longer for nicer trail
+  double life = 0.55;
 
   static final math.Random _rng = math.Random();
 
@@ -345,15 +373,17 @@ class FireParticle extends CircleComponent {
 
     life -= dt;
 
-    // Fade out
-    final opacity = (life / 0.6).clamp(0.0, 1.0);
+    final opacity = (life / 0.55).clamp(0.0, 1.0);
+
     paint = Paint()
       ..color = _baseColor.withValues(alpha: opacity)
       ..blendMode = BlendMode.screen;
 
-    // Gentle random jitter for fire-like effect
-    final jitter = (_rng.nextDouble() - 0.5) * 2.0;
-    position += Vector2(jitter, jitter);
+    final jitterStrength = 1.5 + (_heat * 2.5);
+    final jitterX = (_rng.nextDouble() - 0.5) * jitterStrength;
+    final jitterY = (_rng.nextDouble() - 0.5) * jitterStrength;
+
+    position += Vector2(jitterX, jitterY);
 
     if (life <= 0) {
       removeFromParent();
@@ -361,23 +391,12 @@ class FireParticle extends CircleComponent {
   }
 }
 
-Color getTrailColor(int wave, double speed, double maxSpeed) {
-  final t = (speed / maxSpeed).clamp(0.0, 1.0);
+Color getTrailColor(double heat) {
+  final t = heat.clamp(0.0, 1.0);
 
-  switch (wave) {
-    case 1:
-      return Color.lerp(Colors.red, Colors.orange, t)!;
-    case 2:
-      return Color.lerp(const Color(0xFFFF3300), Colors.blue, t)!;
-    case 3:
-      return Color.lerp(Colors.orange, Colors.yellow, t)!;
-    case 4:
-      return Color.lerp(Colors.yellow, Colors.white, t)!;
-    case 5:
-      return Color.lerp(Colors.white, const Color(0xFF00E5FF), t)!;
-    case 6:
-      return Color.lerp(Colors.white, Colors.white.withOpacity(0.6), t)!;
-    default:
-      return Colors.orange;
-  }
+  return Color.lerp(
+    const Color(0xFFFFD27A), // ember gold
+    const Color(0xFFFF3B1F), // molten red-orange
+    math.pow(t, 0.75).toDouble(),
+  )!;
 }

@@ -14,6 +14,7 @@ import 'package:one_bullet/components/mobile_joystick.dart';
 import 'package:one_bullet/components/player.dart';
 import 'package:one_bullet/components/player_death_effect.dart';
 import 'package:one_bullet/components/wave_manager.dart';
+import 'package:one_bullet/game_config.dart';
 import 'package:one_bullet/services/ad_service.dart';
 import 'package:one_bullet/services/score_service.dart';
 import 'package:one_bullet/services/sound_service.dart';
@@ -518,6 +519,9 @@ class OneBulletGame extends FlameGame
   }
 
   void _updateThreatIndicators() {
+    // Keep bullet VFX synced to the global heat model used by wave/background.
+    bullet?.setEnvironmentHeat(GameConfig.heat);
+
     if (!_hasStarted || _isGameOver || player == null || bullet == null) {
       bullet?.setThreatLevel(0);
       bullet?.setProximityLevel(0);

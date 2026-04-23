@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
+import 'package:one_bullet/game_config.dart';
 
 class GameBackground extends PositionComponent with HasGameReference {
   GameBackground({this.initialEmberCount = 18});
@@ -15,7 +16,6 @@ class GameBackground extends PositionComponent with HasGameReference {
   late final Paint _backgroundPaint;
 
   double _time = 0;
-  double _heat = 0.1;
   int _currentWave = 1;
 
   Rect _screenBounds = Rect.zero;
@@ -86,10 +86,11 @@ class GameBackground extends PositionComponent with HasGameReference {
 
     _time += dt;
 
-    final targetHeat = (_currentWave / 8).clamp(0.1, 1.0);
-    _heat += (targetHeat - _heat) * dt * 1.8;
+    final targetHeat =
+        (_currentWave / 8).clamp(GameConfig.minHeat, GameConfig.maxHeat);
+    GameConfig.heat += (targetHeat - GameConfig.heat) * dt * 1.8;
 
-    final speedMultiplier = 1 + (_heat * 2.0);
+    final speedMultiplier = 1 + (GameConfig.heat * 2.0);
 
     for (final ember in _embers) {
       ember.position += ember.velocity * dt * speedMultiplier;
@@ -120,7 +121,7 @@ class GameBackground extends PositionComponent with HasGameReference {
     _backgroundPaint.color = Color.lerp(
       const Color(0xFF0B0908), // warm charcoal
       const Color(0xFF1F0C08), // ember-brown black
-      _heat,
+      GameConfig.heat,
     )!;
 
     canvas.drawRect(_screenBounds, _backgroundPaint);
@@ -131,10 +132,10 @@ class GameBackground extends PositionComponent with HasGameReference {
       final emberColor = Color.lerp(
         const Color(0xFFFFC94A),
         const Color(0xFFFF3B1F),
-        math.pow(_heat, 0.7).toDouble(),
+        math.pow(GameConfig.heat, 0.7).toDouble(),
       )!;
 
-      final renderSize = ember.size * (1 + _heat * 0.3);
+      final renderSize = ember.size * (1 + GameConfig.heat * 0.3);
 
       // glow
       _emberPaint.color = emberColor.withValues(
