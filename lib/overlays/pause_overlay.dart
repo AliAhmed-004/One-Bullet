@@ -24,13 +24,12 @@ class _PauseOverlayState extends State<PauseOverlay>
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 280),
+      duration: const Duration(milliseconds: 260),
     );
 
     _fade = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
-
     _scale = Tween(
-      begin: 0.95,
+      begin: 0.96,
       end: 1.0,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
 
@@ -43,18 +42,13 @@ class _PauseOverlayState extends State<PauseOverlay>
     super.dispose();
   }
 
-  void _switchToConfirmation() {
-    setState(() => _showConfirmation = true);
-  }
-
-  void _switchToMenu() {
-    setState(() => _showConfirmation = false);
-  }
+  void _switchToConfirmation() => setState(() => _showConfirmation = true);
+  void _switchToMenu() => setState(() => _showConfirmation = false);
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.black.withValues(alpha: 0.6),
+      color: Colors.black.withValues(alpha: 0.72),
       child: Stack(
         children: [
           const SizedBox.expand(),
@@ -65,10 +59,8 @@ class _PauseOverlayState extends State<PauseOverlay>
                 child: ScaleTransition(
                   scale: _scale,
                   child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: _showConfirmation
-                        ? _buildConfirmationDialog()
-                        : _buildPauseMenu(),
+                    duration: const Duration(milliseconds: 180),
+                    child: _showConfirmation ? _buildConfirm() : _buildMenu(),
                   ),
                 ),
               ),
@@ -79,60 +71,63 @@ class _PauseOverlayState extends State<PauseOverlay>
     );
   }
 
-  Widget _buildCard({required Widget child}) {
+  Widget _card({required Widget child}) {
     return Container(
       key: ValueKey(_showConfirmation),
-      width: 340,
-      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+      width: 360,
+      padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 28),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1E1E1E), Color(0xFF141414)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        color: const Color(0xFF12161C),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: const Color(0xFFFFB24A).withValues(alpha: 0.22),
         ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white10),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFF3B2F).withValues(alpha: 0.10),
+            blurRadius: 22,
+            spreadRadius: 2,
+          ),
+        ],
       ),
       child: child,
     );
   }
 
-  Widget _buildPauseMenu() {
-    return _buildCard(
+  Widget _buildMenu() {
+    return _card(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const Text(
-            'PAUSED',
+            "PAUSED",
             style: TextStyle(
               fontSize: 22,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w800,
               letterSpacing: 2,
-              color: Colors.white,
+              color: Color(0xFFFFC46B),
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 28),
 
-          _AnimatedMenuButton(
-            label: 'Resume Game',
+          _HeatButton(
+            label: "RESUME",
             icon: Icons.play_arrow,
-            accentColor: Colors.greenAccent,
+            heat: 0.15,
             onTap: widget.game.resumeGame,
           ),
-          const SizedBox(height: 16),
 
-          _AnimatedMenuButton(
-            label: 'Settings',
+          _HeatButton(
+            label: "SETTINGS",
             icon: Icons.settings,
-            accentColor: Colors.blueGrey,
+            heat: 0.45,
             onTap: widget.game.openSettings,
           ),
-          const SizedBox(height: 16),
 
-          _AnimatedMenuButton(
-            label: 'Back to Menu',
+          _HeatButton(
+            label: "EXIT TO MENU",
             icon: Icons.home,
-            accentColor: Colors.orangeAccent,
+            heat: 0.85,
             onTap: _switchToConfirmation,
           ),
         ],
@@ -140,52 +135,44 @@ class _PauseOverlayState extends State<PauseOverlay>
     );
   }
 
-  Widget _buildConfirmationDialog() {
-    return _buildCard(
+  Widget _buildConfirm() {
+    return _card(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(
             Icons.warning_amber_rounded,
-            color: Colors.orangeAccent,
-            size: 48,
+            color: Color(0xFFFF7A3C),
+            size: 46,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           const Text(
-            'Return to Menu?',
+            "Leave the run?",
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: Color(0xFFFFC46B),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           const Text(
-            'Your current progress will be lost.',
+            "Everything currently in motion stops here.",
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: Colors.white70),
+            style: TextStyle(fontSize: 13, color: Colors.white60),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 22),
 
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _AnimatedMenuButton(
-                label: 'Cancel',
-                icon: Icons.close,
-                accentColor: Colors.grey,
-                small: true,
-                onTap: _switchToMenu,
-              ),
-              const SizedBox(width: 14),
-              _AnimatedMenuButton(
-                label: 'Confirm',
-                icon: Icons.check,
-                accentColor: Colors.orangeAccent,
-                small: true,
-                onTap: widget.game.returnToMenu,
-              ),
-            ],
+          _HeatButton(
+            label: "LEAVE RUN",
+            icon: Icons.home,
+            heat: 0.85,
+            onTap: widget.game.returnToMenu,
+          ),
+          _HeatButton(
+            label: "STAY",
+            icon: Icons.arrow_back,
+            heat: 0.25,
+            onTap: _switchToMenu,
           ),
         ],
       ),
@@ -193,32 +180,41 @@ class _PauseOverlayState extends State<PauseOverlay>
   }
 }
 
-class _AnimatedMenuButton extends StatefulWidget {
-  final String label;
-  final IconData icon;
-  final Color accentColor;
-  final VoidCallback onTap;
-  final bool small;
-
-  const _AnimatedMenuButton({
+class _HeatButton extends StatefulWidget {
+  const _HeatButton({
     required this.label,
     required this.icon,
-    required this.accentColor,
+    required this.heat,
     required this.onTap,
-    this.small = false,
   });
 
+  final String label;
+  final IconData icon;
+
+  /// 0.0 = calm, 1.0 = danger
+  final double heat;
+
+  final VoidCallback onTap;
+
   @override
-  State<_AnimatedMenuButton> createState() => _AnimatedMenuButtonState();
+  State<_HeatButton> createState() => _HeatButtonState();
 }
 
-class _AnimatedMenuButtonState extends State<_AnimatedMenuButton> {
+class _HeatButtonState extends State<_HeatButton> {
   bool _pressed = false;
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = widget.accentColor.withValues(alpha: 0.12);
-    final borderColor = widget.accentColor.withValues(alpha: 0.4);
+    final t = widget.heat.clamp(0.0, 1.0);
+
+    // Base ember palette
+    const cool = Color(0xFFFFC46B);
+    const hot = Color(0xFFFF3B2F);
+
+    final color = Color.lerp(cool, hot, t)!;
+
+    final bg = color.withValues(alpha: 0.10 + (t * 0.08));
+    final border = color.withValues(alpha: 0.25 + (t * 0.25));
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
@@ -228,38 +224,35 @@ class _AnimatedMenuButtonState extends State<_AnimatedMenuButton> {
       },
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedScale(
+        duration: const Duration(milliseconds: 120),
         scale: _pressed ? 0.97 : 1,
-        duration: const Duration(milliseconds: 100),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          width: widget.small ? null : 240,
-          padding: EdgeInsets.symmetric(
-            horizontal: widget.small ? 20 : 24,
-            vertical: widget.small ? 10 : 14,
-          ),
+        child: Container(
+          width: 260,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          margin: const EdgeInsets.symmetric(vertical: 6),
           decoration: BoxDecoration(
-            color: bgColor,
+            color: bg,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: borderColor),
+            border: Border.all(color: border),
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.08),
+                blurRadius: 14,
+                spreadRadius: 1,
+              ),
+            ],
           ),
           child: Row(
-            mainAxisSize:
-                widget.small ? MainAxisSize.min : MainAxisSize.max,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                widget.icon,
-                color: Colors.white.withValues(alpha: 0.9),
-                size: 20,
-              ),
+              Icon(widget.icon, color: color, size: 20),
               const SizedBox(width: 10),
               Text(
                 widget.label,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                  letterSpacing: 0.5,
+                style: TextStyle(
+                  color: color.withValues(alpha: 0.95),
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1,
                 ),
               ),
             ],
@@ -269,4 +262,3 @@ class _AnimatedMenuButtonState extends State<_AnimatedMenuButton> {
     );
   }
 }
-

@@ -1,9 +1,11 @@
 import 'dart:developer';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/services/play_games_service.dart';
 import 'package:one_bullet/services/settings_service.dart';
+import 'package:one_bullet/theme/heat_theme.dart';
 
 class SettingsOverlay extends StatefulWidget {
   final OneBulletGame game;
@@ -19,19 +21,21 @@ class _SettingsOverlayState extends State<SettingsOverlay>
   late final Animation<double> _fade;
   late final Animation<double> _scale;
 
+  final double _heat = 0.25;
+
   @override
   void initState() {
     super.initState();
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 280),
+      duration: const Duration(milliseconds: 260),
     );
 
     _fade = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
 
     _scale = Tween(
-      begin: 0.95,
+      begin: 0.96,
       end: 1.0,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
 
@@ -52,186 +56,165 @@ class _SettingsOverlayState extends State<SettingsOverlay>
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Theme.of(context).colorScheme.surface,
-      child: Stack(
-        children: [
-          const SizedBox.expand(),
-
-          /// Animated card
-          Center(
-            child: FadeTransition(
-              opacity: _fade,
-              child: ScaleTransition(scale: _scale, child: _buildCard()),
-            ),
-          ),
-        ],
+      color: HeatTheme.background(_heat),
+      child: FadeTransition(
+        opacity: _fade,
+        child: ScaleTransition(
+          scale: _scale,
+          child: Center(child: _buildPanel()),
+        ),
       ),
     );
   }
 
-  Widget _buildCard() {
+  Widget _buildPanel() {
     return Container(
-      width: 320,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+      width: 360,
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.95),
-            Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.85),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        // color: HeatTheme.surface(_heat),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: HeatTheme.accent(_heat).withValues(alpha: 0.35),
         ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white10),
+        // boxShadow: [
+        //   BoxShadow(
+        //     color: HeatTheme.accent(_heat).withValues(alpha: 0.15),
+        //     blurRadius: 24,
+        //     spreadRadius: 2,
+        //   ),
+        // ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // ===== TITLE =====
           Text(
-            'SETTINGS',
+            'SYSTEM SETTINGS',
             style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
+              fontSize: 18,
               letterSpacing: 2,
-              color: Theme.of(context).colorScheme.onSurface,
+              fontWeight: FontWeight.w700,
+              color: HeatTheme.textPrimary(_heat),
             ),
           ),
-          const SizedBox(height: 30),
 
-          /// SOUND
-          ValueListenableBuilder<bool>(
+          const SizedBox(height: 24),
+
+          // ===== TOGGLES =====
+          _settingToggle(
+            title: "Sound",
             valueListenable: SettingsService.soundEnabled,
-            builder: (context, value, _) {
-              return _buildSettingsRow(
-                title: "Sound Effects",
-                value: value,
-                onChanged: SettingsService.setSound,
-              );
-            },
+            onChanged: SettingsService.setSound,
           ),
 
-          const SizedBox(height: 18),
+          const SizedBox(height: 14),
 
-          /// HAPTICS
-          ValueListenableBuilder<bool>(
+          _settingToggle(
+            title: "Haptics",
             valueListenable: SettingsService.hapticsEnabled,
-            builder: (context, value, _) {
-              return _buildSettingsRow(
-                title: "Haptic Feedback",
-                value: value,
-                onChanged: SettingsService.setHaptics,
-              );
-            },
+            onChanged: SettingsService.setHaptics,
           ),
 
-          const SizedBox(height: 18),
-          if (!PlayGamesService.instance.isSignedIn) ...[
-            _AnimatedButton(
+          const SizedBox(height: 22),
+
+          // ===== PLAY GAMES =====
+          if (!PlayGamesService.instance.isSignedIn)
+            _systemButton(
               label: "Sign in to Play Games",
               onTap: _signInToPlayGames,
             ),
 
-            const SizedBox(height: 32),
-          ],
+          const SizedBox(height: 10),
 
-          _AnimatedButton(label: "Close", onTap: _close),
-          const SizedBox(height: 8),
+          // ===== CLOSE =====
+          _systemButton(label: "Close", accent: true, onTap: _close),
         ],
       ),
     );
   }
 
-  Widget _buildSettingsRow({
+  Widget _settingToggle({
     required String title,
-    required bool value,
+    required ValueListenable<bool> valueListenable,
     required ValueChanged<bool> onChanged,
   }) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: Theme.of(
-          context,
-        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(fontSize: 16, color: Colors.white70),
+    return ValueListenableBuilder<bool>(
+      valueListenable: valueListenable,
+      builder: (context, value, _) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: HeatTheme.surfaceGlow(_heat).withValues(alpha: 0.25),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: HeatTheme.accent(_heat).withValues(alpha: 0.12),
             ),
           ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeThumbColor: Theme.of(context).colorScheme.primary,
-            activeTrackColor: Theme.of(
-              context,
-            ).colorScheme.primary.withValues(alpha: 0.3),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: HeatTheme.textPrimary(_heat),
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+              Switch(
+                value: value,
+                onChanged: onChanged,
+                activeColor: HeatTheme.accent(_heat),
+              ),
+            ],
           ),
-        ],
+        );
+      },
+    );
+  }
+
+  Widget _systemButton({
+    required String label,
+    required VoidCallback onTap,
+    bool accent = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: accent
+              ? HeatTheme.accent(_heat).withValues(alpha: 0.12)
+              : HeatTheme.surfaceGlow(_heat).withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: HeatTheme.accent(
+              _heat,
+            ).withValues(alpha: accent ? 0.4 : 0.2),
+          ),
+        ),
+        child: Center(
+          child: Text(
+            label.toUpperCase(),
+            style: TextStyle(
+              color: accent
+                  ? HeatTheme.accent(_heat)
+                  : HeatTheme.textPrimary(_heat),
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ),
       ),
     );
   }
 
   void _signInToPlayGames() async {
-    log("[SETTINGS OVERLAY] Attempting to sign in to Play Games...");
+    log("[SETTINGS] Signing into Play Games...");
     final success = await PlayGamesService.instance.signIn();
-    if (success) {
-      log("[SETTINGS OVERLAY] User signed in to Play Games successfully.");
-    } else {
-      log("[SETTINGS OVERLAY] Failed to sign in to Play Games.");
-    }
-  }
-}
 
-class _AnimatedButton extends StatefulWidget {
-  final String label;
-  final VoidCallback onTap;
-
-  const _AnimatedButton({required this.label, required this.onTap});
-
-  @override
-  State<_AnimatedButton> createState() => _AnimatedButtonState();
-}
-
-class _AnimatedButtonState extends State<_AnimatedButton> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) {
-        setState(() => _pressed = false);
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedScale(
-        scale: _pressed ? 0.96 : 1,
-        duration: const Duration(milliseconds: 100),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-          decoration: BoxDecoration(
-            color: Theme.of(
-              context,
-            ).colorScheme.primary.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Text(
-            widget.label.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.5,
-              color: Colors.white,
-            ),
-          ),
-        ),
-      ),
-    );
+    log(success ? "[SETTINGS] Sign-in success" : "[SETTINGS] Sign-in failed");
   }
 }
