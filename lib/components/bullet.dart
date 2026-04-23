@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
@@ -42,8 +43,22 @@ class Bullet extends SpriteComponent with CollisionCallbacks {
 
   double _trailTimer = 0;
 
+  double _threatLevel = 0;
+  double _threatVisual = 0;
+  double _proximityLevel = 0;
+  double _proximityVisual = 0;
+  late final Paint _threatHaloPaint;
+
   Vector2 get velocity => _velocity;
   double get currentSpeed => _currentSpeed;
+
+  void setThreatLevel(double threat) {
+    _threatLevel = threat.clamp(0.0, 1.0);
+  }
+
+  void setProximityLevel(double proximity) {
+    _proximityLevel = proximity.clamp(0.0, 1.0);
+  }
 
   static Vector2 _applyLaunchImperfection(Vector2 velocity) {
     const maxOffset = 5 * math.pi / 180;
@@ -110,6 +125,8 @@ class Bullet extends SpriteComponent with CollisionCallbacks {
   Future<void> onLoad() async {
     await super.onLoad();
 
+    _threatHaloPaint = Paint();
+
     sprite = await Sprite.load('bullet_sprite.png');
     add(RectangleHitbox());
 
@@ -125,6 +142,10 @@ class Bullet extends SpriteComponent with CollisionCallbacks {
   @override
   void update(double dt) {
     super.update(dt);
+
+    final smoothing = (dt * 8).clamp(0.0, 1.0);
+    _threatVisual += (_threatLevel - _threatVisual) * smoothing;
+    _proximityVisual += (_proximityLevel - _proximityVisual) * smoothing;
 
     // === Move the bullet FIRST ===
     position += _velocity * dt;
@@ -142,6 +163,40 @@ class Bullet extends SpriteComponent with CollisionCallbacks {
     _elapsedTime += dt;
 
     _handleWallBounce();
+  }
+
+  @override
+  void render(Canvas canvas) {
+    _renderThreatHalo(canvas);
+    super.render(canvas);
+  }
+
+  void _renderThreatHalo(Canvas canvas) {
+    if (_threatVisual < 0.05) return;
+
+    final center = Offset(size.x / 2, size.y / 2);
+    final radius = 20 + (_threatVisual * 30) + (_proximityVisual * 14);
+    final haloColor = Color.lerp(
+      const Color(0xFFFFB24A),
+      const Color(0xFFFF2E2E),
+      _proximityVisual,
+    )!;
+    final coreAlpha = (0.14 + (_threatVisual * 0.16) + (_proximityVisual * 0.16)).clamp(0.0, 0.55);
+    final midAlpha = (0.06 + (_threatVisual * 0.08) + (_proximityVisual * 0.08)).clamp(0.0, 0.35);
+
+    final gradient = ui.Gradient.radial(
+      center,
+      radius,
+      [
+        haloColor.withValues(alpha: coreAlpha),
+        haloColor.withValues(alpha: midAlpha),
+        Colors.transparent,
+      ],
+      const [0.0, 0.55, 1.0],
+    );
+
+    _threatHaloPaint.shader = gradient;
+    canvas.drawCircle(center, radius, _threatHaloPaint);
   }
 
   void _handleWallBounce() {

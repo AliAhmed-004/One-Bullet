@@ -1,127 +1,118 @@
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
-/// Dynamic background that responds to wave progression.
-///
-/// Features:
-/// - Wave-based gradient that shifts from navy → purple → red/magenta → crimson
-/// - Subtle grid overlay for spatial reference
-/// - Smooth color transitions between waves
 class GameBackground extends Component with HasGameReference {
-  GameBackground() : super(priority: -1); // Render behind all other components
+  GameBackground() : super(priority: -1);
 
-  late Paint _gradientPaint;
-  late Paint _gridPaint;
+  final math.Random _random = math.Random(42);
+  final List<Offset> _noiseDots = [];
 
-  // Grid pattern cache
-  late Path _gridPath;
-  bool _gridInitialized = false;
+  late final Paint _basePaint;
+  late final Paint _streakPaint;
+  late final Paint _noisePaint;
+  late final Paint _vignettePaint;
 
-  static const double _gridSpacing = 50.0;
-  static const double _gridAlpha = 0.08; // 8% opacity for subtlety
+  bool _noiseInitialized = false;
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
 
-    // Initialize paints
-    _gradientPaint = Paint()..style = PaintingStyle.fill;
-
-    _gridPaint = Paint()
-      ..color = Colors.white.withValues(alpha: _gridAlpha)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
+    _basePaint = Paint();
+    _streakPaint = Paint()..strokeWidth = 1.4;
+    _noisePaint = Paint()..strokeWidth = 1.2;
+    _vignettePaint = Paint();
   }
+
+  void setWave(int wave) {}
 
   @override
   void onGameResize(Vector2 size) {
     super.onGameResize(size);
-    _gridInitialized = false; // Regenerate grid on resize
-  }
-
-  /// Resets the background state (called when game restarts).
-  void reset() {
-    _gridInitialized = false;
+    _noiseInitialized = false;
   }
 
   @override
   void render(Canvas canvas) {
     super.render(canvas);
 
-    _ensureGridInitialized();
-    _drawGradientBackground(canvas);
-    _drawGridOverlay(canvas);
-  }
-
-  /// Ensures the grid path is generated based on current screen size.
-  void _ensureGridInitialized() {
-    if (_gridInitialized) return;
-
-    final screenWidth = game.size.x;
-    final screenHeight = game.size.y;
-
-    _gridPath = Path();
-
-    // Vertical lines
-    double x = 0;
-    while (x <= screenWidth) {
-      _gridPath.moveTo(x, 0);
-      _gridPath.lineTo(x, screenHeight);
-      x += _gridSpacing;
-    }
-
-    // Horizontal lines
-    double y = 0;
-    while (y <= screenHeight) {
-      _gridPath.moveTo(0, y);
-      _gridPath.lineTo(screenWidth, y);
-      y += _gridSpacing;
-    }
-
-    _gridInitialized = true;
-  }
-
-  /// Draws the wave-based gradient background.
-  void _drawGradientBackground(Canvas canvas) {
-    // Always use Wave 1 colors for consistency
-    const Color startColor = Color(0xFF0B0B10); // Deep navy black
-    const Color endColor = Color(0xFF1A0D2E); // Dark purple
-
-    final screenWidth = game.size.x;
-    final screenHeight = game.size.y;
-
-    final backgroundRect = Rect.fromLTWH(0, 0, screenWidth, screenHeight);
-
-    // Draw solid base color first
-    final basePaint = Paint()
-      ..color = startColor
-      ..style = PaintingStyle.fill;
-
-    canvas.drawRect(backgroundRect, basePaint);
-
-    // Create radial gradient centered on the screen
-    final centerPoint = Offset(screenWidth / 2, screenHeight / 2);
-
-    final maxRadius = (Vector2(screenWidth, screenHeight).length / 2) * 1.2;
-
-    final gradient = ui.Gradient.radial(
-      centerPoint,
-      maxRadius,
-      [startColor, endColor],
-      [0.0, 1.0],
-      TileMode.clamp,
+    final size = game.size;
+    final rect = Rect.fromLTRB(
+      -size.x / 2,
+      -size.y / 2,
+      size.x / 2,
+      size.y / 2,
     );
 
-    _gradientPaint.shader = gradient;
+    _ensureNoise(size);
 
-    // Draw gradient using screen-space coordinates
-    canvas.drawRect(backgroundRect, _gradientPaint);
+    _drawBase(canvas, rect, size);
+    _drawEnergyStreaks(canvas, size);
+    _drawNoise(canvas);
+    _drawVignette(canvas, rect, size);
   }
 
-  /// Draws the subtle grid overlay.
-  void _drawGridOverlay(Canvas canvas) {
-    canvas.drawPath(_gridPath, _gridPaint);
+  void _ensureNoise(Vector2 size) {
+    if (_noiseInitialized) return;
+
+    _noiseDots.clear();
+
+    for (int i = 0; i < 120; i++) {
+      _noiseDots.add(
+        Offset(
+          -size.x / 2 + _random.nextDouble() * size.x,
+          -size.y / 2 + _random.nextDouble() * size.y,
+        ),
+      );
+    }
+
+    _noiseInitialized = true;
+  }
+
+  void _drawBase(Canvas canvas, Rect rect, Vector2 size) {
+    final gradient = ui.Gradient.linear(
+      Offset(-size.x / 2, -size.y / 2),
+      Offset(size.x / 2, size.y / 2),
+      [const Color(0xFF07080F), const Color(0xFF161C2A), const Color(0xFF0A0C14)],
+      [0.0, 0.55, 1.0],
+    );
+
+    _basePaint.shader = gradient;
+    canvas.drawRect(rect, _basePaint);
+  }
+
+  void _drawEnergyStreaks(Canvas canvas, Vector2 size) {
+    _streakPaint.color = Colors.white.withValues(alpha: 0.01);
+    const spacing = 92.0;
+
+    for (double y = -size.y; y < size.y; y += spacing) {
+      canvas.drawLine(
+        Offset(-size.x, y),
+        Offset(size.x, y + size.x * 0.14),
+        _streakPaint,
+      );
+    }
+  }
+
+  void _drawNoise(Canvas canvas) {
+    _noisePaint.color = Colors.white.withValues(alpha: 0.01);
+    canvas.drawPoints(ui.PointMode.points, _noiseDots, _noisePaint);
+  }
+
+  void _drawVignette(Canvas canvas, Rect rect, Vector2 size) {
+    const edgeDarkness = 0.36;
+
+    final vignette = ui.Gradient.radial(
+      Offset.zero,
+      size.length * 0.75,
+      [Colors.transparent, Colors.black.withValues(alpha: edgeDarkness)],
+      [0.65, 1.0],
+    );
+
+    _vignettePaint.shader = vignette;
+    canvas.drawRect(rect, _vignettePaint);
   }
 }

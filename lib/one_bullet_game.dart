@@ -174,7 +174,7 @@ class OneBulletGame extends FlameGame
 
     // Add the dynamic background (renders behind all game elements)
     gameBackground = GameBackground();
-    add(gameBackground!);
+    await world.add(gameBackground!);
 
     // Show start screen and pause the game
     overlays.add(startScreenOverlayId);
@@ -202,8 +202,9 @@ class OneBulletGame extends FlameGame
     _botFireDelayRemaining = botFireDelaySeconds;
     _botTime = 0;
 
-    // Reset the background so grid and colors render properly on new game
-    gameBackground?.reset();
+    // Reset background state for a fresh run while keeping the component mounted.
+    gameBackground?.setWave(1);
+
 
     // Create and add the player at the center of the arena
     // Offset slightly down to account for HUD space
@@ -239,6 +240,8 @@ class OneBulletGame extends FlameGame
   @override
   void update(double dt) {
     super.update(dt);
+
+    _updateThreatIndicators();
 
     if (_hasStarted && !_isGameOver && !_isPaused && player != null) {
       final input = getMovementInput(dt);
@@ -515,6 +518,30 @@ class OneBulletGame extends FlameGame
     waveState.value = (waveNumber: newWave, isFlashing: isWarning);
   }
 
+  void _updateThreatIndicators() {
+    if (!_hasStarted || _isGameOver || player == null || bullet == null) {
+      bullet?.setThreatLevel(0);
+      bullet?.setProximityLevel(0);
+      return;
+    }
+
+    final distance = player!.position.distanceTo(bullet!.position);
+    const maxThreatDistance = 420.0;
+
+    final normalizedDistance = (1 - (distance / maxThreatDistance)).clamp(
+      0.0,
+      1.0,
+    );
+
+    final speed = bullet!.currentSpeed;
+    final normalizedSpeed = ((speed - 440.0) / 360.0).clamp(0.0, 1.0);
+
+    final threat = (normalizedDistance * 0.9) + (normalizedSpeed * 0.1);
+
+    bullet!.setProximityLevel(normalizedDistance);
+    bullet!.setThreatLevel(threat);
+  }
+
   /// Called when the bullet speed should change.
   void _onSpeedChange(double newSpeed) {
     bullet?.setSpeed(newSpeed);
@@ -701,8 +728,12 @@ class OneBulletGame extends FlameGame
     // Stop all active sound effects before teardown
     SoundService.stopAll();
 
-    // Remove game components except arena boundary
-    world.removeAll(world.children.where((c) => c is! ArenaBoundary));
+    // Remove game components except arena boundary and persistent background.
+    world.removeAll(
+      world.children.where(
+        (c) => c is! ArenaBoundary && c is! GameBackground,
+      ),
+    );
     camera.viewport.removeAll(
       camera.viewport.children.whereType<MobileJoystick>(),
     );
@@ -750,8 +781,12 @@ class OneBulletGame extends FlameGame
     // Stop all active sound effects before teardown
     SoundService.stopAll();
 
-    // Remove game components except arena boundary
-    world.removeAll(world.children.where((c) => c is! ArenaBoundary));
+    // Remove game components except arena boundary and persistent background.
+    world.removeAll(
+      world.children.where(
+        (c) => c is! ArenaBoundary && c is! GameBackground,
+      ),
+    );
     camera.viewport.removeAll(
       camera.viewport.children.whereType<MobileJoystick>(),
     );
