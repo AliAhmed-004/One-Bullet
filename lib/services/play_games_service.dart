@@ -8,158 +8,189 @@ class PlayGamesService {
   PlayGamesService._internal();
   static final PlayGamesService instance = PlayGamesService._internal();
 
+  static const String _androidLeaderboardId = "CgkIvLXzppUPEAIQBw";
+  // Add this later if you support Game Center
+  // static const String _iosLeaderboardId = "your_ios_leaderboard_id";
+
   bool _isInitialized = false;
   bool _isSignedIn = false;
+  final ValueNotifier<bool> signInState = ValueNotifier(false);
+
+  Future<void>? _initFuture;
+  StreamSubscription<PlayerData?>? _authSubscription;
 
   bool get isInitialized => _isInitialized;
   bool get isSignedIn => _isSignedIn;
-  bool get isSupportedPlatform => _supportsPlayGames;
 
-  static bool get _supportsPlayGames =>
-      !kIsWeb &&
-      (defaultTargetPlatform == TargetPlatform.android ||
-          defaultTargetPlatform == TargetPlatform.iOS);
+  static bool get isSupportedPlatform =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
-  /// Initialize Play Games Services.
-  /// Call this once during app startup.
-  Future<void> initialize() async {
-    debugPrint('[PLAY GAMES SERVICE] Initializing Play Games Services...');
-    if (_isInitialized) return;
+  String get _leaderboardId {
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return _androidLeaderboardId;
+      default:
+        throw UnsupportedError('Play Games is not supported on this platform.');
+    }
+  }
 
-    if (!_supportsPlayGames) {
+  /// Safe one-time initialization.
+  /// Can be called multiple times without race conditions.
+  Future<void> initialize() {
+    return _initFuture ??= _doInitialize();
+  }
+
+  Future<void> _doInitialize() async {
+    debugPrint('[PLAY GAMES] Initializing...');
+
+    if (!isSupportedPlatform) {
       _isInitialized = true;
       _isSignedIn = false;
-      debugPrint(
-        '[PLAY GAMES SERVICE] Skipping initialization on unsupported platform',
-      );
+      debugPrint('[PLAY GAMES] Unsupported platform, skipping initialization');
       return;
     }
 
-    // Startup initialization is intentionally passive: no auth prompt.
+    _attachAuthListener();
+    await _refreshSignInState();
+
     _isInitialized = true;
-    _isSignedIn = false;
+
+    debugPrint(
+      '[PLAY GAMES] Initialization complete | signed in: $_isSignedIn',
+    );
   }
 
+  void _attachAuthListener() {
+    _authSubscription ??= GameAuth.player.listen((player) {
+      final signedIn = player != null;
+      _updateSignInState(signedIn);
+    });
+  }
+
+  Future<void> _refreshSignInState() async {
+    try {
+      final signedIn = await GameAuth.isSignedIn;
+      await _updateSignInState(signedIn);
+    } catch (e) {
+      debugPrint('[PLAY GAMES] Sign-in state check failed: $e');
+      await _updateSignInState(false);
+    }
+  }
+
+  Future<void> _updateSignInState(bool signedIn) async {
+    if (_isSignedIn == signedIn) return;
+
+    _isSignedIn = signedIn;
+    signInState.value = signedIn;
+
+    debugPrint('[PLAY GAMES] Auth state changed | signed in: $_isSignedIn');
+
+    if (_isSignedIn) {
+      unawaited(AchievementService.instance.syncUnlockedAchievements());
+    }
+  }
+
+  /// Manual sign-in flow.
   Future<bool> signIn() async {
-    if (!_supportsPlayGames) {
-      debugPrint(
-        '[PLAY GAMES SERVICE] Sign-in skipped on unsupported platform',
-      );
+    if (!isSupportedPlatform) {
+      debugPrint('[PLAY GAMES] Sign-in skipped: unsupported platform');
       return false;
     }
 
-    debugPrint('[PLAY GAMES SERVICE] Attempting manual sign-in...');
+    debugPrint('[PLAY GAMES] Attempting manual sign-in...');
+
     try {
       final result = await GameAuth.signIn();
 
-      _isSignedIn = true;
-      debugPrint('[PLAY GAMES SERVICE] Manual sign-in successful: $result');
+      final signedIn = await GameAuth.isSignedIn;
+      await _updateSignInState(signedIn);
 
-      // Sync unlocked achievements from Play Games (fire-and-forget)
-      AchievementService.instance.syncUnlockedAchievements();
+      debugPrint(
+        '[PLAY GAMES] Sign-in result: $result | signed in: $_isSignedIn',
+      );
 
-      return true;
+      return _isSignedIn;
     } catch (e) {
-      debugPrint('[PLAY GAMES SERVICE] Manual sign-in failed: $e');
-      _isSignedIn = false;
+      debugPrint('[PLAY GAMES] Manual sign-in failed: $e');
+      await _updateSignInState(false);
       return false;
     }
   }
 
-  // show leaderboards
   Future<void> showLeaderboards() async {
-    if (!_supportsPlayGames) {
-      debugPrint(
-        '[PLAY GAMES SERVICE] Cannot show leaderboards: unsupported platform',
-      );
-      return;
-    }
-
-    if (!_isSignedIn) {
-      debugPrint(
-        '[PLAY GAMES SERVICE] Cannot show leaderboards: not signed in',
-      );
-      return;
-    }
+    if (!_canUseService('show leaderboards')) return;
 
     try {
       await GamesServices.showLeaderboards();
-      debugPrint('[PLAY GAMES SERVICE] Show leaderboards successful');
+      debugPrint('[PLAY GAMES] Leaderboards opened');
     } catch (e) {
-      debugPrint('[PLAY GAMES SERVICE] Show leaderboards failed: $e');
+      debugPrint('[PLAY GAMES] Failed to show leaderboards: $e');
     }
   }
 
-  // Load leaderboard scores (for internal use, not UI)
   Future<List<LeaderboardScoreData>> loadLeaderboardScores({
     int maxResults = 10,
   }) async {
-    if (!_supportsPlayGames) {
-      debugPrint(
-        '[PLAY GAMES SERVICE] Cannot load leaderboard scores: unsupported platform',
-      );
-      return [];
-    }
-
-    if (!_isSignedIn) {
-      debugPrint(
-        '[PLAY GAMES SERVICE] Cannot load leaderboard scores: not signed in',
-      );
+    if (!_canUseService('load leaderboard scores')) {
       return [];
     }
 
     try {
       final scores = await GamesServices.loadLeaderboardScores(
         maxResults: maxResults,
-        androidLeaderboardID: "CgkIvLXzppUPEAIQBw",
+        androidLeaderboardID: _leaderboardId,
         timeScope: TimeScope.allTime,
         scope: PlayerScope.global,
       );
 
-      if (scores == null) {
-        debugPrint(
-          '[PLAY GAMES SERVICE] Load leaderboard scores returned null ',
-        );
+      if (scores == null || scores.isEmpty) {
+        debugPrint('[PLAY GAMES] No leaderboard scores found');
         return [];
       }
 
-      debugPrint(
-        '[PLAY GAMES SERVICE] Load leaderboard scores successful: ${scores.length} scores loaded',
-      );
-
-      if (scores.isEmpty) {
-        debugPrint('[PLAY GAMES SERVICE] No scores found for leaderboard ');
-        return [];
-      }
+      debugPrint('[PLAY GAMES] Loaded ${scores.length} leaderboard scores');
 
       return scores;
     } catch (e) {
-      debugPrint('[PLAY GAMES SERVICE] Load leaderboard scores failed: $e');
+      debugPrint('[PLAY GAMES] Failed to load scores: $e');
       return [];
     }
   }
 
-  /// show achievements
   Future<void> showAchievements() async {
-    if (!_supportsPlayGames) {
-      debugPrint(
-        '[PLAY GAMES SERVICE] Cannot show achievements: unsupported platform',
-      );
-      return;
-    }
-
-    if (!_isSignedIn) {
-      debugPrint(
-        '[PLAY GAMES SERVICE] Cannot show achievements: not signed in',
-      );
-      return;
-    }
+    if (!_canUseService('show achievements')) return;
 
     try {
       await GamesServices.showAchievements();
-      debugPrint('[PLAY GAMES SERVICE] Show achievements successful');
+      debugPrint('[PLAY GAMES] Achievements opened');
     } catch (e) {
-      debugPrint('[PLAY GAMES SERVICE] Show achievements failed: $e');
+      debugPrint('[PLAY GAMES] Failed to show achievements: $e');
     }
+  }
+
+  bool _canUseService(String action) {
+    if (!isSupportedPlatform) {
+      debugPrint('[PLAY GAMES] Cannot $action: unsupported platform');
+      return false;
+    }
+
+    if (!_isSignedIn) {
+      debugPrint('[PLAY GAMES] Cannot $action: user not signed in');
+      return false;
+    }
+
+    return true;
+  }
+
+  /// Cleanup for tests / app shutdown / hot restart.
+  Future<void> dispose() async {
+    debugPrint('[PLAY GAMES] Disposing service...');
+
+    await _authSubscription?.cancel();
+    _authSubscription = null;
+
+    _initFuture = null;
+    _isInitialized = false;
+    _isSignedIn = false;
   }
 }

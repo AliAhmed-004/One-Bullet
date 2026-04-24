@@ -147,66 +147,79 @@ class _StartScreenOverlayState extends State<StartScreenOverlay> {
                 },
               ),
 
-              if (PlayGamesService.instance.isSupportedPlatform &&
-                  !PlayGamesService.instance.isSignedIn) ...[
-                const SizedBox(height: 18),
-                GestureDetector(
-                  onTap: _isSigningIn ? null : _signInToPlayGames,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: HeatTheme.surface(heat),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: HeatTheme.accent(heat).withValues(alpha: 0.35),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (_isSigningIn) ...[
-                          SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: HeatTheme.accent(heat),
+              ValueListenableBuilder(
+                valueListenable: PlayGamesService.instance.signInState,
+                builder: (context, isSignedIn, _) {
+                  if (!PlayGamesService.isSupportedPlatform || isSignedIn) {
+                    return const SizedBox.shrink();
+                  }
+
+                  return Column(
+                    children: [
+                      GestureDetector(
+                        onTap: _isSigningIn ? null : _signInToPlayGames,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: HeatTheme.surface(heat),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: HeatTheme.accent(
+                                heat,
+                              ).withValues(alpha: 0.35),
                             ),
                           ),
-                          const SizedBox(width: 10),
-                        ] else ...[
-                          Icon(
-                            Icons.emoji_events,
-                            size: 16,
-                            color: HeatTheme.accent(heat),
-                          ),
-                          const SizedBox(width: 8),
-                        ],
-                        Text(
-                          _isSigningIn ? 'CONNECTING...' : 'CONNECT PLAY GAMES',
-                          style: TextStyle(
-                            color: HeatTheme.textPrimary(heat),
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 1.0,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (_isSigningIn) ...[
+                                SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: HeatTheme.accent(heat),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                              ] else ...[
+                                Icon(
+                                  Icons.emoji_events,
+                                  size: 16,
+                                  color: HeatTheme.accent(heat),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              Text(
+                                _isSigningIn
+                                    ? 'CONNECTING...'
+                                    : 'CONNECT PLAY GAMES',
+                                style: TextStyle(
+                                  color: HeatTheme.textPrimary(heat),
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 1.0,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Save achievements and join global leaderboards',
-                  style: TextStyle(
-                    color: HeatTheme.textMuted(heat),
-                    fontSize: 11,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Save achievements and join global leaderboards',
+                        style: TextStyle(
+                          color: HeatTheme.textMuted(heat),
+                          fontSize: 11,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
 
               const SizedBox(height: 60),
 
@@ -250,7 +263,7 @@ class _SystemMenuState extends State<_SystemMenu> {
     required String featureLabel,
     required VoidCallback onAuthorized,
   }) async {
-    if (!PlayGamesService.instance.isSupportedPlatform) {
+    if (!PlayGamesService.isSupportedPlatform) {
       if (!mounted) {
         return;
       }

@@ -119,7 +119,7 @@ class _SettingsOverlayState extends State<SettingsOverlay>
           const SizedBox(height: 22),
 
           // ===== PLAY GAMES =====
-          if (PlayGamesService.instance.isSupportedPlatform)
+          if (PlayGamesService.isSupportedPlatform)
             _playGamesSection(),
 
           const SizedBox(height: 10),

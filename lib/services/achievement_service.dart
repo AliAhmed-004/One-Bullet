@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:games_services/games_services.dart' as gs;
@@ -125,7 +127,7 @@ class AchievementService {
   /// This method is fire-and-forget to avoid blocking app startup.
   /// The game will work fine without sync; it just won't skip already-unlocked
   /// achievements in the "Next Achievement" UI.
-  void syncUnlockedAchievements() {
+  Future<void> syncUnlockedAchievements() async {
     if (!PlayGamesService.instance.isSignedIn) {
       debugPrint('[ACHIEVEMENT SERVICE] Cannot sync: not signed in');
       return;
@@ -134,7 +136,7 @@ class AchievementService {
     // Fire-and-forget: schedule sync after first frame to ensure main thread
     // Don't await - we don't want to block app startup
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _performSync();
+      unawaited(_performSync());
     });
   }
 
