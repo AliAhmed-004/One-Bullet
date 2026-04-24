@@ -22,19 +22,21 @@ class _GameOverOverlayState extends State<GameOverOverlay>
   late final Animation<double> _scale;
   late final DeathMessageResult _deathMessage;
 
+  static const _ember = Color(0xFFFF6A3D);
+  static const _gold = Color(0xFFFFC46B);
+  static const _deepHeat = Color(0xFFB83A1B);
+
   @override
   void initState() {
     super.initState();
 
-    // Get contextual death message based on survival time
-    final survivalSeconds = widget.game.survivalTime.value.inSeconds;
-    _deathMessage = DeathMessageService.instance.getDeathMessage(
-      survivalSeconds,
-    );
+    final seconds = widget.game.survivalTime.value.inSeconds;
+
+    _deathMessage = DeathMessageService.instance.getDeathMessage(seconds);
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 280),
     );
 
     _fade = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
@@ -59,52 +61,43 @@ class _GameOverOverlayState extends State<GameOverOverlay>
     final isNewRecord = widget.game.isNewHighScore;
     final canContinue = widget.game.canContinue;
 
-    final accent = isNewRecord ? Colors.amberAccent : Colors.redAccent;
-
     return Material(
-      color: Theme.of(context).colorScheme.surface,
-      child: Stack(
-        children: [
-          const SizedBox.expand(),
-          Center(
-            child: FadeTransition(
-              opacity: _fade,
-              child: ScaleTransition(
-                scale: _scale,
-                child: _buildCard(
-                  accent: accent,
-                  finalTime: finalTime,
-                  isNewRecord: isNewRecord,
-                  canContinue: canContinue,
-                ),
-              ),
+      color: Colors.black.withValues(alpha: 0.78),
+      child: SafeArea(
+        child: Center(
+          child: FadeTransition(
+            opacity: _fade,
+            child: ScaleTransition(
+              scale: _scale,
+              child: _buildCard(finalTime, isNewRecord, canContinue),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildCard({
-    required Color accent,
-    required Duration finalTime,
-    required bool isNewRecord,
-    required bool canContinue,
-  }) {
+  Widget _buildCard(Duration finalTime, bool isNewRecord, bool canContinue) {
     return Container(
-      width: 360,
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 36),
+      width: 370,
+      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 30),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Theme.of(context).scaffoldBackgroundColor,
-            Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.9),
-          ],
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1B120D), Color(0xFF120D09)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: accent.withValues(alpha: 0.6)),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: (isNewRecord ? _gold : _ember).withValues(alpha: 0.45),
+        ),
+        boxShadow: [
+          BoxShadow(
+            blurRadius: 24,
+            spreadRadius: 2,
+            color: _ember.withValues(alpha: 0.10),
+          ),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -112,78 +105,49 @@ class _GameOverOverlayState extends State<GameOverOverlay>
           Text(
             'GAME OVER',
             style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 3,
-              color: Theme.of(context).colorScheme.errorContainer,
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 2,
+              color: isNewRecord ? _gold : _ember,
             ),
           ),
+
           const SizedBox(height: 12),
 
-          // Death message - contextual based on achievement proximity
           _buildDeathMessage(),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 22),
 
           Text(
-            'Time Survived',
+            'TIME SURVIVED',
             style: TextStyle(
-              fontSize: 13,
-              letterSpacing: 1.5,
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.7),
+              fontSize: 11,
+              letterSpacing: 1.8,
+              color: Colors.white.withValues(alpha: 0.65),
             ),
           ),
-          const SizedBox(height: 6),
+
+          const SizedBox(height: 8),
+
           Text(
             ScoreService.formatDuration(finalTime),
-            style: TextStyle(
-              fontSize: 42,
+            style: const TextStyle(
+              fontSize: 44,
               fontWeight: FontWeight.bold,
               fontFamily: 'monospace',
               letterSpacing: 3,
-              color: Theme.of(context).colorScheme.onSurface,
+              color: Colors.white,
             ),
           ),
 
-          // Next achievement progress indicator
           if (_deathMessage.secondsToNextAchievement != null) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             _buildNextAchievementSection(),
           ],
 
-          if (isNewRecord) ...[
-            const SizedBox(height: 18),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.amberAccent.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: Colors.amberAccent.withValues(alpha: 0.6),
-                ),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.emoji_events, color: Colors.amberAccent, size: 18),
-                  SizedBox(width: 8),
-                  Text(
-                    'NEW HIGH SCORE',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5,
-                      color: Colors.amberAccent,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          if (isNewRecord) ...[const SizedBox(height: 18), _buildRecordBadge()],
 
-          const SizedBox(height: 36),
+          const SizedBox(height: 30),
 
           if (canContinue) ...[
             _isLoadingAd
@@ -191,31 +155,33 @@ class _GameOverOverlayState extends State<GameOverOverlay>
                     height: 52,
                     child: Center(
                       child: CircularProgressIndicator(
-                        color: Colors.white,
                         strokeWidth: 2,
+                        color: Colors.white,
                       ),
                     ),
                   )
                 : _ActionButton(
-                    label: 'Continue (Watch Ad)',
+                    label: 'Continue',
                     icon: Icons.play_circle_fill,
-                    accentColor: Colors.greenAccent,
+                    accentColor: _gold,
                     onTap: _onContinuePressed,
                   ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
           ],
 
           _ActionButton(
             label: 'Restart',
             icon: Icons.refresh,
-            accentColor: Theme.of(context).colorScheme.errorContainer,
+            accentColor: _ember,
             onTap: widget.game.restart,
           ),
+
           const SizedBox(height: 12),
+
           _ActionButton(
             label: 'Main Menu',
             icon: Icons.home,
-            accentColor: Theme.of(context).colorScheme.primary,
+            accentColor: _deepHeat,
             onTap: widget.game.returnToMenu,
           ),
         ],
@@ -223,162 +189,87 @@ class _GameOverOverlayState extends State<GameOverOverlay>
     );
   }
 
-  /// Builds the contextual death message widget.
-  Widget _buildDeathMessage() {
-    final Color messageColor;
-    final IconData? icon;
-
-    switch (_deathMessage.type) {
-      case DeathMessageType.nearMiss:
-        // Infuriating red/orange - you were SO close
-        messageColor = Colors.deepOrangeAccent;
-        icon = Icons.local_fire_department;
-      case DeathMessageType.almostThere:
-        // Encouraging amber - keep trying
-        messageColor = Colors.amberAccent;
-        icon = Icons.trending_up;
-      case DeathMessageType.sarcastic:
-        // Playful blue/gray - lighthearted
-        messageColor = Theme.of(
-          context,
-        ).colorScheme.onSurface.withValues(alpha: 0.7);
-        icon = null;
-      case DeathMessageType.champion:
-        // Respectful gold - you've earned it
-        messageColor = Colors.amber;
-        icon = Icons.workspace_premium;
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Column(
+  Widget _buildRecordBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: _gold.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _gold.withValues(alpha: 0.4)),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Main message
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (icon != null) ...[
-                Icon(icon, color: messageColor, size: 16),
-                const SizedBox(width: 6),
-              ],
-              Flexible(
-                child: Text(
-                  _deathMessage.message,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontStyle: FontStyle.italic,
-                    color: messageColor,
-                    fontWeight: _deathMessage.type == DeathMessageType.nearMiss
-                        ? FontWeight.w600
-                        : FontWeight.normal,
-                  ),
-                ),
-              ),
-            ],
+          Icon(Icons.emoji_events, color: _gold, size: 16),
+          SizedBox(width: 8),
+          Text(
+            'NEW RECORD',
+            style: TextStyle(
+              color: _gold,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+              fontSize: 11,
+            ),
           ),
         ],
       ),
     );
   }
 
-  /// Builds the "Next Achievement" progress section.
+  Widget _buildDeathMessage() {
+    return Text(
+      _deathMessage.message,
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontSize: 14,
+        fontStyle: FontStyle.italic,
+        color: _gold.withValues(alpha: 0.85),
+      ),
+    );
+  }
+
   Widget _buildNextAchievementSection() {
-    final secondsLeft = _deathMessage.secondsToNextAchievement!;
-    final achievementTitle = _deathMessage.nextAchievementTitle!;
-    final survivalSeconds = widget.game.survivalTime.value.inSeconds;
+    final left = _deathMessage.secondsToNextAchievement!;
+    final title = _deathMessage.nextAchievementTitle!;
+    final survived = widget.game.survivalTime.value.inSeconds;
+    final target = survived + left;
 
-    // Find the achievement's required seconds from the service
-    final requiredSeconds = secondsLeft + survivalSeconds;
-
-    // Calculate progress percentage
-    final progress = (survivalSeconds / requiredSeconds).clamp(0.0, 1.0);
-
-    // Color based on proximity
-    final Color accentColor;
-    final String proximityText;
-
-    if (secondsLeft <= 10) {
-      accentColor = Colors.deepOrangeAccent;
-      proximityText = 'SO CLOSE!';
-    } else if (secondsLeft <= 20) {
-      accentColor = Colors.amberAccent;
-      proximityText = 'Almost there!';
-    } else {
-      accentColor = Theme.of(
-        context,
-      ).colorScheme.primary.withValues(alpha: 0.7);
-      proximityText = 'Next target';
-    }
+    final progress = (survived / target).clamp(0.0, 1.0);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: accentColor.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: accentColor.withValues(alpha: 0.3)),
+        color: _ember.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _ember.withValues(alpha: 0.18)),
       ),
       child: Column(
         children: [
-          // Header row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                proximityText,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1,
-                  color: accentColor,
-                ),
-              ),
-              Text(
-                '${secondsLeft}s to go',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: accentColor,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          // Achievement name
           Text(
-            achievementTitle,
+            title,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
+              color: Colors.white,
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 10),
-
-          // Progress bar
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(6),
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 6,
-              backgroundColor: accentColor.withValues(alpha: 0.15),
-              valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+              backgroundColor: Colors.white12,
+              valueColor: const AlwaysStoppedAnimation(_ember),
             ),
           ),
-          const SizedBox(height: 4),
-
-          // Progress text
+          const SizedBox(height: 6),
           Text(
-            '${survivalSeconds}s / ${requiredSeconds}s',
+            '$survived s / $target s',
             style: TextStyle(
               fontSize: 10,
-              fontFamily: 'monospace',
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.6),
+              color: Colors.white.withValues(alpha: 0.55),
             ),
           ),
         ],
@@ -390,9 +281,7 @@ class _GameOverOverlayState extends State<GameOverOverlay>
     setState(() => _isLoadingAd = true);
 
     AdService.showRewardedAd(
-      onRewardEarned: () {
-        widget.game.continueGame();
-      },
+      onRewardEarned: widget.game.continueGame,
       onAdDismissedWithoutReward: () {
         if (mounted) {
           setState(() => _isLoadingAd = false);
@@ -403,17 +292,17 @@ class _GameOverOverlayState extends State<GameOverOverlay>
 }
 
 class _ActionButton extends StatefulWidget {
-  final String label;
-  final IconData icon;
-  final Color accentColor;
-  final VoidCallback onTap;
-
   const _ActionButton({
     required this.label,
     required this.icon,
     required this.accentColor,
     required this.onTap,
   });
+
+  final String label;
+  final IconData icon;
+  final Color accentColor;
+  final VoidCallback onTap;
 
   @override
   State<_ActionButton> createState() => _ActionButtonState();
@@ -424,9 +313,6 @@ class _ActionButtonState extends State<_ActionButton> {
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = widget.accentColor.withValues(alpha: 0.12);
-    final borderColor = widget.accentColor.withValues(alpha: 0.5);
-
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) {
@@ -441,26 +327,23 @@ class _ActionButtonState extends State<_ActionButton> {
           width: 260,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           decoration: BoxDecoration(
-            color: bgColor,
+            color: widget.accentColor.withValues(alpha: 0.10),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: borderColor),
+            border: Border.all(
+              color: widget.accentColor.withValues(alpha: 0.35),
+            ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                widget.icon,
-                color: Theme.of(context).colorScheme.onSurface,
-                size: 20,
-              ),
+              Icon(widget.icon, color: Colors.white, size: 20),
               const SizedBox(width: 10),
               Text(
                 widget.label,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
-                  color: Theme.of(context).colorScheme.onSurface,
+                  color: Colors.white,
                 ),
               ),
             ],

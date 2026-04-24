@@ -119,16 +119,60 @@ class _SettingsOverlayState extends State<SettingsOverlay>
           const SizedBox(height: 22),
 
           // ===== PLAY GAMES =====
-          if (!PlayGamesService.instance.isSignedIn)
-            _systemButton(
-              label: "Sign in to Play Games",
-              onTap: _signInToPlayGames,
-            ),
+          if (PlayGamesService.instance.isSupportedPlatform)
+            _playGamesSection(),
 
           const SizedBox(height: 10),
 
           // ===== CLOSE =====
           _systemButton(label: "Close", accent: true, onTap: _close),
+        ],
+      ),
+    );
+  }
+
+  Widget _playGamesSection() {
+    final isSignedIn = PlayGamesService.instance.isSignedIn;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: HeatTheme.surfaceGlow(_heat).withValues(alpha: 0.25),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: HeatTheme.accent(_heat).withValues(alpha: 0.12),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Play Games',
+            style: TextStyle(
+              color: HeatTheme.textPrimary(_heat),
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            isSignedIn
+                ? 'Connected. Achievements and leaderboards are active.'
+                : 'Not connected. Sign in to save achievements and join leaderboards.',
+            style: TextStyle(
+              color: HeatTheme.textMuted(_heat),
+              fontSize: 12,
+              height: 1.35,
+            ),
+          ),
+          if (!isSignedIn) ...[
+            const SizedBox(height: 10),
+            _systemButton(
+              label: 'Connect Play Games',
+              onTap: _signInToPlayGames,
+            ),
+          ],
         ],
       ),
     );
@@ -216,5 +260,20 @@ class _SettingsOverlayState extends State<SettingsOverlay>
     final success = await PlayGamesService.instance.signIn();
 
     log(success ? "[SETTINGS] Sign-in success" : "[SETTINGS] Sign-in failed");
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          success
+              ? 'Play Games connected successfully.'
+              : 'Play Games sign-in failed. Please try again.',
+        ),
+      ),
+    );
+
+    setState(() {});
   }
 }

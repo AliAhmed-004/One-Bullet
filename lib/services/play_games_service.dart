@@ -13,6 +13,7 @@ class PlayGamesService {
 
   bool get isInitialized => _isInitialized;
   bool get isSignedIn => _isSignedIn;
+  bool get isSupportedPlatform => _supportsPlayGames;
 
   static bool get _supportsPlayGames =>
       !kIsWeb &&
@@ -34,33 +35,9 @@ class PlayGamesService {
       return;
     }
 
-    try {
-      await _attemptSilentSignIn();
-      _isInitialized = true;
-    } catch (e) {
-      // We don't crash the game because of Play Games.
-      _isInitialized = true;
-      _isSignedIn = false;
-    }
-  }
-
-  Future<void> _attemptSilentSignIn() async {
-    debugPrint('[PLAY GAMES SERVICE] Attempting silent sign-in...');
-    try {
-      final result = await GameAuth.signIn();
-
-      _isSignedIn = true;
-      debugPrint('[PLAY GAMES SERVICE] Silent sign-in successful: $result');
-      debugPrint(
-        'Play Games signed in: ${PlayGamesService.instance.isSignedIn}',
-      );
-
-      // Sync unlocked achievements from Play Games (fire-and-forget)
-      AchievementService.instance.syncUnlockedAchievements();
-    } catch (e) {
-      debugPrint('[PLAY GAMES SERVICE] Silent sign-in failed: $e');
-      _isSignedIn = false;
-    }
+    // Startup initialization is intentionally passive: no auth prompt.
+    _isInitialized = true;
+    _isSignedIn = false;
   }
 
   Future<bool> signIn() async {
