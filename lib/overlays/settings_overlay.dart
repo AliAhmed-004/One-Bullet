@@ -209,7 +209,7 @@ class _SettingsOverlayState extends State<SettingsOverlay>
               Switch(
                 value: value,
                 onChanged: onChanged,
-                activeColor: HeatTheme.accent(_heat),
+                activeThumbColor: HeatTheme.accent(_heat),
               ),
             ],
           ),
