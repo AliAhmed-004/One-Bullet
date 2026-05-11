@@ -13,15 +13,12 @@ class LeaderboardsOverlay extends StatefulWidget {
   State<LeaderboardsOverlay> createState() => _LeaderboardsOverlayState();
 }
 
-enum _ConnectionState { connected, disconnected, unknown }
-
 class _LeaderboardsOverlayState extends State<LeaderboardsOverlay>
     with SingleTickerProviderStateMixin {
   bool _isLoading = true;
   bool _hasError = false;
   String _errorMessage = '';
   final List<LeaderboardScoreData> _scores = [];
-  _ConnectionState _connectionState = _ConnectionState.unknown;
 
   late final AnimationController _controller;
   late final Animation<double> _fade;
@@ -54,12 +51,6 @@ class _LeaderboardsOverlayState extends State<LeaderboardsOverlay>
     final isConnected =
         result.contains(ConnectivityResult.wifi) ||
         result.contains(ConnectivityResult.mobile);
-
-    setState(() {
-      _connectionState = isConnected
-          ? _ConnectionState.connected
-          : _ConnectionState.disconnected;
-    });
 
     if (isConnected) {
       _loadLeaderboards();
