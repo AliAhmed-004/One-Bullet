@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:one_bullet/config/game_constants.dart';
 
 /// Service for managing Google AdMob ads.
 ///
@@ -55,7 +56,7 @@ class AdService {
 
       return kDebugMode
           ? 'ca-app-pub-3940256099942544/1033173712'
-          : 'ca-app-pub-4588211425588192/7743120305';
+          : GameConstants.androidInterstitialAdUnitId;
     } else if (Platform.isIOS) {
       // iOS test interstitial ad unit ID
       return 'ca-app-pub-3940256099942544/4411468910';
@@ -74,7 +75,7 @@ class AdService {
 
       return kDebugMode
           ? 'ca-app-pub-3940256099942544/5224354917' // Test ID for debug builds
-          : 'ca-app-pub-4588211425588192/6790691784'; // Real ID for release builds
+          : GameConstants.androidRewardedAdUnitId; // Real ID for release builds
     } else if (Platform.isIOS) {
       // iOS test rewarded ad unit ID
       return 'ca-app-pub-3940256099942544/1712485313';

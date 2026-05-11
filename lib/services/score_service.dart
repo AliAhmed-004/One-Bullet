@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:games_services/games_services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:one_bullet/config/game_constants.dart';
 import 'package:one_bullet/services/play_games_service.dart';
 
 /// Service for managing high scores using Hive local storage.
@@ -49,7 +50,7 @@ class ScoreService {
     try {
       await Leaderboards.submitScore(
         score: Score(
-          androidLeaderboardID: 'CgkIvLXzppUPEAIQBw',
+          androidLeaderboardID: GameConstants.androidLeaderboardId,
           value: score.inMilliseconds,
         ),
       );

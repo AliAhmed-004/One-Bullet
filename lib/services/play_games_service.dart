@@ -2,13 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:games_services/games_services.dart';
+import 'package:one_bullet/config/game_constants.dart';
 import 'package:one_bullet/services/achievement_service.dart';
 
 class PlayGamesService {
   PlayGamesService._internal();
   static final PlayGamesService instance = PlayGamesService._internal();
 
-  static const String _androidLeaderboardId = "CgkIvLXzppUPEAIQBw";
   // Add this later if you support Game Center
   // static const String _iosLeaderboardId = "your_ios_leaderboard_id";
 
@@ -28,7 +28,7 @@ class PlayGamesService {
   String get _leaderboardId {
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        return _androidLeaderboardId;
+        return GameConstants.androidLeaderboardId;
       default:
         throw UnsupportedError('Play Games is not supported on this platform.');
     }
