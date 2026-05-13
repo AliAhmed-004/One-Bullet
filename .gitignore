@@ -50,5 +50,4 @@ android/keystores/
 *.jks
 *.keystore
 
-pubspec.lock
 devtools_options.yaml
