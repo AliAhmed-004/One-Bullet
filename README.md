@@ -2,7 +2,18 @@
 
 > Fire once. Dodge forever.
 
-One Bullet is a minimalist 2D survival game built with Flutter and Flame. You fire a single bullet, then spend the rest of the run surviving the chaos it creates as it bounces, speeds up, and turns the arena against you.
+> One Bullet is a minimalist 2D survival game built with Flutter and Flame. You fire a single bullet, then spend the rest of the run surviving the chaos it creates as it bounces, speeds up, and turns the arena against you.
+
+## Screenshots
+
+Here are a few screenshots from the game (stored in `assets/screenshots`).
+
+| | | |
+|---|---|---|
+| ![Main menu](assets/screenshots/main_menu.jpg) | ![Gameplay](assets/screenshots/gameplay.jpg) | ![Gameplay variant](assets/screenshots/gameplay_1.jpg) |
+| ![Game over](assets/screenshots/game_over.jpg) | ![Achievements](assets/screenshots/achievements.jpg) | ![Leaderboards](assets/screenshots/leaderboards.jpg) |
+| ![Settings](assets/screenshots/settings.jpg) | ![Settings bottom sheet](assets/screenshots/settings_bottom_sheet.jpg) | |
+
 
 ## Highlights
 
