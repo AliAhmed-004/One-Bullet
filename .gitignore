@@ -52,3 +52,7 @@ android/keystores/
 
 devtools_options.yaml
 graphify-out/
+
+# Rewritten by flutter tooling on every analyze/test run
+analysis_options.yaml
+pubspec.lock
