@@ -5,6 +5,7 @@ import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:one_bullet/debug/frame_logger.dart';
 import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/services/settings_service.dart';
 import 'package:one_bullet/services/sound_service.dart';
@@ -206,6 +207,7 @@ class Bullet extends SpriteComponent with CollisionCallbacks {
   }
 
   void _renderThreatHalo(Canvas canvas) {
+    if (FrameLogger.noBlend) return;
     if (_threatVisual < 0.05 && _heatVisual < 0.05) return;
 
     final center = Offset(size.x / 2, size.y / 2);
@@ -379,7 +381,7 @@ class FireParticle extends CircleComponent {
          anchor: Anchor.center,
          paint: Paint()
            ..color = color
-           ..blendMode = BlendMode.screen,
+           ..blendMode = BlendMode.srcOver,
        );
 
   final Color _baseColor;
@@ -404,7 +406,8 @@ class FireParticle extends CircleComponent {
     final jitterX = (_rng.nextDouble() - 0.5) * jitterStrength;
     final jitterY = (_rng.nextDouble() - 0.5) * jitterStrength;
 
-    position += Vector2(jitterX, jitterY);
+    position.x += jitterX;
+    position.y += jitterY;
 
     if (life <= 0) {
       removeFromParent();

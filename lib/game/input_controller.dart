@@ -1,6 +1,7 @@
 import 'package:flame/components.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:one_bullet/debug/frame_logger.dart';
 import 'package:one_bullet/game/bot_pilot.dart';
 
 enum ControlMode { player, bot }
@@ -93,7 +94,7 @@ class InputController {
 
   /// Debug-only toggle between player and bot control.
   void toggleBot({required bool playerHasFired}) {
-    if (!kDebugMode) return;
+    if (!kDebugMode && !FrameLogger.enabled) return;
 
     mode = isBot ? ControlMode.player : ControlMode.bot;
 

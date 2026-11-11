@@ -52,3 +52,4 @@ android/keystores/
 
 devtools_options.yaml
 graphify-out/
+tool/perf-out/

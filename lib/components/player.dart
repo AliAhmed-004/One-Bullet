@@ -3,6 +3,7 @@ import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:one_bullet/components/aim_indicator.dart';
 import 'package:one_bullet/components/bullet.dart';
+import 'package:one_bullet/debug/frame_logger.dart';
 import 'package:one_bullet/one_bullet_game.dart';
 
 class Player extends PositionComponent with CollisionCallbacks {
@@ -70,7 +71,7 @@ class Player extends PositionComponent with CollisionCallbacks {
   void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
     super.onCollision(intersectionPoints, other);
 
-    if (other is Bullet) {
+    if (other is Bullet && !FrameLogger.godMode) {
       _gameRef?.onPlayerDeath();
     }
   }

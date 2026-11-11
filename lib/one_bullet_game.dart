@@ -12,6 +12,7 @@ import 'package:one_bullet/components/game_background.dart';
 import 'package:one_bullet/components/mobile_joystick.dart';
 import 'package:one_bullet/components/player.dart';
 import 'package:one_bullet/components/wave_manager.dart';
+import 'package:one_bullet/debug/frame_logger.dart';
 import 'package:one_bullet/game/death_sequence.dart';
 import 'package:one_bullet/game/deflector_spawner.dart';
 import 'package:one_bullet/game/input_controller.dart';
@@ -113,6 +114,8 @@ class OneBulletGame extends FlameGame
     // Note: AchievementService is initialized in main.dart before Play Games
 
     await SoundService.init();
+    FrameLogger.context = () =>
+        'wave=${run.waveState.value.waveNumber} deflectors=${_deflectors.activeCount}';
 
     // Arena boundary persists across games and must be fully loaded before
     // other components use it.
@@ -188,6 +191,8 @@ class OneBulletGame extends FlameGame
   /// Called when player taps "Start" on the start screen.
   void startGame() {
     run.hasStarted = true;
+    // Profiling builds play themselves so long runs can be measured.
+    if (FrameLogger.enabled && !input.isBot) toggleBotMode();
     overlays.remove(startScreenOverlayId);
     overlays.add(gameHudOverlayId);
     resumeEngine();
