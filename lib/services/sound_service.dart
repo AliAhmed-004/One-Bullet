@@ -1,5 +1,6 @@
 import 'package:flame_audio/flame_audio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:one_bullet/debug/frame_logger.dart';
 import 'package:one_bullet/services/settings_service.dart';
 
 class SoundService {
@@ -65,6 +66,7 @@ class SoundService {
     required double volume,
     int minIntervalMs = 0,
   }) async {
+    if (FrameLogger.noSound) return;
     if (!SettingsService.soundEnabled.value || !_audioBackendAvailable) return;
 
     final nowMs = DateTime.now().millisecondsSinceEpoch;

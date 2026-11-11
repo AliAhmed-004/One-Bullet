@@ -3,6 +3,7 @@ import 'package:flame/game.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import 'package:one_bullet/debug/frame_logger.dart';
 import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/overlays/game_hud_overlay.dart';
 import 'package:one_bullet/overlays/game_over_overlay.dart';
@@ -25,6 +26,7 @@ bool get _isMobilePlatform =>
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  FrameLogger.install();
 
   // Initialize Hive for high score storage
   await ScoreService.init();
