@@ -68,6 +68,29 @@ class Bullet extends SpriteComponent with CollisionCallbacks {
     _proximityLevel = proximity.clamp(0.0, 1.0);
   }
 
+  /// Distance at which the bullet starts reading as a threat to the player.
+  static const double _maxThreatDistance = 420.0;
+
+  /// Derives threat/proximity visuals from the player's distance.
+  /// Pass null when there is no live player (menu, game over).
+  void updateThreat(Vector2? playerPosition) {
+    if (playerPosition == null) {
+      setThreatLevel(0);
+      setProximityLevel(0);
+      return;
+    }
+
+    final proximity =
+        (1 - (playerPosition.distanceTo(position) / _maxThreatDistance)).clamp(
+          0.0,
+          1.0,
+        );
+    final speed = ((_currentSpeed - 440.0) / 360.0).clamp(0.0, 1.0);
+
+    setProximityLevel(proximity);
+    setThreatLevel((proximity * 0.9) + (speed * 0.1));
+  }
+
   static Vector2 _applyLaunchImperfection(Vector2 velocity) {
     const maxOffset = 5 * math.pi / 180;
 
@@ -375,9 +398,7 @@ class FireParticle extends CircleComponent {
 
     final opacity = (life / 0.55).clamp(0.0, 1.0);
 
-    paint = Paint()
-      ..color = _baseColor.withValues(alpha: opacity)
-      ..blendMode = BlendMode.screen;
+    paint.color = _baseColor.withValues(alpha: opacity);
 
     final jitterStrength = 1.5 + (_heat * 2.5);
     final jitterX = (_rng.nextDouble() - 0.5) * jitterStrength;
