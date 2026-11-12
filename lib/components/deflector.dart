@@ -5,10 +5,11 @@ import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:one_bullet/components/bullet.dart';
 import 'package:one_bullet/components/player.dart';
+import 'package:one_bullet/components/shockwave.dart';
 import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/services/sound_service.dart';
 
-/// A wooden obstacle that deflects bullets and blocks player movement.
+/// A neon crystal-panel obstacle that deflects bullets and blocks player movement.
 /// Spawns starting from wave 5 and breaks apart when hit by a bullet.
 class Deflector extends PositionComponent with CollisionCallbacks {
   Deflector({
@@ -31,10 +32,10 @@ class Deflector extends PositionComponent with CollisionCallbacks {
   @override
   final double height;
 
-  /// Wood-like brown color.
-  static const Color woodColor = Color(0xFF8B4513); // Saddle brown
-  static const Color woodDarkColor = Color(0xFF5D2E0C); // Darker brown
-  static const Color woodLightColor = Color(0xFFA0522D); // Sienna
+  /// Neon panel colors (names kept from the old wood look).
+  static const Color woodColor = Color(0xFF1C0C45); // deep violet body
+  static const Color woodDarkColor = Color(0xFFB14CFF); // violet edge / lines
+  static const Color woodLightColor = Color(0xFF00E5FF); // cyan highlight
 
   /// Cached Paint objects for rendering (avoid recreation each frame).
   late final Paint _bodyPaint;
@@ -61,19 +62,19 @@ class Deflector extends PositionComponent with CollisionCallbacks {
       ..style = PaintingStyle.fill;
     
     _grainPaint = Paint()
-      ..color = woodDarkColor.withValues(alpha: 0.4)
+      ..color = woodDarkColor.withValues(alpha: 0.35)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
     
     _highlightPaint = Paint()
-      ..color = woodLightColor.withValues(alpha: 0.5)
+      ..color = woodLightColor.withValues(alpha: 0.85)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
     
     _borderPaint = Paint()
-      ..color = woodDarkColor
+      ..color = const Color(0xFFFF2BD6)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
+      ..strokeWidth = 2;
   }
 
   @override
@@ -151,6 +152,22 @@ class Deflector extends PositionComponent with CollisionCallbacks {
 
     // Spawn destruction fragments
     _spawnDestructionFragments();
+
+    final game = findGame() as OneBulletGame?;
+    if (game != null) {
+      game.juice
+        ..shake(6)
+        ..hitStop(0.05);
+      game.world.add(
+        Shockwave(
+          position: position.clone(),
+          color: const Color(0xFFFFD27A),
+          maxRadius: 64,
+          duration: 0.35,
+          strokeWidth: 4,
+        ),
+      );
+    }
 
     // Remove this deflector
     removeFromParent();

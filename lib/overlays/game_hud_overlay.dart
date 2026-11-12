@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/overlays/wave_indicator_widget.dart';
 import 'package:one_bullet/services/score_service.dart';
+import 'package:one_bullet/theme/neon.dart';
+import 'package:one_bullet/theme/neon_widgets.dart';
 
 class GameHudOverlay extends StatelessWidget {
   const GameHudOverlay({required this.game, super.key});
@@ -61,11 +63,17 @@ class _PauseButtonState extends State<_PauseButton> {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.06),
+            color: const Color(0xCC0B0524),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white10),
+            border: Border.all(color: Neon.cyan.withValues(alpha: 0.7)),
+            boxShadow: [
+              BoxShadow(
+                color: Neon.cyan.withValues(alpha: 0.25),
+                blurRadius: 12,
+              ),
+            ],
           ),
-          child: const Icon(Icons.pause, color: Colors.white, size: 24),
+          child: const Icon(Icons.pause, color: Neon.cyan, size: 24),
         ),
       ),
     );
@@ -114,19 +122,24 @@ class _GlassTimerDisplay extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
+        color: const Color(0xCC0B0524),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: Neon.magenta.withValues(alpha: 0.7)),
+        boxShadow: [
+          BoxShadow(
+            color: Neon.magenta.withValues(alpha: 0.25),
+            blurRadius: 12,
+          ),
+        ],
       ),
       child: Text(
         time,
-        style: const TextStyle(
-          fontSize: 30,
-          fontWeight: FontWeight.w700,
-          fontFamily: 'monospace',
-          letterSpacing: 3,
+        style: neonDisplay(
+          size: 26,
+          weight: FontWeight.w700,
+          spacing: 3,
           color: Colors.white,
-          decoration: TextDecoration.none,
+          glow: Neon.magenta,
         ),
       ),
     );
@@ -146,17 +159,15 @@ class _HighScoreRow extends StatelessWidget {
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.emoji_events, color: Colors.amberAccent, size: 16),
+            const Icon(Icons.emoji_events, color: Neon.gold, size: 16),
             const SizedBox(width: 6),
             Text(
               'Best ${ScoreService.formatDuration(highScore)}',
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: Colors.amberAccent,
-                fontFamily: 'monospace',
-                letterSpacing: 1.2,
-                decoration: TextDecoration.none,
+              style: neonDisplay(
+                size: 12,
+                weight: FontWeight.w600,
+                color: Neon.gold,
+                spacing: 1.5,
               ),
             ),
           ],

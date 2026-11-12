@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:one_bullet/components/player.dart';
 import 'package:one_bullet/components/player_death_effect.dart';
+import 'package:one_bullet/components/shockwave.dart';
 import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/services/achievement_service.dart';
 import 'package:one_bullet/services/ad_service.dart';
@@ -30,6 +30,19 @@ class DeathSequence {
     // Remove player from the world instantly.
     player.removeFromParent();
 
+    _game.juice
+      ..hitStop(0.12)
+      ..shake(12);
+    _game.world.add(
+      Shockwave(
+        position: position,
+        color: Player.playerColor,
+        maxRadius: 90,
+        duration: 0.45,
+        strokeWidth: 5,
+      ),
+    );
+
     final secondsSurvived = run.survivalTime.value.inSeconds;
 
     // Decide achievements now but only unlock once game over is visible.
@@ -44,7 +57,7 @@ class DeathSequence {
     _game.world.addAll(
       PlayerDeathEffect.createFragments(
         position: position,
-        color: Colors.blue,
+        color: Player.playerColor,
         fragmentCount: 14,
         baseSpeed: 300.0,
       ),

@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/services/play_games_service.dart';
 import 'package:one_bullet/services/settings_service.dart';
-import 'package:one_bullet/theme/heat_theme.dart';
+import 'package:one_bullet/theme/neon.dart';
+import 'package:one_bullet/theme/neon_widgets.dart';
 
 class SettingsOverlay extends StatefulWidget {
   final OneBulletGame game;
@@ -21,7 +22,7 @@ class _SettingsOverlayState extends State<SettingsOverlay>
   late final Animation<double> _fade;
   late final Animation<double> _scale;
 
-  final double _heat = 0.25;
+  static const double _heat = 0.25;
 
   @override
   void initState() {
@@ -56,46 +57,40 @@ class _SettingsOverlayState extends State<SettingsOverlay>
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: HeatTheme.background(_heat),
-      child: FadeTransition(
-        opacity: _fade,
-        child: ScaleTransition(
-          scale: _scale,
-          child: Center(child: _buildPanel()),
+      color: Neon.voidDeep,
+      child: NeonBackdrop(
+        heat: _heat,
+        child: SafeArea(
+          child: FadeTransition(
+            opacity: _fade,
+            child: ScaleTransition(
+              scale: _scale,
+              child: Center(
+                child: SingleChildScrollView(child: _buildPanel()),
+              ),
+            ),
+          ),
         ),
       ),
     );
   }
 
   Widget _buildPanel() {
-    return Container(
-      width: 360,
+    return NeonPanel(
+      width: 340,
+      color: Neon.violet,
       padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        // color: HeatTheme.surface(_heat),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: HeatTheme.accent(_heat).withValues(alpha: 0.35),
-        ),
-        // boxShadow: [
-        //   BoxShadow(
-        //     color: HeatTheme.accent(_heat).withValues(alpha: 0.15),
-        //     blurRadius: 24,
-        //     spreadRadius: 2,
-        //   ),
-        // ],
-      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           // ===== TITLE =====
           Text(
-            'SYSTEM SETTINGS',
-            style: TextStyle(
-              fontSize: 18,
-              letterSpacing: 2,
-              fontWeight: FontWeight.w700,
-              color: HeatTheme.textPrimary(_heat),
+            'SETTINGS',
+            style: neonDisplay(
+              size: 22,
+              spacing: 4,
+              color: Colors.white,
+              glow: Neon.cyan,
             ),
           ),
 
@@ -103,29 +98,39 @@ class _SettingsOverlayState extends State<SettingsOverlay>
 
           // ===== TOGGLES =====
           _settingToggle(
-            title: "Sound",
+            title: "SOUND",
+            icon: Icons.volume_up_rounded,
+            color: Neon.cyan,
             valueListenable: SettingsService.soundEnabled,
             onChanged: SettingsService.setSound,
           ),
 
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
 
           _settingToggle(
-            title: "Haptics",
+            title: "HAPTICS",
+            icon: Icons.vibration,
+            color: Neon.magenta,
             valueListenable: SettingsService.hapticsEnabled,
             onChanged: SettingsService.setHaptics,
           ),
 
-          const SizedBox(height: 22),
+          const SizedBox(height: 18),
 
           // ===== PLAY GAMES =====
-          if (PlayGamesService.isSupportedPlatform)
-            _playGamesSection(),
+          if (PlayGamesService.isSupportedPlatform) _playGamesSection(),
 
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
 
           // ===== CLOSE =====
-          _systemButton(label: "Close", accent: true, onTap: _close),
+          NeonButton(
+            label: 'CLOSE',
+            icon: Icons.close_rounded,
+            primary: true,
+            color: Neon.cyan,
+            width: double.infinity,
+            onTap: _close,
+          ),
         ],
       ),
     );
@@ -136,40 +141,53 @@ class _SettingsOverlayState extends State<SettingsOverlay>
 
     return Container(
       width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: HeatTheme.surfaceGlow(_heat).withValues(alpha: 0.25),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: HeatTheme.accent(_heat).withValues(alpha: 0.12),
-        ),
+        color: Neon.violet.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Neon.violet.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Play Games',
-            style: TextStyle(
-              color: HeatTheme.textPrimary(_heat),
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-            ),
+          Row(
+            children: [
+              Icon(
+                Icons.emoji_events,
+                size: 18,
+                color: isSignedIn ? Neon.gold : Neon.violet,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'PLAY GAMES',
+                style: neonDisplay(
+                  size: 13,
+                  weight: FontWeight.w700,
+                  spacing: 2,
+                  color: Neon.textPrimary,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Text(
             isSignedIn
                 ? 'Connected. Achievements and leaderboards are active.'
                 : 'Not connected. Sign in to save achievements and join leaderboards.',
-            style: TextStyle(
-              color: HeatTheme.textMuted(_heat),
+            style: const TextStyle(
+              color: Neon.textMuted,
               fontSize: 12,
               height: 1.35,
+              decoration: TextDecoration.none,
             ),
           ),
           if (!isSignedIn) ...[
-            const SizedBox(height: 10),
-            _systemButton(
-              label: 'Connect Play Games',
+            const SizedBox(height: 8),
+            NeonButton(
+              label: 'CONNECT',
+              color: Neon.violet,
+              width: double.infinity,
               onTap: _signInToPlayGames,
             ),
           ],
@@ -180,78 +198,60 @@ class _SettingsOverlayState extends State<SettingsOverlay>
 
   Widget _settingToggle({
     required String title,
+    required IconData icon,
+    required Color color,
     required ValueListenable<bool> valueListenable,
     required ValueChanged<bool> onChanged,
   }) {
     return ValueListenableBuilder<bool>(
       valueListenable: valueListenable,
       builder: (context, value, _) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: HeatTheme.surfaceGlow(_heat).withValues(alpha: 0.25),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: HeatTheme.accent(_heat).withValues(alpha: 0.12),
+        final c = value ? color : Neon.textMuted;
+
+        return GestureDetector(
+          onTap: () => onChanged(!value),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: c.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: c.withValues(alpha: value ? 0.8 : 0.3)),
+              boxShadow: value
+                  ? [BoxShadow(color: color.withValues(alpha: 0.25), blurRadius: 12)]
+                  : null,
             ),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    color: HeatTheme.textPrimary(_heat),
-                    fontSize: 15,
+            child: Row(
+              children: [
+                Icon(icon, color: c, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: neonDisplay(
+                      size: 14,
+                      weight: FontWeight.w700,
+                      spacing: 2,
+                      color: value ? Colors.white : Neon.textMuted,
+                    ),
                   ),
                 ),
-              ),
-              Switch(
-                value: value,
-                onChanged: onChanged,
-                activeThumbColor: HeatTheme.accent(_heat),
-              ),
-            ],
+                Switch(
+                  value: value,
+                  onChanged: onChanged,
+                  activeThumbColor: color,
+                  activeTrackColor: color.withValues(alpha: 0.35),
+                  inactiveThumbColor: Neon.textMuted,
+                  inactiveTrackColor: Neon.voidDeep,
+                  trackOutlineColor: WidgetStatePropertyAll(
+                    c.withValues(alpha: 0.6),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
-    );
-  }
-
-  Widget _systemButton({
-    required String label,
-    required VoidCallback onTap,
-    bool accent = false,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          color: accent
-              ? HeatTheme.accent(_heat).withValues(alpha: 0.12)
-              : HeatTheme.surfaceGlow(_heat).withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: HeatTheme.accent(
-              _heat,
-            ).withValues(alpha: accent ? 0.4 : 0.2),
-          ),
-        ),
-        child: Center(
-          child: Text(
-            label.toUpperCase(),
-            style: TextStyle(
-              color: accent
-                  ? HeatTheme.accent(_heat)
-                  : HeatTheme.textPrimary(_heat),
-              fontWeight: FontWeight.w600,
-              letterSpacing: 1.2,
-            ),
-          ),
-        ),
-      ),
     );
   }
 

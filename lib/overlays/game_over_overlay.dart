@@ -3,6 +3,8 @@ import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/services/ad_service.dart';
 import 'package:one_bullet/services/death_message_service.dart';
 import 'package:one_bullet/services/score_service.dart';
+import 'package:one_bullet/theme/neon.dart';
+import 'package:one_bullet/theme/neon_widgets.dart';
 
 class GameOverOverlay extends StatefulWidget {
   const GameOverOverlay({required this.game, super.key});
@@ -22,9 +24,9 @@ class _GameOverOverlayState extends State<GameOverOverlay>
   late final Animation<double> _scale;
   late final DeathMessageResult _deathMessage;
 
-  static const _ember = Color(0xFFFF6A3D);
-  static const _gold = Color(0xFFFFC46B);
-  static const _deepHeat = Color(0xFFB83A1B);
+  static const _ember = Neon.magenta;
+  static const _gold = Neon.gold;
+  static const _deepHeat = Neon.violet;
 
   @override
   void initState() {
@@ -62,7 +64,7 @@ class _GameOverOverlayState extends State<GameOverOverlay>
     final canContinue = widget.game.canContinue;
 
     return Material(
-      color: Colors.black.withValues(alpha: 0.78),
+      color: Neon.voidDeep.withValues(alpha: 0.86),
       child: SafeArea(
         child: Center(
           child: FadeTransition(
@@ -78,37 +80,20 @@ class _GameOverOverlayState extends State<GameOverOverlay>
   }
 
   Widget _buildCard(Duration finalTime, bool isNewRecord, bool canContinue) {
-    return Container(
-      width: 370,
+    return NeonPanel(
+      width: 350,
+      color: isNewRecord ? _gold : _ember,
       padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 30),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1B120D), Color(0xFF120D09)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: (isNewRecord ? _gold : _ember).withValues(alpha: 0.45),
-        ),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 24,
-            spreadRadius: 2,
-            color: _ember.withValues(alpha: 0.10),
-          ),
-        ],
-      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             'GAME OVER',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 2,
-              color: isNewRecord ? _gold : _ember,
+            style: neonDisplay(
+              size: 26,
+              spacing: 3,
+              color: Colors.white,
+              glow: isNewRecord ? _gold : _ember,
             ),
           ),
 
@@ -131,12 +116,11 @@ class _GameOverOverlayState extends State<GameOverOverlay>
 
           Text(
             ScoreService.formatDuration(finalTime),
-            style: const TextStyle(
-              fontSize: 44,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'monospace',
-              letterSpacing: 3,
+            style: neonDisplay(
+              size: 40,
+              spacing: 3,
               color: Colors.white,
+              glow: Neon.cyan,
             ),
           ),
 
@@ -291,7 +275,7 @@ class _GameOverOverlayState extends State<GameOverOverlay>
   }
 }
 
-class _ActionButton extends StatefulWidget {
+class _ActionButton extends StatelessWidget {
   const _ActionButton({
     required this.label,
     required this.icon,
@@ -305,51 +289,12 @@ class _ActionButton extends StatefulWidget {
   final VoidCallback onTap;
 
   @override
-  State<_ActionButton> createState() => _ActionButtonState();
-}
-
-class _ActionButtonState extends State<_ActionButton> {
-  bool _pressed = false;
-
-  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) {
-        setState(() => _pressed = false);
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedScale(
-        scale: _pressed ? 0.97 : 1,
-        duration: const Duration(milliseconds: 100),
-        child: Container(
-          width: 260,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-          decoration: BoxDecoration(
-            color: widget.accentColor.withValues(alpha: 0.10),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: widget.accentColor.withValues(alpha: 0.35),
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(widget.icon, color: Colors.white, size: 20),
-              const SizedBox(width: 10),
-              Text(
-                widget.label,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return NeonButton(
+      label: label.toUpperCase(),
+      icon: icon,
+      color: accentColor,
+      onTap: onTap,
     );
   }
 }

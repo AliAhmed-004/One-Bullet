@@ -5,9 +5,11 @@ import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:one_bullet/components/shockwave.dart';
 import 'package:one_bullet/debug/frame_logger.dart';
 import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/services/settings_service.dart';
+import 'package:one_bullet/theme/neon.dart';
 import 'package:one_bullet/services/sound_service.dart';
 import 'package:vibration/vibration.dart';
 
@@ -218,11 +220,7 @@ class Bullet extends SpriteComponent with CollisionCallbacks {
         (_proximityVisual * 16) +
         (_heatVisual * 12);
 
-    final haloColor = Color.lerp(
-      const Color(0xFFFFC46B),
-      const Color(0xFFFF3B1F),
-      _heatVisual,
-    )!;
+    final haloColor = Neon.trail(_heatVisual);
 
     final coreAlpha =
         (0.16 +
@@ -300,6 +298,18 @@ class Bullet extends SpriteComponent with CollisionCallbacks {
 
         SoundService.playBulletBounce();
         _triggerHaptics();
+
+        final heat = _gameRef!.waveManager == null ? 0.1 : _heatVisual;
+        _gameRef!.juice.shake(1.5 + heat * 2.5);
+        if (impactPosition != null) {
+          _gameRef!.world.add(
+            Shockwave(
+              position: impactPosition.clone(),
+              color: getTrailColor(heat),
+              maxRadius: 28 + heat * 18,
+            ),
+          );
+        }
       }
 
       if (impactPosition != null && impactNormal != null) {
@@ -418,9 +428,5 @@ class FireParticle extends CircleComponent {
 Color getTrailColor(double heat) {
   final t = heat.clamp(0.0, 1.0);
 
-  return Color.lerp(
-    const Color(0xFFFFD27A), // ember gold
-    const Color(0xFFFF3B1F), // molten red-orange
-    math.pow(t, 0.75).toDouble(),
-  )!;
+  return Neon.trail(math.pow(t, 0.75).toDouble());
 }

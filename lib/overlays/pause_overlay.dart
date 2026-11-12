@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
+import 'package:one_bullet/theme/neon.dart';
+import 'package:one_bullet/theme/neon_widgets.dart';
 
 class PauseOverlay extends StatefulWidget {
   const PauseOverlay({required this.game, super.key});
@@ -48,7 +50,7 @@ class _PauseOverlayState extends State<PauseOverlay>
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.black.withValues(alpha: 0.72),
+      color: Neon.voidDeep.withValues(alpha: 0.82),
       child: Stack(
         children: [
           const SizedBox.expand(),
@@ -72,24 +74,9 @@ class _PauseOverlayState extends State<PauseOverlay>
   }
 
   Widget _card({required Widget child}) {
-    return Container(
+    return NeonPanel(
       key: ValueKey(_showConfirmation),
-      width: 360,
-      padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 28),
-      decoration: BoxDecoration(
-        color: const Color(0xFF12161C),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: const Color(0xFFFFB24A).withValues(alpha: 0.22),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFFF3B2F).withValues(alpha: 0.10),
-            blurRadius: 22,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
+      width: 340,
       child: child,
     );
   }
@@ -99,13 +86,13 @@ class _PauseOverlayState extends State<PauseOverlay>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
+          Text(
             "PAUSED",
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 2,
-              color: Color(0xFFFFC46B),
+            style: neonDisplay(
+              size: 24,
+              spacing: 4,
+              color: Colors.white,
+              glow: Neon.cyan,
             ),
           ),
           const SizedBox(height: 28),
@@ -142,23 +129,19 @@ class _PauseOverlayState extends State<PauseOverlay>
         children: [
           const Icon(
             Icons.warning_amber_rounded,
-            color: Color(0xFFFF7A3C),
+            color: Neon.orange,
             size: 46,
           ),
           const SizedBox(height: 16),
-          const Text(
-            "Leave the run?",
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFFFFC46B),
-            ),
+          Text(
+            "LEAVE THE RUN?",
+            style: neonDisplay(size: 18, color: Colors.white, glow: Neon.orange),
           ),
           const SizedBox(height: 10),
           const Text(
             "Everything currently in motion stops here.",
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, color: Colors.white60),
+            style: TextStyle(fontSize: 13, color: Neon.textMuted),
           ),
           const SizedBox(height: 22),
 
@@ -180,7 +163,7 @@ class _PauseOverlayState extends State<PauseOverlay>
   }
 }
 
-class _HeatButton extends StatefulWidget {
+class _HeatButton extends StatelessWidget {
   const _HeatButton({
     required this.label,
     required this.icon,
@@ -191,74 +174,18 @@ class _HeatButton extends StatefulWidget {
   final String label;
   final IconData icon;
 
-  /// 0.0 = calm, 1.0 = danger
+  /// 0.0 = calm (cyan), 1.0 = danger (orange/magenta)
   final double heat;
 
   final VoidCallback onTap;
 
   @override
-  State<_HeatButton> createState() => _HeatButtonState();
-}
-
-class _HeatButtonState extends State<_HeatButton> {
-  bool _pressed = false;
-
-  @override
   Widget build(BuildContext context) {
-    final t = widget.heat.clamp(0.0, 1.0);
-
-    // Base ember palette
-    const cool = Color(0xFFFFC46B);
-    const hot = Color(0xFFFF3B2F);
-
-    final color = Color.lerp(cool, hot, t)!;
-
-    final bg = color.withValues(alpha: 0.10 + (t * 0.08));
-    final border = color.withValues(alpha: 0.25 + (t * 0.25));
-
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) {
-        setState(() => _pressed = false);
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedScale(
-        duration: const Duration(milliseconds: 120),
-        scale: _pressed ? 0.97 : 1,
-        child: Container(
-          width: 260,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          margin: const EdgeInsets.symmetric(vertical: 6),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: border),
-            boxShadow: [
-              BoxShadow(
-                color: color.withValues(alpha: 0.08),
-                blurRadius: 14,
-                spreadRadius: 1,
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(widget.icon, color: color, size: 20),
-              const SizedBox(width: 10),
-              Text(
-                widget.label,
-                style: TextStyle(
-                  color: color.withValues(alpha: 0.95),
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return NeonButton(
+      label: label,
+      icon: icon,
+      color: Neon.accent(heat),
+      onTap: onTap,
     );
   }
 }

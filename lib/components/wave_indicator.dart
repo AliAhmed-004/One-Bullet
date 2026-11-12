@@ -175,8 +175,8 @@ class WaveIndicator extends PositionComponent {
   /// Updates cached paint styles based on flash state.
   void _updatePaintStyles(double flashProgress) {
     final flashColor = _isFlashing
-        ? Color.lerp(Colors.orange, Colors.red, flashProgress)!
-        : Colors.cyan;
+        ? Color.lerp(const Color(0xFFFF7A3D), const Color(0xFFFF2BD6), flashProgress)!
+        : const Color(0xFF00E5FF);
 
     _bgPaint.color = flashColor.withValues(
       alpha: _isFlashing ? 0.3 + flashProgress * 0.2 : 0.15,

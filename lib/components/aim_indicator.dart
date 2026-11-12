@@ -8,7 +8,7 @@ class AimIndicator extends PositionComponent {
   AimIndicator({
     required this.orbitRadius,
     this.rotationSpeed = 2.0,
-    this.color = Colors.red,
+    this.color = const Color(0xFFFF2BD6),
   }) : super(
          anchor: Anchor.center,
        );

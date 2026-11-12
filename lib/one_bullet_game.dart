@@ -16,6 +16,7 @@ import 'package:one_bullet/debug/frame_logger.dart';
 import 'package:one_bullet/game/death_sequence.dart';
 import 'package:one_bullet/game/deflector_spawner.dart';
 import 'package:one_bullet/game/input_controller.dart';
+import 'package:one_bullet/game/juice.dart';
 import 'package:one_bullet/game/run_state.dart';
 import 'package:one_bullet/game_config.dart';
 import 'package:one_bullet/services/ad_service.dart';
@@ -84,6 +85,9 @@ class OneBulletGame extends FlameGame
   /// Per-run state and HUD notifiers.
   final RunState run = RunState();
 
+  /// Screen shake and hit-stop.
+  final Juice juice = Juice();
+
   /// Keyboard / joystick / bot input.
   final InputController input = InputController();
 
@@ -145,6 +149,8 @@ class OneBulletGame extends FlameGame
   void _initializeGame() {
     run.reset();
     input.reset();
+    juice.reset();
+    camera.viewfinder.position = Vector2.zero();
 
     // Reset background state for a fresh run while keeping it mounted.
     gameBackground?.setWave(1);
@@ -200,7 +206,10 @@ class OneBulletGame extends FlameGame
 
   @override
   void update(double dt) {
+    // Hit-stop slows game time; shake keeps running on real time.
+    dt = juice.tick(dt);
     super.update(dt);
+    camera.viewfinder.position = juice.offset;
 
     _updateBulletVisuals();
 

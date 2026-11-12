@@ -1,11 +1,13 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:one_bullet/game_config.dart';
+import 'package:one_bullet/theme/neon.dart';
 
 class GameBackground extends PositionComponent with HasGameReference {
-  GameBackground({this.initialEmberCount = 18});
+  GameBackground({this.initialEmberCount = 26});
 
   final int initialEmberCount;
 
@@ -14,6 +16,13 @@ class GameBackground extends PositionComponent with HasGameReference {
 
   late final Paint _emberPaint;
   late final Paint _backgroundPaint;
+  late final Paint _hotPaint;
+  late final Paint _gridPaint;
+  late final Paint _vignettePaint;
+
+  /// Distance between grid lines in world px.
+  static const double _gridSpacing = 56;
+  double _gridScroll = 0;
 
   double _time = 0;
   int _currentWave = 1;
@@ -33,6 +42,11 @@ class GameBackground extends PositionComponent with HasGameReference {
 
     _emberPaint = Paint()..style = PaintingStyle.fill;
     _backgroundPaint = Paint()..style = PaintingStyle.fill;
+    _hotPaint = Paint()..style = PaintingStyle.fill;
+    _gridPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    _vignettePaint = Paint()..style = PaintingStyle.fill;
 
     _updateBounds(game.size);
     _initializeEmbers();
@@ -53,6 +67,18 @@ class GameBackground extends PositionComponent with HasGameReference {
       -halfHeight,
       halfWidth,
       halfHeight,
+    );
+
+    _backgroundPaint.shader = ui.Gradient.linear(
+      _screenBounds.topCenter,
+      _screenBounds.bottomCenter,
+      [Neon.voidDeep, Neon.voidMid],
+    );
+    _vignettePaint.shader = ui.Gradient.radial(
+      _screenBounds.center,
+      _screenBounds.longestSide * 0.65,
+      [Colors.transparent, Neon.voidDeep.withValues(alpha: 0.85)],
+      const [0.45, 1.0],
     );
   }
 
@@ -77,6 +103,7 @@ class GameBackground extends PositionComponent with HasGameReference {
       size: 1.2 + _random.nextDouble() * 2.2,
       alpha: 0.14 + _random.nextDouble() * 0.18,
       driftOffset: _random.nextDouble() * math.pi * 2,
+      colorIndex: _random.nextInt(3),
     );
   }
 
@@ -91,6 +118,7 @@ class GameBackground extends PositionComponent with HasGameReference {
     GameConfig.heat += (targetHeat - GameConfig.heat) * dt * 1.8;
 
     final speedMultiplier = 1 + (GameConfig.heat * 2.0);
+    _gridScroll = (_gridScroll + dt * 10 * speedMultiplier) % _gridSpacing;
 
     for (final ember in _embers) {
       ember.position += ember.velocity * dt * speedMultiplier;
@@ -118,40 +146,65 @@ class GameBackground extends PositionComponent with HasGameReference {
   void render(Canvas canvas) {
     super.render(canvas);
 
-    _backgroundPaint.color = Color.lerp(
-      const Color(0xFF0B0908), // warm charcoal
-      const Color(0xFF1F0C08), // ember-brown black
-      GameConfig.heat,
-    )!;
+    final heat = GameConfig.heat;
 
+    // Sky gradient, tinted warmer with heat.
     canvas.drawRect(_screenBounds, _backgroundPaint);
+    _hotPaint.color = Neon.voidHot.withValues(alpha: heat * 0.55);
+    canvas.drawRect(_screenBounds, _hotPaint);
+
+    _drawGrid(canvas, heat);
+
+    // Edge vignette keeps focus on the arena.
+    canvas.drawRect(_screenBounds, _vignettePaint);
 
     for (final ember in _embers) {
       final flicker = 0.7 + 0.4 * math.sin(_time * 3 + ember.driftOffset);
 
-      final emberColor = Color.lerp(
-        const Color(0xFFFFC94A),
-        const Color(0xFFFF3B1F),
-        math.pow(GameConfig.heat, 0.7).toDouble(),
+      final color = Color.lerp(
+        _particleColors[ember.colorIndex],
+        Neon.accent(heat),
+        heat * 0.6,
       )!;
 
-      final renderSize = ember.size * (1 + GameConfig.heat * 0.3);
+      final renderSize = ember.size * (1 + heat * 0.3);
 
       // glow
-      _emberPaint.color = emberColor.withValues(
+      _emberPaint.color = color.withValues(
         alpha: ember.alpha * 0.22 * flicker,
       );
-
       canvas.drawCircle(
         ember.position.toOffset(),
-        renderSize * 2.2,
+        renderSize * 2.4,
         _emberPaint,
       );
 
       // core
-      _emberPaint.color = emberColor.withValues(alpha: ember.alpha * flicker);
-
+      _emberPaint.color = color.withValues(alpha: ember.alpha * flicker);
       canvas.drawCircle(ember.position.toOffset(), renderSize, _emberPaint);
+    }
+  }
+
+  static const List<Color> _particleColors = [
+    Neon.cyan,
+    Neon.violet,
+    Neon.magenta,
+  ];
+
+  void _drawGrid(Canvas canvas, double heat) {
+    final b = _screenBounds;
+    final pulse = 0.5 + 0.5 * math.sin(_time * 1.2);
+    _gridPaint.color = Neon.accent(heat).withValues(alpha: 0.07 + pulse * 0.03);
+
+    for (double x = b.left - (b.left % _gridSpacing); x <= b.right; x +=
+        _gridSpacing) {
+      canvas.drawLine(Offset(x, b.top), Offset(x, b.bottom), _gridPaint);
+    }
+
+    // Horizontal lines scroll slowly downward.
+    final startY = b.top - _gridSpacing + _gridScroll;
+    for (double y = startY; y <= b.bottom; y += _gridSpacing) {
+      canvas.drawLine(Offset(b.left, y), Offset(b.right, y), _gridPaint);
     }
   }
 }
@@ -163,6 +216,7 @@ class _Ember {
     required this.size,
     required this.alpha,
     required this.driftOffset,
+    required this.colorIndex,
   });
 
   Vector2 position;
@@ -170,4 +224,5 @@ class _Ember {
   double size;
   double alpha;
   double driftOffset;
+  int colorIndex;
 }

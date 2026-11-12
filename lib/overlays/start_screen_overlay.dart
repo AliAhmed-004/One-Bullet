@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/services/play_games_service.dart';
 import 'package:one_bullet/services/score_service.dart';
-import 'package:one_bullet/theme/heat_theme.dart';
+import 'package:one_bullet/theme/neon.dart';
+import 'package:one_bullet/theme/neon_widgets.dart';
 
 class StartScreenOverlay extends StatefulWidget {
   const StartScreenOverlay({required this.game, super.key});
@@ -48,14 +49,14 @@ class _StartScreenOverlayState extends State<StartScreenOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    final heat = 0.15; // static calm menu state
+    const heat = 0.15; // static calm menu state
 
     return Material(
-      color: HeatTheme.background(heat),
-      child: SafeArea(
-        child: Center(
+      color: Neon.voidDeep,
+      child: NeonBackdrop(
+        heat: heat,
+        child: SafeArea(
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // ===== SYSTEM MENU BUTTON (TOP RIGHT) =====
               Padding(
@@ -63,7 +64,7 @@ class _StartScreenOverlayState extends State<StartScreenOverlay> {
                 child: Align(
                   alignment: Alignment.topRight,
                   child: IconButton(
-                    icon: Icon(Icons.menu, color: HeatTheme.accent(heat)),
+                    icon: const Icon(Icons.menu, color: Neon.cyan),
                     onPressed: () {
                       showModalBottomSheet(
                         context: context,
@@ -75,56 +76,23 @@ class _StartScreenOverlayState extends State<StartScreenOverlay> {
                 ),
               ),
 
-              // ===== TITLE =====
-              Text(
-                'ONE BULLET',
-                style: TextStyle(
-                  fontSize: 52,
-                  fontWeight: FontWeight.w800,
-                  color: HeatTheme.textPrimary(heat),
-                  letterSpacing: 2,
-                ),
-              ),
+              const Spacer(flex: 2),
 
-              const SizedBox(height: 40),
+              // ===== TITLE =====
+              const NeonLogo(),
+
+              const Spacer(flex: 3),
 
               // ===== START BUTTON =====
-              GestureDetector(
+              NeonButton(
+                label: 'START',
+                icon: Icons.play_arrow_rounded,
+                primary: true,
+                color: Neon.cyan,
                 onTap: () => widget.game.startGame(),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 48,
-                    vertical: 16,
-                  ),
-                  decoration: BoxDecoration(
-                    color: HeatTheme.surface(heat),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: HeatTheme.accent(heat),
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: HeatTheme.accent(heat).withValues(alpha: 0.25),
-                        blurRadius: 20,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                  child: Text(
-                    'START',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: HeatTheme.accent(heat),
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                ),
               ),
 
-              const SizedBox(height: 30),
+              const SizedBox(height: 14),
 
               // ===== HIGH SCORE =====
               ValueListenableBuilder<Duration>(
@@ -132,16 +100,24 @@ class _StartScreenOverlayState extends State<StartScreenOverlay> {
                 builder: (context, score, _) {
                   if (score == Duration.zero) {
                     return Text(
-                      'No survival record yet',
-                      style: TextStyle(color: HeatTheme.textMuted(heat)),
+                      'NO SURVIVAL RECORD YET',
+                      style: neonDisplay(
+                        size: 11,
+                        color: Neon.textMuted,
+                        weight: FontWeight.w500,
+                        spacing: 2,
+                      ),
                     );
                   }
 
                   return Text(
-                    'Best: ${ScoreService.formatDuration(score)}',
-                    style: TextStyle(
-                      color: HeatTheme.emberGold,
-                      fontWeight: FontWeight.w500,
+                    'BEST  ${ScoreService.formatDuration(score)}',
+                    style: neonDisplay(
+                      size: 14,
+                      color: Neon.gold,
+                      weight: FontWeight.w700,
+                      spacing: 2,
+                      glow: Neon.gold,
                     ),
                   );
                 },
@@ -154,93 +130,49 @@ class _StartScreenOverlayState extends State<StartScreenOverlay> {
                     return const SizedBox.shrink();
                   }
 
-                  return Column(
-                    children: [
-                      GestureDetector(
-                        onTap: _isSigningIn ? null : _signInToPlayGames,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            color: HeatTheme.surface(heat),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: HeatTheme.accent(
-                                heat,
-                              ).withValues(alpha: 0.35),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (_isSigningIn) ...[
-                                SizedBox(
-                                  width: 14,
-                                  height: 14,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: HeatTheme.accent(heat),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                              ] else ...[
-                                Icon(
-                                  Icons.emoji_events,
-                                  size: 16,
-                                  color: HeatTheme.accent(heat),
-                                ),
-                                const SizedBox(width: 8),
-                              ],
-                              Text(
-                                _isSigningIn
-                                    ? 'CONNECTING...'
-                                    : 'CONNECT PLAY GAMES',
-                                style: TextStyle(
-                                  color: HeatTheme.textPrimary(heat),
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 1.0,
-                                ),
-                              ),
-                            ],
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 14),
+                    child: Column(
+                      children: [
+                        NeonButton(
+                          label: _isSigningIn
+                              ? 'CONNECTING...'
+                              : 'CONNECT PLAY GAMES',
+                          icon: _isSigningIn ? null : Icons.emoji_events,
+                          color: Neon.violet,
+                          width: 280,
+                          onTap: _isSigningIn ? null : _signInToPlayGames,
+                        ),
+                        Text(
+                          'Save achievements and join global leaderboards',
+                          style: TextStyle(
+                            color: Neon.textMuted,
+                            fontSize: 11,
+                            letterSpacing: 0.8,
+                            decoration: TextDecoration.none,
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Save achievements and join global leaderboards',
-                        style: TextStyle(
-                          color: HeatTheme.textMuted(heat),
-                          fontSize: 11,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   );
                 },
               ),
 
-              const SizedBox(height: 60),
+              const Spacer(),
 
               // ===== MINIMAL FOOTER =====
-              Text(
-                'fire a bullet, survive as long as you can',
-                style: TextStyle(
-                  color: HeatTheme.textMuted(heat),
-                  fontSize: 12,
-                  letterSpacing: 1.2,
+              Padding(
+                padding: const EdgeInsets.only(bottom: 18),
+                child: Text(
+                  'fire a bullet, survive as long as you can',
+                  style: TextStyle(
+                    color: Neon.textPrimary.withValues(alpha: 0.7),
+                    fontSize: 12,
+                    letterSpacing: 1.2,
+                    decoration: TextDecoration.none,
+                  ),
                 ),
               ),
-
-              // Text(
-              //   '',
-              //   style: TextStyle(
-              //     color: HeatTheme.textMuted(heat),
-              //     fontSize: 12,
-              //     letterSpacing: 1.2,
-              //   ),
-              // ),
             ],
           ),
         ),
@@ -329,23 +261,23 @@ class _SystemMenuState extends State<_SystemMenu> {
 
   @override
   Widget build(BuildContext context) {
-    final heat = 0.2;
-
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: HeatTheme.surface(heat),
+        color: const Color(0xF20B0524),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        border: Border.all(
-          color: HeatTheme.accent(heat).withValues(alpha: 0.4),
-        ),
+        border: Border.all(color: Neon.violet.withValues(alpha: 0.6)),
+        boxShadow: [
+          BoxShadow(color: Neon.violet.withValues(alpha: 0.3), blurRadius: 24),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           _SystemButton(
             icon: Icons.leaderboard,
-            label: "Leaderboard",
+            label: "LEADERBOARD",
+            color: Neon.cyan,
             onTap: () {
               _handlePlayGamesAction(
                 featureLabel: 'leaderboards',
@@ -359,11 +291,10 @@ class _SystemMenuState extends State<_SystemMenu> {
               );
             },
           ),
-          const SizedBox(height: 12),
-
           _SystemButton(
             icon: Icons.emoji_events,
-            label: "Achievements",
+            label: "ACHIEVEMENTS",
+            color: Neon.gold,
             onTap: () {
               _handlePlayGamesAction(
                 featureLabel: 'achievements',
@@ -374,11 +305,10 @@ class _SystemMenuState extends State<_SystemMenu> {
               );
             },
           ),
-          const SizedBox(height: 12),
-
           _SystemButton(
             icon: Icons.settings,
-            label: "Settings",
+            label: "SETTINGS",
+            color: Neon.magenta,
             onTap: () {
               Navigator.pop(context);
               widget.game.overlays.add(OneBulletGame.settingsOverlayId);
@@ -395,42 +325,23 @@ class _SystemButton extends StatelessWidget {
   const _SystemButton({
     required this.icon,
     required this.label,
+    required this.color,
     required this.onTap,
   });
 
   final IconData icon;
   final String label;
+  final Color color;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final heat = 0.2;
-
-    return GestureDetector(
+    return NeonButton(
+      label: label,
+      icon: icon,
+      color: color,
+      width: double.infinity,
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-        decoration: BoxDecoration(
-          color: HeatTheme.surface(heat),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: HeatTheme.accent(heat).withValues(alpha: 0.25),
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: HeatTheme.accent(heat)),
-            const SizedBox(width: 12),
-            Text(
-              label,
-              style: TextStyle(
-                color: HeatTheme.textPrimary(heat),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

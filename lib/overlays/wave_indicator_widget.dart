@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:one_bullet/theme/neon.dart';
+import 'package:one_bullet/theme/neon_widgets.dart';
 
 class WaveIndicatorWidget extends StatefulWidget {
   const WaveIndicatorWidget({
@@ -79,12 +81,8 @@ class _WaveIndicatorWidgetState extends State<WaveIndicatorWidget>
   @override
   Widget build(BuildContext context) {
     final baseAccent = widget.isFlashing
-        ? Color.lerp(
-            Colors.orangeAccent,
-            Colors.redAccent,
-            _flashAnimation.value,
-          )!
-        : Colors.white;
+        ? Color.lerp(Neon.orange, Neon.magenta, _flashAnimation.value)!
+        : Neon.cyan;
 
     return ScaleTransition(
       scale: _scaleAnimation,
@@ -100,41 +98,38 @@ class _WaveIndicatorWidgetState extends State<WaveIndicatorWidget>
             height: 54,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
+              color: const Color(0xCC0B0524),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: baseAccent.withValues(alpha: 0.4)),
+              border: Border.all(color: baseAccent.withValues(alpha: 0.7)),
+              boxShadow: [
+                BoxShadow(
+                  color: baseAccent.withValues(alpha: glowStrength),
+                  blurRadius: 12,
+                ),
+              ],
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   'WAVE',
-                  style: TextStyle(
-                    fontSize: 10,
-                    letterSpacing: 2,
-                    color: Colors.white.withValues(alpha: 0.5),
-                    fontWeight: FontWeight.w500,
-                    decoration: TextDecoration.none,
-                    height: 1,
-                  ),
+                  style: neonDisplay(
+                    size: 9,
+                    spacing: 3,
+                    color: Neon.textMuted,
+                    weight: FontWeight.w600,
+                  ).copyWith(height: 1),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   '${widget.waveNumber}',
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 2,
-                    height: 1,
+                  style: neonDisplay(
+                    size: 24,
+                    weight: FontWeight.w800,
+                    spacing: 2,
                     color: baseAccent,
-                    decoration: TextDecoration.none,
-                    shadows: [
-                      Shadow(
-                        color: baseAccent.withValues(alpha: glowStrength * 2),
-                        blurRadius: 12,
-                      ),
-                    ],
-                  ),
+                    glow: baseAccent,
+                  ).copyWith(height: 1),
                 ),
               ],
             ),

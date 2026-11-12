@@ -94,13 +94,13 @@ class _LeaderboardsOverlayState extends State<LeaderboardsOverlay>
     final colors = Theme.of(context).colorScheme;
 
     return Material(
-      color: const Color(0xFF0B0F14),
+      color: const Color(0xFF06031A),
       child: Container(
         decoration: const BoxDecoration(
           gradient: RadialGradient(
             center: Alignment.center,
             radius: 1.2,
-            colors: [Color(0xFF1A0F0F), Color(0xFF070A0D)],
+            colors: [Color(0xFF2A0B5C), Color(0xFF06031A)],
           ),
         ),
         child: SafeArea(
@@ -122,14 +122,14 @@ class _LeaderboardsOverlayState extends State<LeaderboardsOverlay>
       constraints: const BoxConstraints(maxHeight: 560),
       padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
       decoration: BoxDecoration(
-        color: const Color(0xFF12161C).withValues(alpha: 0.92),
+        color: const Color(0xFF0F0A2E).withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: const Color(0xFFFFB24A).withValues(alpha: 0.25),
+          color: const Color(0xFF00E5FF).withValues(alpha: 0.25),
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFFF3B2F).withValues(alpha: 0.12),
+            color: const Color(0xFFB14CFF).withValues(alpha: 0.12),
             blurRadius: 24,
             spreadRadius: 2,
           ),
@@ -151,7 +151,7 @@ class _LeaderboardsOverlayState extends State<LeaderboardsOverlay>
     return const Text(
       "LEADERBOARD",
       style: TextStyle(
-        color: Color(0xFFFFC46B),
+        color: Color(0xFFFFD84D),
         fontSize: 20,
         fontWeight: FontWeight.w700,
         letterSpacing: 2,
@@ -162,7 +162,7 @@ class _LeaderboardsOverlayState extends State<LeaderboardsOverlay>
   Widget _buildContent() {
     if (_isLoading) {
       return const Center(
-        child: CircularProgressIndicator(color: Color(0xFFFF7A3C)),
+        child: CircularProgressIndicator(color: Color(0xFFFF2BD6)),
       );
     }
 
@@ -198,10 +198,10 @@ class _LeaderboardsOverlayState extends State<LeaderboardsOverlay>
           margin: const EdgeInsets.symmetric(vertical: 6),
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: const Color(0xFF1A1F27).withValues(alpha: 0.7),
+            color: const Color(0xFF1B1050).withValues(alpha: 0.7),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: const Color(0xFFFF7A3C).withValues(alpha: 0.08),
+              color: const Color(0xFFFF2BD6).withValues(alpha: 0.08),
             ),
           ),
           child: Row(
@@ -209,7 +209,7 @@ class _LeaderboardsOverlayState extends State<LeaderboardsOverlay>
               Text(
                 "$rank",
                 style: const TextStyle(
-                  color: Color(0xFFFFB24A),
+                  color: Color(0xFF00E5FF),
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -224,7 +224,7 @@ class _LeaderboardsOverlayState extends State<LeaderboardsOverlay>
               Text(
                 score,
                 style: const TextStyle(
-                  color: Color(0xFFFF6A3D),
+                  color: Color(0xFFFF2BD6),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -242,12 +242,12 @@ class _LeaderboardsOverlayState extends State<LeaderboardsOverlay>
         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFFF7A3C)),
+          border: Border.all(color: const Color(0xFFFF2BD6)),
         ),
         child: const Text(
           "CLOSE",
           style: TextStyle(
-            color: Color(0xFFFFB24A),
+            color: Color(0xFF00E5FF),
             fontWeight: FontWeight.bold,
             letterSpacing: 1.5,
           ),

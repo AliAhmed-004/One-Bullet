@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
+import 'package:one_bullet/game_config.dart';
+import 'package:one_bullet/theme/neon.dart';
 
 class ArenaBoundary extends PositionComponent with HasGameReference {
   ArenaBoundary({
@@ -31,6 +33,11 @@ class ArenaBoundary extends PositionComponent with HasGameReference {
   late final Paint _accentPaint;
   late final Paint _sparkPaint;
   late final Paint _wallImpactPaint;
+  final Paint _midGlowPaint = Paint()..style = PaintingStyle.stroke;
+  final Paint _coreLinePaint = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1
+    ..color = const Color(0x99FFFFFF);
 
   static const double _waveHeatSmoothing = 1.8;
   static const double _impactPulseDecay = 5.2;
@@ -145,9 +152,9 @@ class ArenaBoundary extends PositionComponent with HasGameReference {
       final life = 0.25 + _random.nextDouble() * 0.2;
 
       final sparkColor = Color.lerp(
-        const Color(0xFFFFC58F),
-        const Color(0xFFFF4938),
-        _random.nextDouble() * _waveHeatCurrent,
+        Neon.accentSoft(_waveHeatCurrent),
+        Colors.white,
+        _random.nextDouble() * 0.5,
       )!;
 
       _sparks.add(
@@ -225,38 +232,36 @@ class ArenaBoundary extends PositionComponent with HasGameReference {
   void _updateVisualPaints() {
     final breathing = 0.5 + 0.5 * math.sin(_time * 2 * math.pi * _breathingHz);
 
-    final heat = (_waveHeatCurrent + (_impactPulse * 0.18) + (breathing * 0.04))
-        .clamp(0.0, 1.0);
+    // Blend wave heat with the global heat model so the border tracks the
+    // background and bullet.
+    final base = math.max(_waveHeatCurrent, GameConfig.heat);
+    final heat = (base + (_impactPulse * 0.18) + (breathing * 0.04)).clamp(
+      0.0,
+      1.0,
+    );
 
-    final border = Color.lerp(
-      const Color(0xFF6A8598),
-      const Color(0xFFE05E4D),
-      heat,
-    )!;
-
-    final accent = Color.lerp(
-      const Color(0xFF9DB9CA),
-      const Color(0xFFFF9679),
-      heat,
-    )!;
+    final border = Neon.accent(heat);
+    final accent = Neon.accentSoft(heat);
 
     _innerFillPaint.color = Color.lerp(
-      const Color(0xFF0D1822),
-      const Color(0xFF261515),
+      const Color(0xFF0A0526),
+      const Color(0xFF240A3C),
       heat,
-    )!.withValues(alpha: 0.18);
+    )!.withValues(alpha: 0.55);
 
     _outerGlowPaint
-      ..color = border.withValues(alpha: 0.10 + heat * 0.08)
-      ..strokeWidth = 8 + (heat * 2);
+      ..color = border.withValues(
+        alpha: 0.12 + heat * 0.08 + _impactPulse * 0.12,
+      )
+      ..strokeWidth = 14 + (heat * 4);
 
     _borderPaint
-      ..color = border.withValues(alpha: 0.9)
-      ..strokeWidth = 3.2 + heat + (_impactPulse * 0.6);
+      ..color = border.withValues(alpha: 0.95)
+      ..strokeWidth = 3 + (heat * 0.8) + (_impactPulse * 1.2);
 
     _accentPaint
-      ..color = accent.withValues(alpha: 0.75)
-      ..strokeWidth = 3;
+      ..color = accent
+      ..strokeWidth = 4;
 
     _wallImpactPaint
       ..color = Color.lerp(
@@ -294,7 +299,16 @@ class ArenaBoundary extends PositionComponent with HasGameReference {
 
     canvas.drawRect(rect, _innerFillPaint);
     canvas.drawRect(rect.inflate(2), _outerGlowPaint);
+    // Tighter second glow gives the neon-tube falloff.
+    _midGlowPaint
+      ..color = _outerGlowPaint.color.withValues(
+        alpha: (_outerGlowPaint.color.a * 2.0).clamp(0.0, 0.5),
+      )
+      ..strokeWidth = 7;
+    canvas.drawRect(rect, _midGlowPaint);
     canvas.drawRect(rect, _borderPaint);
+    // White-hot center line of the tube.
+    canvas.drawRect(rect, _coreLinePaint);
 
     // _drawWallImpactAccents(canvas, rect);
     _drawCornerAccents(canvas, rect);
