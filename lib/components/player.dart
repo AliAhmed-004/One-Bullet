@@ -15,7 +15,7 @@ class Player extends PositionComponent with CollisionCallbacks {
   static const double speed = 260.0;
 
   /// Player core color (also used for the death fragments).
-  static const Color playerColor = Color(0xFF00E5FF);
+  static const Color playerColor = Color(0xFF5BB8D0);
 
   AimIndicator? aimIndicator;
   bool _hasFired = false;
@@ -39,7 +39,7 @@ class Player extends PositionComponent with CollisionCallbacks {
     await super.onLoad();
 
     // BODY
-    // Soft neon glow behind the core (stacked translucent discs, no blur).
+    // Soft glow behind the core (stacked translucent discs, no blur).
     for (final (radius, alpha) in const [(26.0, 0.10), (20.0, 0.18)]) {
       add(
         CircleComponent(
@@ -56,7 +56,7 @@ class Player extends PositionComponent with CollisionCallbacks {
       anchor: Anchor.center,
       paint: Paint()..color = playerColor,
     );
-    // Bright rim so the cyan core reads against the dark arena.
+    // Bright rim so the steel core reads against the warm earth.
     _body.add(
       CircleComponent(
         radius: 14,
@@ -65,7 +65,7 @@ class Player extends PositionComponent with CollisionCallbacks {
         paint: Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 2.5
-          ..color = const Color(0xFFE0FFFF),
+          ..color = const Color(0xFFF5E6C8),
       ),
     );
 

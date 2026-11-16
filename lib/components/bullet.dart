@@ -9,7 +9,7 @@ import 'package:one_bullet/components/shockwave.dart';
 import 'package:one_bullet/debug/frame_logger.dart';
 import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/services/settings_service.dart';
-import 'package:one_bullet/theme/neon.dart';
+import 'package:one_bullet/theme/west.dart';
 import 'package:one_bullet/services/sound_service.dart';
 import 'package:vibration/vibration.dart';
 
@@ -220,7 +220,7 @@ class Bullet extends SpriteComponent with CollisionCallbacks {
         (_proximityVisual * 16) +
         (_heatVisual * 12);
 
-    final haloColor = Neon.trail(_heatVisual);
+    final haloColor = West.trail(_heatVisual);
 
     final coreAlpha =
         (0.16 +
@@ -428,5 +428,5 @@ class FireParticle extends CircleComponent {
 Color getTrailColor(double heat) {
   final t = heat.clamp(0.0, 1.0);
 
-  return Neon.trail(math.pow(t, 0.75).toDouble());
+  return West.trail(math.pow(t, 0.75).toDouble());
 }

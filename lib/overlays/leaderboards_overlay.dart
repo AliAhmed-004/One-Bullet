@@ -3,7 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:games_services/games_services.dart';
 import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/services/play_games_service.dart';
+import 'package:one_bullet/theme/west.dart';
+import 'package:one_bullet/theme/west_widgets.dart';
 
+/// Leaderboard as a wall of wanted posters: #1 gets the full "WANTED" poster,
+/// everyone else a smaller pinned notice.
 class LeaderboardsOverlay extends StatefulWidget {
   const LeaderboardsOverlay({required this.game, super.key});
 
@@ -46,11 +50,19 @@ class _LeaderboardsOverlayState extends State<LeaderboardsOverlay>
     _checkConnectivityAndLoad();
   }
 
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
   Future<void> _checkConnectivityAndLoad() async {
     final result = await _connectivity.checkConnectivity();
     final isConnected =
         result.contains(ConnectivityResult.wifi) ||
         result.contains(ConnectivityResult.mobile);
+
+    if (!mounted) return;
 
     if (isConnected) {
       _loadLeaderboards();
@@ -58,7 +70,7 @@ class _LeaderboardsOverlayState extends State<LeaderboardsOverlay>
       setState(() {
         _isLoading = false;
         _hasError = true;
-        _errorMessage = "No connection to the arena network";
+        _errorMessage = 'No telegraph line to town';
       });
     }
   }
@@ -66,6 +78,7 @@ class _LeaderboardsOverlayState extends State<LeaderboardsOverlay>
   Future<void> _loadLeaderboards() async {
     try {
       final data = await PlayGamesService.instance.loadLeaderboardScores();
+      if (!mounted) return;
 
       setState(() {
         _scores
@@ -75,10 +88,11 @@ class _LeaderboardsOverlayState extends State<LeaderboardsOverlay>
         _hasError = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
         _hasError = true;
-        _errorMessage = "Failed to reach scoreboard";
+        _errorMessage = 'Failed to reach the sheriff\'s office';
       });
     }
   }
@@ -91,23 +105,43 @@ class _LeaderboardsOverlayState extends State<LeaderboardsOverlay>
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-
     return Material(
-      color: const Color(0xFF06031A),
-      child: Container(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment.center,
-            radius: 1.2,
-            colors: [Color(0xFF2A0B5C), Color(0xFF06031A)],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
+      color: West.dustDeep,
+      child: WestBackdrop(
+        child: ColoredBox(
+          color: West.dustDeep.withValues(alpha: 0.55),
+          child: SafeArea(
             child: FadeTransition(
               opacity: _fade,
-              child: ScaleTransition(scale: _scale, child: _buildCard(colors)),
+              child: ScaleTransition(
+                scale: _scale,
+                child: Column(
+                  children: [
+                    const SizedBox(height: 14),
+                    Text(
+                      'MOST WANTED',
+                      style: westTitle(
+                        size: 30,
+                        color: West.gold,
+                        spacing: 3,
+                        shadow: West.dustDeep,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Expanded(child: _buildContent()),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12, top: 6),
+                      child: WestButton(
+                        label: 'CLOSE',
+                        icon: Icons.close_rounded,
+                        primary: true,
+                        width: 200,
+                        onTap: _close,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
@@ -115,143 +149,142 @@ class _LeaderboardsOverlayState extends State<LeaderboardsOverlay>
     );
   }
 
-  Widget _buildCard(ColorScheme colors) {
-    return Container(
-      margin: const EdgeInsets.all(22),
-      width: 380,
-      constraints: const BoxConstraints(maxHeight: 560),
-      padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F0A2E).withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: const Color(0xFF00E5FF).withValues(alpha: 0.25),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFB14CFF).withValues(alpha: 0.12),
-            blurRadius: 24,
-            spreadRadius: 2,
+  Widget _centerMessage(String text) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: WantedPoster(
+          width: 300,
+          seed: 2,
+          child: Text(
+            text,
+            textAlign: TextAlign.center,
+            style: westText(size: 15, color: West.ink),
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          _title(),
-          const SizedBox(height: 16),
-          Expanded(child: _buildContent()),
-          const SizedBox(height: 14),
-          _closeButton(),
-        ],
-      ),
-    );
-  }
-
-  Widget _title() {
-    return const Text(
-      "LEADERBOARD",
-      style: TextStyle(
-        color: Color(0xFFFFD84D),
-        fontSize: 20,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 2,
+        ),
       ),
     );
   }
 
   Widget _buildContent() {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: Color(0xFFFF2BD6)),
-      );
+      return const Center(child: CircularProgressIndicator(color: West.gold));
     }
 
-    if (_hasError) {
-      return Center(
-        child: Text(
-          _errorMessage,
-          style: const TextStyle(color: Colors.white60),
-          textAlign: TextAlign.center,
-        ),
-      );
-    }
+    if (_hasError) return _centerMessage(_errorMessage);
 
-    if (_scores.isEmpty) {
-      return const Center(
-        child: Text(
-          "No survivors yet",
-          style: TextStyle(color: Colors.white54),
-        ),
-      );
-    }
+    if (_scores.isEmpty) return _centerMessage('No outlaws on record yet');
 
     return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
       itemCount: _scores.length,
       itemBuilder: (context, i) {
         final s = _scores[i];
-        final holder = s.scoreHolder;
-        final name = holder.displayName;
+        final name = s.scoreHolder.displayName;
         final score = s.displayScore;
         final rank = s.rank;
 
-        return Container(
-          margin: const EdgeInsets.symmetric(vertical: 6),
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1B1050).withValues(alpha: 0.7),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: const Color(0xFFFF2BD6).withValues(alpha: 0.08),
-            ),
-          ),
-          child: Row(
-            children: [
-              Text(
-                "$rank",
-                style: const TextStyle(
-                  color: Color(0xFF00E5FF),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  name,
-                  style: const TextStyle(color: Colors.white70),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Text(
-                score,
-                style: const TextStyle(
-                  color: Color(0xFFFF2BD6),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+        // Alternate the lean so the wall of posters feels hand-pinned.
+        final tilt = (i.isEven ? -1 : 1) * (0.01 + (i % 3) * 0.006);
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Center(
+            child: i == 0
+                ? _topPoster(name, score, tilt)
+                : _notice(rank, name, score, tilt, i),
           ),
         );
       },
     );
   }
 
-  Widget _closeButton() {
-    return GestureDetector(
-      onTap: _close,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFFF2BD6)),
-        ),
-        child: const Text(
-          "CLOSE",
-          style: TextStyle(
-            color: Color(0xFF00E5FF),
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.5,
+  /// First place: full-size WANTED poster.
+  Widget _topPoster(String name, String score, double tilt) {
+    return WantedPoster(
+      width: 340,
+      tilt: tilt,
+      seed: 101,
+      padding: const EdgeInsets.fromLTRB(26, 28, 26, 26),
+      child: Column(
+        children: [
+          Text(
+            'WANTED',
+            style: westTitle(size: 44, color: West.blood, spacing: 5),
           ),
-        ),
+          Text(
+            'FASTEST GUN IN THE WEST',
+            style: westText(size: 10, color: West.ink, spacing: 3),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: 84,
+            height: 84,
+            decoration: BoxDecoration(
+              color: West.ink.withValues(alpha: 0.12),
+              border: Border.all(color: West.ink, width: 3),
+            ),
+            child: const Icon(Icons.person, size: 60, color: West.ink),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            name.toUpperCase(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: westTitle(size: 22, color: West.ink, spacing: 2),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'SURVIVED',
+            style: westText(size: 11, color: West.rust, spacing: 4),
+          ),
+          Text(
+            score,
+            style: westTitle(size: 32, color: West.ink, spacing: 2),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'RANK #1',
+            style: westText(
+              size: 13,
+              color: West.blood,
+              spacing: 3,
+              weight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Everyone else: a smaller pinned notice.
+  Widget _notice(int rank, String name, String score, double tilt, int i) {
+    return WantedPoster(
+      width: 310,
+      tilt: tilt,
+      seed: 200 + i,
+      padding: const EdgeInsets.fromLTRB(24, 22, 24, 20),
+      child: Row(
+        children: [
+          Text(
+            '#$rank',
+            style: westTitle(size: 24, color: West.rust, spacing: 1),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: westText(
+                size: 15,
+                color: West.ink,
+                weight: FontWeight.w700,
+              ),
+            ),
+          ),
+          Text(score, style: westText(size: 15, color: West.ink)),
+        ],
       ),
     );
   }

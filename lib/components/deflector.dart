@@ -9,7 +9,7 @@ import 'package:one_bullet/components/shockwave.dart';
 import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/services/sound_service.dart';
 
-/// A neon crystal-panel obstacle that deflects bullets and blocks player movement.
+/// A wooden barricade obstacle that deflects bullets and blocks player movement.
 /// Spawns starting from wave 5 and breaks apart when hit by a bullet.
 class Deflector extends PositionComponent with CollisionCallbacks {
   Deflector({
@@ -32,10 +32,10 @@ class Deflector extends PositionComponent with CollisionCallbacks {
   @override
   final double height;
 
-  /// Neon panel colors (names kept from the old wood look).
-  static const Color woodColor = Color(0xFF1C0C45); // deep violet body
-  static const Color woodDarkColor = Color(0xFFB14CFF); // violet edge / lines
-  static const Color woodLightColor = Color(0xFF00E5FF); // cyan highlight
+  /// Barricade colors.
+  static const Color woodColor = Color(0xFF2E1B11); // dark timber body
+  static const Color woodDarkColor = Color(0xFFA8461F); // rust grain lines
+  static const Color woodLightColor = Color(0xFFE3C58E); // sandy highlight
 
   /// Cached Paint objects for rendering (avoid recreation each frame).
   late final Paint _bodyPaint;
@@ -72,7 +72,7 @@ class Deflector extends PositionComponent with CollisionCallbacks {
       ..strokeWidth = 2;
     
     _borderPaint = Paint()
-      ..color = const Color(0xFFFF2BD6)
+      ..color = const Color(0xFFC9A26B)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
   }

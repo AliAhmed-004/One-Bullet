@@ -5,9 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/services/play_games_service.dart';
 import 'package:one_bullet/services/settings_service.dart';
-import 'package:one_bullet/theme/neon.dart';
-import 'package:one_bullet/theme/neon_widgets.dart';
+import 'package:one_bullet/theme/west.dart';
+import 'package:one_bullet/theme/west_widgets.dart';
 
+/// Settings as a floating WANTED-poster dialog over a dimmed scene.
 class SettingsOverlay extends StatefulWidget {
   final OneBulletGame game;
   const SettingsOverlay({super.key, required this.game});
@@ -21,8 +22,6 @@ class _SettingsOverlayState extends State<SettingsOverlay>
   late final AnimationController _controller;
   late final Animation<double> _fade;
   late final Animation<double> _scale;
-
-  static const double _heat = 0.25;
 
   @override
   void initState() {
@@ -57,16 +56,16 @@ class _SettingsOverlayState extends State<SettingsOverlay>
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Neon.voidDeep,
-      child: NeonBackdrop(
-        heat: _heat,
-        child: SafeArea(
-          child: FadeTransition(
-            opacity: _fade,
-            child: ScaleTransition(
-              scale: _scale,
-              child: Center(
-                child: SingleChildScrollView(child: _buildPanel()),
+      color: West.dustDeep.withValues(alpha: 0.78),
+      child: SafeArea(
+        child: FadeTransition(
+          opacity: _fade,
+          child: ScaleTransition(
+            scale: _scale,
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: _buildPanel(),
               ),
             ),
           ),
@@ -76,58 +75,44 @@ class _SettingsOverlayState extends State<SettingsOverlay>
   }
 
   Widget _buildPanel() {
-    return NeonPanel(
+    return WantedPoster(
       width: 340,
-      color: Neon.violet,
-      padding: const EdgeInsets.all(22),
+      tilt: 0.012,
+      seed: 11,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // ===== TITLE =====
+          Text(
+            'HOUSE RULES',
+            style: westTitle(size: 28, color: West.ink, spacing: 2),
+          ),
+          const SizedBox(height: 2),
           Text(
             'SETTINGS',
-            style: neonDisplay(
-              size: 22,
-              spacing: 4,
-              color: Colors.white,
-              glow: Neon.cyan,
-            ),
+            style: westText(size: 12, color: West.rust, spacing: 4),
           ),
-
-          const SizedBox(height: 24),
-
-          // ===== TOGGLES =====
+          const SizedBox(height: 20),
           _settingToggle(
-            title: "SOUND",
+            title: 'SOUND',
             icon: Icons.volume_up_rounded,
-            color: Neon.cyan,
             valueListenable: SettingsService.soundEnabled,
             onChanged: SettingsService.setSound,
           ),
-
-          const SizedBox(height: 12),
-
+          const SizedBox(height: 10),
           _settingToggle(
-            title: "HAPTICS",
+            title: 'HAPTICS',
             icon: Icons.vibration,
-            color: Neon.magenta,
             valueListenable: SettingsService.hapticsEnabled,
             onChanged: SettingsService.setHaptics,
           ),
-
-          const SizedBox(height: 18),
-
-          // ===== PLAY GAMES =====
+          const SizedBox(height: 16),
           if (PlayGamesService.isSupportedPlatform) _playGamesSection(),
-
-          const SizedBox(height: 8),
-
-          // ===== CLOSE =====
-          NeonButton(
+          const SizedBox(height: 6),
+          WestButton(
             label: 'CLOSE',
             icon: Icons.close_rounded,
+            onPaper: true,
             primary: true,
-            color: Neon.cyan,
             width: double.infinity,
             onTap: _close,
           ),
@@ -144,9 +129,9 @@ class _SettingsOverlayState extends State<SettingsOverlay>
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Neon.violet.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Neon.violet.withValues(alpha: 0.5)),
+        color: West.ink.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: West.ink.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -156,16 +141,16 @@ class _SettingsOverlayState extends State<SettingsOverlay>
               Icon(
                 Icons.emoji_events,
                 size: 18,
-                color: isSignedIn ? Neon.gold : Neon.violet,
+                color: isSignedIn ? West.rust : West.ink,
               ),
               const SizedBox(width: 8),
               Text(
                 'PLAY GAMES',
-                style: neonDisplay(
+                style: westText(
                   size: 13,
                   weight: FontWeight.w700,
                   spacing: 2,
-                  color: Neon.textPrimary,
+                  color: West.ink,
                 ),
               ),
             ],
@@ -175,18 +160,13 @@ class _SettingsOverlayState extends State<SettingsOverlay>
             isSignedIn
                 ? 'Connected. Achievements and leaderboards are active.'
                 : 'Not connected. Sign in to save achievements and join leaderboards.',
-            style: const TextStyle(
-              color: Neon.textMuted,
-              fontSize: 12,
-              height: 1.35,
-              decoration: TextDecoration.none,
-            ),
+            style: westText(size: 12, color: West.ink, spacing: 0.4),
           ),
           if (!isSignedIn) ...[
             const SizedBox(height: 8),
-            NeonButton(
+            WestButton(
               label: 'CONNECT',
-              color: Neon.violet,
+              onPaper: true,
               width: double.infinity,
               onTap: _signInToPlayGames,
             ),
@@ -199,14 +179,13 @@ class _SettingsOverlayState extends State<SettingsOverlay>
   Widget _settingToggle({
     required String title,
     required IconData icon,
-    required Color color,
     required ValueListenable<bool> valueListenable,
     required ValueChanged<bool> onChanged,
   }) {
     return ValueListenableBuilder<bool>(
       valueListenable: valueListenable,
       builder: (context, value, _) {
-        final c = value ? color : Neon.textMuted;
+        final c = value ? West.ink : West.ink.withValues(alpha: 0.45);
 
         return GestureDetector(
           onTap: () => onChanged(!value),
@@ -214,12 +193,9 @@ class _SettingsOverlayState extends State<SettingsOverlay>
             duration: const Duration(milliseconds: 160),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: c.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: c.withValues(alpha: value ? 0.8 : 0.3)),
-              boxShadow: value
-                  ? [BoxShadow(color: color.withValues(alpha: 0.25), blurRadius: 12)]
-                  : null,
+              color: West.ink.withValues(alpha: value ? 0.08 : 0.02),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: c, width: value ? 2 : 1),
             ),
             child: Row(
               children: [
@@ -228,24 +204,22 @@ class _SettingsOverlayState extends State<SettingsOverlay>
                 Expanded(
                   child: Text(
                     title,
-                    style: neonDisplay(
+                    style: westText(
                       size: 14,
                       weight: FontWeight.w700,
                       spacing: 2,
-                      color: value ? Colors.white : Neon.textMuted,
+                      color: c,
                     ),
                   ),
                 ),
                 Switch(
                   value: value,
                   onChanged: onChanged,
-                  activeThumbColor: color,
-                  activeTrackColor: color.withValues(alpha: 0.35),
-                  inactiveThumbColor: Neon.textMuted,
-                  inactiveTrackColor: Neon.voidDeep,
-                  trackOutlineColor: WidgetStatePropertyAll(
-                    c.withValues(alpha: 0.6),
-                  ),
+                  activeThumbColor: West.parchment,
+                  activeTrackColor: West.rust,
+                  inactiveThumbColor: West.parchmentDark,
+                  inactiveTrackColor: West.ink.withValues(alpha: 0.25),
+                  trackOutlineColor: WidgetStatePropertyAll(c),
                 ),
               ],
             ),

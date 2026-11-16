@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/services/play_games_service.dart';
 import 'package:one_bullet/services/score_service.dart';
-import 'package:one_bullet/theme/neon.dart';
-import 'package:one_bullet/theme/neon_widgets.dart';
+import 'package:one_bullet/theme/west.dart';
+import 'package:one_bullet/theme/west_widgets.dart';
 
 class StartScreenOverlay extends StatefulWidget {
   const StartScreenOverlay({required this.game, super.key});
@@ -49,12 +49,10 @@ class _StartScreenOverlayState extends State<StartScreenOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    const heat = 0.15; // static calm menu state
 
     return Material(
-      color: Neon.voidDeep,
-      child: NeonBackdrop(
-        heat: heat,
+      color: West.dustDeep,
+      child: WestBackdrop(
         child: SafeArea(
           child: Column(
             children: [
@@ -64,7 +62,7 @@ class _StartScreenOverlayState extends State<StartScreenOverlay> {
                 child: Align(
                   alignment: Alignment.topRight,
                   child: IconButton(
-                    icon: const Icon(Icons.menu, color: Neon.cyan),
+                    icon: const Icon(Icons.menu, color: West.gold),
                     onPressed: () {
                       showModalBottomSheet(
                         context: context,
@@ -79,16 +77,16 @@ class _StartScreenOverlayState extends State<StartScreenOverlay> {
               const Spacer(flex: 2),
 
               // ===== TITLE =====
-              const NeonLogo(),
+              const WestLogo(),
 
               const Spacer(flex: 3),
 
               // ===== START BUTTON =====
-              NeonButton(
+              WestButton(
                 label: 'START',
                 icon: Icons.play_arrow_rounded,
                 primary: true,
-                color: Neon.cyan,
+                color: West.gold,
                 onTap: () => widget.game.startGame(),
               ),
 
@@ -101,9 +99,9 @@ class _StartScreenOverlayState extends State<StartScreenOverlay> {
                   if (score == Duration.zero) {
                     return Text(
                       'NO SURVIVAL RECORD YET',
-                      style: neonDisplay(
+                      style: westText(
                         size: 11,
-                        color: Neon.textMuted,
+                        color: West.textMuted,
                         weight: FontWeight.w500,
                         spacing: 2,
                       ),
@@ -112,12 +110,11 @@ class _StartScreenOverlayState extends State<StartScreenOverlay> {
 
                   return Text(
                     'BEST  ${ScoreService.formatDuration(score)}',
-                    style: neonDisplay(
+                    style: westText(
                       size: 14,
-                      color: Neon.gold,
+                      color: West.gold,
                       weight: FontWeight.w700,
                       spacing: 2,
-                      glow: Neon.gold,
                     ),
                   );
                 },
@@ -134,19 +131,19 @@ class _StartScreenOverlayState extends State<StartScreenOverlay> {
                     padding: const EdgeInsets.only(top: 14),
                     child: Column(
                       children: [
-                        NeonButton(
+                        WestButton(
                           label: _isSigningIn
                               ? 'CONNECTING...'
                               : 'CONNECT PLAY GAMES',
                           icon: _isSigningIn ? null : Icons.emoji_events,
-                          color: Neon.violet,
+                          color: West.rust,
                           width: 280,
                           onTap: _isSigningIn ? null : _signInToPlayGames,
                         ),
                         Text(
                           'Save achievements and join global leaderboards',
                           style: TextStyle(
-                            color: Neon.textMuted,
+                            color: West.textMuted,
                             fontSize: 11,
                             letterSpacing: 0.8,
                             decoration: TextDecoration.none,
@@ -166,7 +163,7 @@ class _StartScreenOverlayState extends State<StartScreenOverlay> {
                 child: Text(
                   'fire a bullet, survive as long as you can',
                   style: TextStyle(
-                    color: Neon.textPrimary.withValues(alpha: 0.7),
+                    color: West.textPrimary.withValues(alpha: 0.7),
                     fontSize: 12,
                     letterSpacing: 1.2,
                     decoration: TextDecoration.none,
@@ -261,23 +258,14 @@ class _SystemMenuState extends State<_SystemMenu> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: const Color(0xF20B0524),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        border: Border.all(color: Neon.violet.withValues(alpha: 0.6)),
-        boxShadow: [
-          BoxShadow(color: Neon.violet.withValues(alpha: 0.3), blurRadius: 24),
-        ],
-      ),
+    return PlankPanel(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           _SystemButton(
             icon: Icons.leaderboard,
             label: "LEADERBOARD",
-            color: Neon.cyan,
+            color: West.gold,
             onTap: () {
               _handlePlayGamesAction(
                 featureLabel: 'leaderboards',
@@ -294,7 +282,7 @@ class _SystemMenuState extends State<_SystemMenu> {
           _SystemButton(
             icon: Icons.emoji_events,
             label: "ACHIEVEMENTS",
-            color: Neon.gold,
+            color: West.gold,
             onTap: () {
               _handlePlayGamesAction(
                 featureLabel: 'achievements',
@@ -308,7 +296,7 @@ class _SystemMenuState extends State<_SystemMenu> {
           _SystemButton(
             icon: Icons.settings,
             label: "SETTINGS",
-            color: Neon.magenta,
+            color: West.blood,
             onTap: () {
               Navigator.pop(context);
               widget.game.overlays.add(OneBulletGame.settingsOverlayId);
@@ -336,7 +324,7 @@ class _SystemButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return NeonButton(
+    return WestButton(
       label: label,
       icon: icon,
       color: color,

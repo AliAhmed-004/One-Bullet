@@ -3,8 +3,8 @@ import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/services/ad_service.dart';
 import 'package:one_bullet/services/death_message_service.dart';
 import 'package:one_bullet/services/score_service.dart';
-import 'package:one_bullet/theme/neon.dart';
-import 'package:one_bullet/theme/neon_widgets.dart';
+import 'package:one_bullet/theme/west.dart';
+import 'package:one_bullet/theme/west_widgets.dart';
 
 class GameOverOverlay extends StatefulWidget {
   const GameOverOverlay({required this.game, super.key});
@@ -23,10 +23,6 @@ class _GameOverOverlayState extends State<GameOverOverlay>
   late final Animation<double> _fade;
   late final Animation<double> _scale;
   late final DeathMessageResult _deathMessage;
-
-  static const _ember = Neon.magenta;
-  static const _gold = Neon.gold;
-  static const _deepHeat = Neon.violet;
 
   @override
   void initState() {
@@ -64,14 +60,17 @@ class _GameOverOverlayState extends State<GameOverOverlay>
     final canContinue = widget.game.canContinue;
 
     return Material(
-      color: Neon.voidDeep.withValues(alpha: 0.86),
+      color: West.dustDeep.withValues(alpha: 0.82),
       child: SafeArea(
         child: Center(
           child: FadeTransition(
             opacity: _fade,
             child: ScaleTransition(
               scale: _scale,
-              child: _buildCard(finalTime, isNewRecord, canContinue),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: _buildCard(finalTime, isNewRecord, canContinue),
+              ),
             ),
           ),
         ),
@@ -80,59 +79,40 @@ class _GameOverOverlayState extends State<GameOverOverlay>
   }
 
   Widget _buildCard(Duration finalTime, bool isNewRecord, bool canContinue) {
-    return NeonPanel(
+    return WantedPoster(
       width: 350,
-      color: isNewRecord ? _gold : _ember,
-      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 30),
+      tilt: -0.012,
+      seed: 5,
+      padding: const EdgeInsets.fromLTRB(28, 32, 28, 28),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'GAME OVER',
-            style: neonDisplay(
-              size: 26,
-              spacing: 3,
-              color: Colors.white,
-              glow: isNewRecord ? _gold : _ember,
-            ),
+            'DEAD',
+            style: westTitle(size: 54, color: West.blood, spacing: 6),
           ),
-
+          Text(
+            'OR ALIVE? NOT ANYMORE',
+            style: westText(size: 11, color: West.ink, spacing: 3),
+          ),
           const SizedBox(height: 12),
-
           _buildDeathMessage(),
-
-          const SizedBox(height: 22),
-
+          const SizedBox(height: 20),
           Text(
             'TIME SURVIVED',
-            style: TextStyle(
-              fontSize: 11,
-              letterSpacing: 1.8,
-              color: Colors.white.withValues(alpha: 0.65),
-            ),
+            style: westText(size: 11, color: West.rust, spacing: 3),
           ),
-
-          const SizedBox(height: 8),
-
+          const SizedBox(height: 4),
           Text(
             ScoreService.formatDuration(finalTime),
-            style: neonDisplay(
-              size: 40,
-              spacing: 3,
-              color: Colors.white,
-              glow: Neon.cyan,
-            ),
+            style: westTitle(size: 44, color: West.ink, spacing: 3),
           ),
-
           if (_deathMessage.secondsToNextAchievement != null) ...[
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             _buildNextAchievementSection(),
           ],
-
-          if (isNewRecord) ...[const SizedBox(height: 18), _buildRecordBadge()],
-
-          const SizedBox(height: 30),
-
+          if (isNewRecord) ...[const SizedBox(height: 16), _buildRecordBadge()],
+          const SizedBox(height: 22),
           if (canContinue) ...[
             _isLoadingAd
                 ? const SizedBox(
@@ -140,32 +120,29 @@ class _GameOverOverlayState extends State<GameOverOverlay>
                     child: Center(
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        color: West.ink,
                       ),
                     ),
                   )
-                : _ActionButton(
-                    label: 'Continue',
+                : WestButton(
+                    label: 'CONTINUE',
                     icon: Icons.play_circle_fill,
-                    accentColor: _gold,
+                    onPaper: true,
+                    primary: true,
                     onTap: _onContinuePressed,
                   ),
-            const SizedBox(height: 14),
           ],
-
-          _ActionButton(
-            label: 'Restart',
+          WestButton(
+            label: 'RESTART',
             icon: Icons.refresh,
-            accentColor: _ember,
+            onPaper: true,
+            primary: !canContinue,
             onTap: widget.game.restart,
           ),
-
-          const SizedBox(height: 12),
-
-          _ActionButton(
-            label: 'Main Menu',
+          WestButton(
+            label: 'MAIN MENU',
             icon: Icons.home,
-            accentColor: _deepHeat,
+            onPaper: true,
             onTap: widget.game.returnToMenu,
           ),
         ],
@@ -174,28 +151,31 @@ class _GameOverOverlayState extends State<GameOverOverlay>
   }
 
   Widget _buildRecordBadge() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: _gold.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _gold.withValues(alpha: 0.4)),
-      ),
-      child: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.emoji_events, color: _gold, size: 16),
-          SizedBox(width: 8),
-          Text(
-            'NEW RECORD',
-            style: TextStyle(
-              color: _gold,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.2,
-              fontSize: 11,
+    // Rubber-stamp look: red ink, slightly rotated.
+    return Transform.rotate(
+      angle: -0.08,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: West.blood, width: 3),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.emoji_events, color: West.blood, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              'NEW RECORD',
+              style: westText(
+                size: 14,
+                color: West.blood,
+                spacing: 2,
+                weight: FontWeight.w700,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -204,11 +184,7 @@ class _GameOverOverlayState extends State<GameOverOverlay>
     return Text(
       _deathMessage.message,
       textAlign: TextAlign.center,
-      style: TextStyle(
-        fontSize: 14,
-        fontStyle: FontStyle.italic,
-        color: _gold.withValues(alpha: 0.85),
-      ),
+      style: westText(size: 14, color: West.ink, spacing: 0.6),
     );
   }
 
@@ -221,40 +197,33 @@ class _GameOverOverlayState extends State<GameOverOverlay>
     final progress = (survived / target).clamp(0.0, 1.0);
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: _ember.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _ember.withValues(alpha: 0.18)),
+        color: West.ink.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: West.ink.withValues(alpha: 0.4)),
       ),
       child: Column(
         children: [
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
+            style: westText(size: 13, color: West.ink, spacing: 0.6),
           ),
           const SizedBox(height: 10),
           ClipRRect(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(2),
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 6,
-              backgroundColor: Colors.white12,
-              valueColor: const AlwaysStoppedAnimation(_ember),
+              backgroundColor: West.ink.withValues(alpha: 0.15),
+              valueColor: const AlwaysStoppedAnimation(West.rust),
             ),
           ),
           const SizedBox(height: 6),
           Text(
             '$survived s / $target s',
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.white.withValues(alpha: 0.55),
-            ),
+            style: westText(size: 10, color: West.ink, spacing: 1),
           ),
         ],
       ),
@@ -271,30 +240,6 @@ class _GameOverOverlayState extends State<GameOverOverlay>
           setState(() => _isLoadingAd = false);
         }
       },
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({
-    required this.label,
-    required this.icon,
-    required this.accentColor,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final Color accentColor;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return NeonButton(
-      label: label.toUpperCase(),
-      icon: icon,
-      color: accentColor,
-      onTap: onTap,
     );
   }
 }

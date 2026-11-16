@@ -1,17 +1,20 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
+import 'package:one_bullet/components/arena_scenery.dart';
 import 'package:one_bullet/game_config.dart';
-import 'package:one_bullet/theme/neon.dart';
+import 'package:one_bullet/theme/west.dart';
 
+/// The run-down stone arena: packed-earth floor, a ring of broken stone wall
+/// and a heat line along the inner edge. Collision is the plain [bounds] rect;
+/// the walls are purely visual and live just outside it.
 class ArenaBoundary extends PositionComponent with HasGameReference {
   ArenaBoundary({
     required this.topPadding,
     this.bottomPadding = 8,
     this.sidePadding = 8,
-    this.borderColor = const Color(0xFF64B5F6),
-    this.borderWidth = 2,
     this.horizontalPadding = 16,
     this.verticalPadding = 12,
   });
@@ -19,29 +22,27 @@ class ArenaBoundary extends PositionComponent with HasGameReference {
   final double topPadding;
   final double bottomPadding;
   final double sidePadding;
-  final Color borderColor;
-  final double borderWidth;
   final double horizontalPadding;
   final double verticalPadding;
+
+  /// Visual wall thickness outside [bounds].
+  static const double _wallThickness = 12;
 
   Rect _arenaBounds = Rect.zero;
   bool _boundsInitialized = false;
 
-  late final Paint _borderPaint;
-  late final Paint _outerGlowPaint;
-  late final Paint _innerFillPaint;
-  late final Paint _accentPaint;
+  // Cached static art, rebuilt on resize.
+  ui.Image? _staticArt;
+  Rect _artRect = Rect.zero;
+  static const double _artScale = 2.75;
+
+  late final Paint _floorPaint;
+  late final Paint _heatLinePaint;
   late final Paint _sparkPaint;
-  late final Paint _wallImpactPaint;
-  final Paint _midGlowPaint = Paint()..style = PaintingStyle.stroke;
-  final Paint _coreLinePaint = Paint()
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 1
-    ..color = const Color(0x99FFFFFF);
+  final Paint _artPaint = Paint()..filterQuality = FilterQuality.medium;
 
   static const double _waveHeatSmoothing = 1.8;
   static const double _impactPulseDecay = 5.2;
-  static const double _wallEnergyDecay = 4.6;
   static const double _breathingHz = 0.24;
 
   double _time = 0;
@@ -49,12 +50,7 @@ class ArenaBoundary extends PositionComponent with HasGameReference {
   double _waveHeatCurrent = 0.1;
   double _impactPulse = 0;
 
-  double _leftWallEnergy = 0;
-  double _rightWallEnergy = 0;
-  double _topWallEnergy = 0;
-  double _bottomWallEnergy = 0;
-
-  final List<_SparkParticle> _sparks = [];
+  final List<_Chip> _chips = [];
   final math.Random _random = math.Random();
 
   Rect get bounds {
@@ -82,25 +78,16 @@ class ArenaBoundary extends PositionComponent with HasGameReference {
   Future<void> onLoad() async {
     await super.onLoad();
 
-    _borderPaint = Paint()..style = PaintingStyle.stroke;
-
-    _outerGlowPaint = Paint()..style = PaintingStyle.stroke;
-
-    _innerFillPaint = Paint()..style = PaintingStyle.fill;
-
-    _accentPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
+    _floorPaint = Paint()..style = PaintingStyle.fill;
+    _heatLinePaint = Paint()..style = PaintingStyle.stroke;
     _sparkPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    _wallImpactPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
     _updateBounds(game.size);
+
+    // Bushes, tumbleweed and drifting dust render right after the arena.
+    await add(ArenaScenery());
   }
 
   @override
@@ -123,7 +110,213 @@ class ArenaBoundary extends PositionComponent with HasGameReference {
     );
 
     _boundsInitialized = true;
+    _rebuildStaticArt(_arenaBounds);
   }
+
+  // ---- Cached art -------------------------------------------------------
+
+  /// Dark patches, pebbles and cracks on the floor. Seeded so it stays stable
+  /// across resizes.
+  void _paintFloorDetail(Canvas c, Rect r) {
+    final rnd = math.Random(42);
+
+    final patch = Paint()..color = West.dustDeep.withValues(alpha: 0.16);
+    for (var i = 0; i < 14; i++) {
+      c.drawOval(
+        Rect.fromCenter(
+          center: Offset(
+            r.left + rnd.nextDouble() * r.width,
+            r.top + rnd.nextDouble() * r.height,
+          ),
+          width: 50 + rnd.nextDouble() * 90,
+          height: 24 + rnd.nextDouble() * 50,
+        ),
+        patch,
+      );
+    }
+
+    final light = Paint()..color = West.sandLight.withValues(alpha: 0.10);
+    for (var i = 0; i < 10; i++) {
+      c.drawOval(
+        Rect.fromCenter(
+          center: Offset(
+            r.left + rnd.nextDouble() * r.width,
+            r.top + rnd.nextDouble() * r.height,
+          ),
+          width: 40 + rnd.nextDouble() * 80,
+          height: 18 + rnd.nextDouble() * 36,
+        ),
+        light,
+      );
+    }
+
+    final pebble = Paint()..color = West.stoneLight.withValues(alpha: 0.35);
+    final pebbleDark = Paint()..color = West.dustDeep.withValues(alpha: 0.35);
+    for (var i = 0; i < 70; i++) {
+      final o = Offset(
+        r.left + rnd.nextDouble() * r.width,
+        r.top + rnd.nextDouble() * r.height,
+      );
+      final rad = 0.8 + rnd.nextDouble() * 1.8;
+      c
+        ..drawCircle(o.translate(0.6, 0.8), rad, pebbleDark)
+        ..drawCircle(o, rad, pebble);
+    }
+
+    // A few hairline cracks.
+    final crack = Paint()
+      ..color = West.dustDeep.withValues(alpha: 0.4)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+    for (var i = 0; i < 7; i++) {
+      var p = Offset(
+        r.left + rnd.nextDouble() * r.width,
+        r.top + rnd.nextDouble() * r.height,
+      );
+      final path = Path()..moveTo(p.dx, p.dy);
+      for (var s = 0; s < 4; s++) {
+        p = p.translate(
+          (rnd.nextDouble() - 0.3) * 24,
+          (rnd.nextDouble() - 0.5) * 18,
+        );
+        path.lineTo(p.dx, p.dy);
+      }
+      c.drawPath(path, crack);
+    }
+  }
+
+  /// Ring of irregular stone blocks, with a few missing (broken) ones.
+  void _paintWalls(Canvas c, Rect r) {
+    final rnd = math.Random(7);
+
+    // Dark mortar/shadow band behind the stones: four strips, so the arena
+    // interior stays untouched.
+    final mortar = Paint()..color = West.dustDeep;
+    final outer = r.inflate(_wallThickness + 1);
+    c
+      ..drawRect(Rect.fromLTRB(outer.left, outer.top, outer.right, r.top), mortar)
+      ..drawRect(Rect.fromLTRB(outer.left, r.bottom, outer.right, outer.bottom), mortar)
+      ..drawRect(Rect.fromLTRB(outer.left, r.top, r.left, r.bottom), mortar)
+      ..drawRect(Rect.fromLTRB(r.right, r.top, outer.right, r.bottom), mortar);
+
+    void stone(Rect s, {bool broken = false}) {
+      if (broken) {
+        // Gap: leave dark, add a little rubble.
+        for (var i = 0; i < 3; i++) {
+          c.drawCircle(
+            s.center.translate(
+              (rnd.nextDouble() - 0.5) * s.width,
+              (rnd.nextDouble() - 0.5) * s.height,
+            ),
+            1.2 + rnd.nextDouble() * 1.6,
+            Paint()..color = West.stone.withValues(alpha: 0.7),
+          );
+        }
+        return;
+      }
+      final base = Color.lerp(
+        West.stoneDark,
+        West.stoneLight,
+        0.25 + rnd.nextDouble() * 0.6,
+      )!;
+      final rr = RRect.fromRectAndRadius(s.deflate(0.8), const Radius.circular(2));
+      c
+        ..drawRRect(rr, Paint()..color = base)
+        // Highlight on the upper-left, shadow on the lower-right.
+        ..drawLine(
+          rr.outerRect.topLeft.translate(2, 1),
+          rr.outerRect.topRight.translate(-2, 1),
+          Paint()
+            ..color = Colors.white.withValues(alpha: 0.18)
+            ..strokeWidth = 1,
+        )
+        ..drawLine(
+          rr.outerRect.bottomLeft.translate(2, -1),
+          rr.outerRect.bottomRight.translate(-2, -1),
+          Paint()
+            ..color = Colors.black.withValues(alpha: 0.28)
+            ..strokeWidth = 1,
+        );
+      // Occasional chip/crack.
+      if (rnd.nextDouble() < 0.35) {
+        c.drawLine(
+          s.center.translate(-s.width * 0.2, -s.height * 0.3),
+          s.center.translate(s.width * 0.15, s.height * 0.3),
+          Paint()
+            ..color = West.dustDeep.withValues(alpha: 0.7)
+            ..strokeWidth = 1,
+        );
+      }
+    }
+
+    // Horizontal runs (top & bottom).
+    for (final top in [true, false]) {
+      var x = r.left - _wallThickness;
+      while (x < r.right + _wallThickness) {
+        final len = 22 + rnd.nextDouble() * 18;
+        final t = _wallThickness - rnd.nextDouble() * 2.5;
+        final w = math.min(len, r.right + _wallThickness - x);
+        final rect = top
+            ? Rect.fromLTWH(x, r.top - t, w, t)
+            : Rect.fromLTWH(x, r.bottom, w, t);
+        stone(rect, broken: rnd.nextDouble() < 0.07);
+        x += len;
+      }
+    }
+
+    // Vertical runs (left & right), between the horizontal ones.
+    for (final left in [true, false]) {
+      var y = r.top;
+      while (y < r.bottom) {
+        final len = 22 + rnd.nextDouble() * 18;
+        final t = _wallThickness - rnd.nextDouble() * 2.5;
+        final h = math.min(len, r.bottom - y);
+        final rect = left
+            ? Rect.fromLTWH(r.left - t, y, t, h)
+            : Rect.fromLTWH(r.right, y, t, h);
+        stone(rect, broken: rnd.nextDouble() < 0.07);
+        y += len;
+      }
+    }
+
+    // Rubble spilling just inside the walls.
+    final rubble = Paint()..color = West.stone.withValues(alpha: 0.55);
+    for (var i = 0; i < 26; i++) {
+      final edge = rnd.nextInt(4);
+      final along = rnd.nextDouble();
+      final off = 2 + rnd.nextDouble() * 6;
+      final o = switch (edge) {
+        0 => Offset(r.left + along * r.width, r.top + off),
+        1 => Offset(r.left + along * r.width, r.bottom - off),
+        2 => Offset(r.left + off, r.top + along * r.height),
+        _ => Offset(r.right - off, r.top + along * r.height),
+      };
+      c.drawCircle(o, 1.2 + rnd.nextDouble() * 2.2, rubble);
+    }
+  }
+
+  /// Rasterizes floor detail + walls once into a single image so each frame
+  /// is one textured draw instead of hundreds of vector ops.
+  void _rebuildStaticArt(Rect r) {
+    _staticArt?.dispose();
+
+    _artRect = r.inflate(_wallThickness + 2);
+    const scale = _artScale;
+    final rec = ui.PictureRecorder();
+    final c = Canvas(rec)
+      ..scale(scale)
+      ..translate(-_artRect.left, -_artRect.top);
+    _paintFloorDetail(c, r);
+    _paintWalls(c, r);
+    final pic = rec.endRecording();
+    _staticArt = pic.toImageSync(
+      (_artRect.width * scale).ceil(),
+      (_artRect.height * scale).ceil(),
+    );
+    pic.dispose();
+  }
+
+  // ---- Gameplay hooks ---------------------------------------------------
 
   void addImpactSparks({
     required Vector2 position,
@@ -133,38 +326,35 @@ class ArenaBoundary extends PositionComponent with HasGameReference {
     _setWaveHeatTargetFromWave(wave);
     _impactPulse = (_impactPulse + 0.24).clamp(0.0, 1.0);
 
-    // _registerWallImpact(wallNormal: wallNormal, impactPosition: position);
-
-    final sparkCount = _getSparkCount(wave);
+    // Stone chips and dust, not sparks.
+    final count = _getSparkCount(wave);
     final baseSize = wave <= 2
-        ? 4.0
+        ? 3.4
         : wave <= 4
-        ? 3.0
+        ? 2.8
         : 2.2;
 
-    for (int i = 0; i < sparkCount; i++) {
+    for (int i = 0; i < count; i++) {
       final direction = wallNormal.clone()..normalize();
+      direction.rotate((_random.nextDouble() - 0.5) * 1.2);
 
-      final angle = (_random.nextDouble() - 0.5) * 1.2;
-      direction.rotate(angle);
+      final speed = 70 + _random.nextDouble() * (50 + wave * 10);
+      final life = 0.3 + _random.nextDouble() * 0.25;
 
-      final speed = 80 + _random.nextDouble() * (60 + wave * 10);
-      final life = 0.25 + _random.nextDouble() * 0.2;
-
-      final sparkColor = Color.lerp(
-        Neon.accentSoft(_waveHeatCurrent),
-        Colors.white,
-        _random.nextDouble() * 0.5,
+      final color = Color.lerp(
+        West.sandLight,
+        West.accentSoft(_waveHeatCurrent),
+        0.25 + _random.nextDouble() * 0.35,
       )!;
 
-      _sparks.add(
-        _SparkParticle(
+      _chips.add(
+        _Chip(
           position: position.clone(),
           velocity: direction * speed,
           life: life,
           maxLife: life,
-          color: sparkColor,
-          size: baseSize + _random.nextDouble() * 2.5,
+          color: color,
+          size: baseSize + _random.nextDouble() * 2.0,
         ),
       );
     }
@@ -181,58 +371,33 @@ class ArenaBoundary extends PositionComponent with HasGameReference {
     _waveHeatTarget = 0.1 + (normalized * 0.82);
   }
 
-  // void _registerWallImpact({
-  //   required Vector2 wallNormal,
-  //   required Vector2 impactPosition,
-  // }) {
-  //   if (wallNormal.x > 0.5) {
-  //     _leftWallEnergy = 1.0;
-  //     _leftImpactY = impactPosition.y;
-  //     return;
-  //   }
+  // ---- Update / render --------------------------------------------------
 
-  //   if (wallNormal.x < -0.5) {
-  //     _rightWallEnergy = 1.0;
-  //     _rightImpactY = impactPosition.y;
-  //     return;
-  //   }
+  @override
+  void update(double dt) {
+    super.update(dt);
 
-  //   if (wallNormal.y > 0.5) {
-  //     _topWallEnergy = 1.0;
-  //     _topImpactX = impactPosition.x;
-  //     return;
-  //   }
-
-  //   if (wallNormal.y < -0.5) {
-  //     _bottomWallEnergy = 1.0;
-  //     _bottomImpactX = impactPosition.x;
-  //   }
-  // }
-
-  void _updateReactiveState(double dt) {
     _time += dt;
-
     final heatLerp = (dt * _waveHeatSmoothing).clamp(0.0, 1.0);
     _waveHeatCurrent += (_waveHeatTarget - _waveHeatCurrent) * heatLerp;
-
     _impactPulse = (_impactPulse - dt * _impactPulseDecay).clamp(0.0, 1.0);
 
-    _leftWallEnergy = (_leftWallEnergy - dt * _wallEnergyDecay).clamp(0.0, 1.0);
-    _rightWallEnergy = (_rightWallEnergy - dt * _wallEnergyDecay).clamp(
-      0.0,
-      1.0,
-    );
-    _topWallEnergy = (_topWallEnergy - dt * _wallEnergyDecay).clamp(0.0, 1.0);
-    _bottomWallEnergy = (_bottomWallEnergy - dt * _wallEnergyDecay).clamp(
-      0.0,
-      1.0,
-    );
+    final friction = math.pow(0.94, dt * 60).toDouble();
+    for (final chip in _chips) {
+      chip.life -= dt;
+      chip.position += chip.velocity * dt;
+      chip.velocity *= friction;
+    }
+    _chips.removeWhere((s) => s.life <= 0);
   }
 
-  void _updateVisualPaints() {
+  @override
+  void render(Canvas canvas) {
+    super.render(canvas);
+
     final breathing = 0.5 + 0.5 * math.sin(_time * 2 * math.pi * _breathingHz);
 
-    // Blend wave heat with the global heat model so the border tracks the
+    // Blend wave heat with the global heat model so the arena tracks the
     // background and bullet.
     final base = math.max(_waveHeatCurrent, GameConfig.heat);
     final heat = (base + (_impactPulse * 0.18) + (breathing * 0.04)).clamp(
@@ -240,200 +405,55 @@ class ArenaBoundary extends PositionComponent with HasGameReference {
       1.0,
     );
 
-    final border = Neon.accent(heat);
-    final accent = Neon.accentSoft(heat);
-
-    _innerFillPaint.color = Color.lerp(
-      const Color(0xFF0A0526),
-      const Color(0xFF240A3C),
-      heat,
-    )!.withValues(alpha: 0.55);
-
-    _outerGlowPaint
-      ..color = border.withValues(
-        alpha: 0.12 + heat * 0.08 + _impactPulse * 0.12,
-      )
-      ..strokeWidth = 14 + (heat * 4);
-
-    _borderPaint
-      ..color = border.withValues(alpha: 0.95)
-      ..strokeWidth = 3 + (heat * 0.8) + (_impactPulse * 1.2);
-
-    _accentPaint
-      ..color = accent
-      ..strokeWidth = 4;
-
-    _wallImpactPaint
-      ..color = Color.lerp(
-        const Color(0xFFFFB176),
-        const Color(0xFFFF5340),
-        heat,
-      )!
-      ..strokeWidth = 4 + heat * 2;
-  }
-
-  @override
-  void update(double dt) {
-    super.update(dt);
-
-    _updateReactiveState(dt);
-
-    final friction = math.pow(0.94, dt * 60).toDouble();
-
-    for (final spark in _sparks) {
-      spark.life -= dt;
-      spark.position += spark.velocity * dt;
-      spark.velocity *= friction;
-    }
-
-    _sparks.removeWhere((s) => s.life <= 0);
-  }
-
-  @override
-  void render(Canvas canvas) {
-    super.render(canvas);
-
-    _updateVisualPaints();
-
     final rect = _arenaBounds;
 
-    canvas.drawRect(rect, _innerFillPaint);
-    canvas.drawRect(rect.inflate(2), _outerGlowPaint);
-    // Tighter second glow gives the neon-tube falloff.
-    _midGlowPaint
-      ..color = _outerGlowPaint.color.withValues(
-        alpha: (_outerGlowPaint.color.a * 2.0).clamp(0.0, 0.5),
-      )
-      ..strokeWidth = 7;
-    canvas.drawRect(rect, _midGlowPaint);
-    canvas.drawRect(rect, _borderPaint);
-    // White-hot center line of the tube.
-    canvas.drawRect(rect, _coreLinePaint);
+    // Floor: packed earth, reddening as heat rises.
+    _floorPaint.color = Color.lerp(West.floor, West.floorHot, heat)!;
+    canvas.drawRect(rect, _floorPaint);
 
-    // _drawWallImpactAccents(canvas, rect);
-    _drawCornerAccents(canvas, rect);
-    _drawSparks(canvas);
-  }
-
-  // void _drawWallImpactAccents(Canvas canvas, Rect rect) {
-
-  //   const len = 48.0;
-  //   if (_leftWallEnergy > 0) {
-  //     _wallImpactPaint.color = _wallImpactPaint.color.withValues(
-  //       alpha: _leftWallEnergy * 0.6,
-  //     );
-  //     canvas.drawLine(
-  //       Offset(rect.left, _leftImpactY - len),
-  //       Offset(rect.left, _leftImpactY + len),
-  //       _wallImpactPaint,
-  //     );
-  //   }
-
-  //   if (_rightWallEnergy > 0) {
-  //     _wallImpactPaint.color = _wallImpactPaint.color.withValues(
-  //       alpha: _rightWallEnergy * 0.6,
-  //     );
-  //     canvas.drawLine(
-  //       Offset(rect.right, _rightImpactY - len),
-  //       Offset(rect.right, _rightImpactY + len),
-  //       _wallImpactPaint,
-  //     );
-  //   }
-
-  //   if (_topWallEnergy > 0) {
-  //     _wallImpactPaint.color = _wallImpactPaint.color.withValues(
-  //       alpha: _topWallEnergy * 0.6,
-  //     );
-  //     canvas.drawLine(
-  //       Offset(_topImpactX - len, rect.top),
-  //       Offset(_topImpactX + len, rect.top),
-  //       _wallImpactPaint,
-  //     );
-  //   }
-
-  //   if (_bottomWallEnergy > 0) {
-  //     _wallImpactPaint.color = _wallImpactPaint.color.withValues(
-  //       alpha: _bottomWallEnergy * 0.6,
-  //     );
-  //     canvas.drawLine(
-  //       Offset(_bottomImpactX - len, rect.bottom),
-  //       Offset(_bottomImpactX + len, rect.bottom),
-  //       _wallImpactPaint,
-  //     );
-  //   }
-  // }
-
-  void _drawSparks(Canvas canvas) {
-    for (final spark in _sparks) {
-      final alpha = (spark.life / spark.maxLife).clamp(0.0, 1.0);
-
-      _sparkPaint
-        ..color = spark.color.withValues(alpha: alpha)
-        ..strokeWidth = spark.size;
-
-      final end = spark.position.toOffset();
-
-      final speed = spark.velocity.length;
-      final dirX = speed > 0.001 ? spark.velocity.x / speed : 0.0;
-      final dirY = speed > 0.001 ? spark.velocity.y / speed : 0.0;
-
-      final start = Offset(end.dx - dirX * 6, end.dy - dirY * 6);
-
-      canvas.drawLine(start, end, _sparkPaint);
+    // Floor detail + broken stone wall ring, pre-rasterized.
+    final art = _staticArt;
+    if (art != null) {
+      canvas.drawImageRect(
+        art,
+        Rect.fromLTWH(0, 0, art.width.toDouble(), art.height.toDouble()),
+        _artRect,
+        _artPaint,
+      );
     }
+
+    // Heat line hugging the inside of the wall.
+    _heatLinePaint
+      ..color = West.accent(heat).withValues(alpha: 0.55 + _impactPulse * 0.3)
+      ..strokeWidth = 2.5 + heat * 1.2 + _impactPulse * 1.5;
+    canvas.drawRect(rect.deflate(1.5), _heatLinePaint);
+
+    _drawChips(canvas);
   }
 
-  void _drawCornerAccents(Canvas canvas, Rect rect) {
-    const len = 20.0;
+  void _drawChips(Canvas canvas) {
+    for (final chip in _chips) {
+      final alpha = (chip.life / chip.maxLife).clamp(0.0, 1.0);
+      _sparkPaint
+        ..color = chip.color.withValues(alpha: alpha)
+        ..strokeWidth = chip.size;
 
-    canvas.drawLine(
-      Offset(rect.left, rect.top + len),
-      Offset(rect.left, rect.top),
-      _accentPaint,
-    );
-    canvas.drawLine(
-      Offset(rect.left, rect.top),
-      Offset(rect.left + len, rect.top),
-      _accentPaint,
-    );
+      final end = chip.position.toOffset();
+      final speed = chip.velocity.length;
+      final dirX = speed > 0.001 ? chip.velocity.x / speed : 0.0;
+      final dirY = speed > 0.001 ? chip.velocity.y / speed : 0.0;
 
-    canvas.drawLine(
-      Offset(rect.right - len, rect.top),
-      Offset(rect.right, rect.top),
-      _accentPaint,
-    );
-    canvas.drawLine(
-      Offset(rect.right, rect.top),
-      Offset(rect.right, rect.top + len),
-      _accentPaint,
-    );
-
-    canvas.drawLine(
-      Offset(rect.left, rect.bottom - len),
-      Offset(rect.left, rect.bottom),
-      _accentPaint,
-    );
-    canvas.drawLine(
-      Offset(rect.left, rect.bottom),
-      Offset(rect.left + len, rect.bottom),
-      _accentPaint,
-    );
-
-    canvas.drawLine(
-      Offset(rect.right - len, rect.bottom),
-      Offset(rect.right, rect.bottom),
-      _accentPaint,
-    );
-    canvas.drawLine(
-      Offset(rect.right, rect.bottom),
-      Offset(rect.right, rect.bottom - len),
-      _accentPaint,
-    );
+      canvas.drawLine(
+        Offset(end.dx - dirX * 4, end.dy - dirY * 4),
+        end,
+        _sparkPaint,
+      );
+    }
   }
 }
 
-class _SparkParticle {
-  _SparkParticle({
+class _Chip {
+  _Chip({
     required this.position,
     required this.velocity,
     required this.life,

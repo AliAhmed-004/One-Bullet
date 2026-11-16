@@ -6,7 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 /// This file exposes `appLightTheme` and `appDarkTheme` which use a
 /// single seed/base color and a unified font family for consistent UI.
 
-const Color kBaseColor = Color(0xFF6C63FF); // single accent (adjustable)
+const Color kBaseColor = Color(0xFFA8461F); // single accent (adjustable)
 
 final ThemeData appLightTheme = ThemeData(
   useMaterial3: true,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:one_bullet/theme/neon.dart';
-import 'package:one_bullet/theme/neon_widgets.dart';
+import 'package:one_bullet/theme/west.dart';
+import 'package:one_bullet/theme/west_widgets.dart';
 
 class WaveIndicatorWidget extends StatefulWidget {
   const WaveIndicatorWidget({
@@ -81,8 +81,8 @@ class _WaveIndicatorWidgetState extends State<WaveIndicatorWidget>
   @override
   Widget build(BuildContext context) {
     final baseAccent = widget.isFlashing
-        ? Color.lerp(Neon.orange, Neon.magenta, _flashAnimation.value)!
-        : Neon.cyan;
+        ? Color.lerp(West.orange, West.blood, _flashAnimation.value)!
+        : West.gold;
 
     return ScaleTransition(
       scale: _scaleAnimation,
@@ -98,7 +98,7 @@ class _WaveIndicatorWidgetState extends State<WaveIndicatorWidget>
             height: 54,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              color: const Color(0xCC0B0524),
+              color: const Color(0xCC1A0F0A),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: baseAccent.withValues(alpha: 0.7)),
               boxShadow: [
@@ -113,22 +113,21 @@ class _WaveIndicatorWidgetState extends State<WaveIndicatorWidget>
               children: [
                 Text(
                   'WAVE',
-                  style: neonDisplay(
+                  style: westText(
                     size: 9,
                     spacing: 3,
-                    color: Neon.textMuted,
+                    color: West.textMuted,
                     weight: FontWeight.w600,
                   ).copyWith(height: 1),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   '${widget.waveNumber}',
-                  style: neonDisplay(
+                  style: westText(
                     size: 24,
                     weight: FontWeight.w800,
                     spacing: 2,
                     color: baseAccent,
-                    glow: baseAccent,
                   ).copyWith(height: 1),
                 ),
               ],

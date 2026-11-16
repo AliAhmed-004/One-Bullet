@@ -12,7 +12,7 @@ flutter build apk --profile --dart-define=PERF_LOG=true --dart-define=PERF_GOD=t
 adb -s "$D" install -r build/app/outputs/flutter-apk/app-profile.apk >/dev/null
 $A am force-stop $P; adb -s "$D" logcat -c
 $A monkey -p $P -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; sleep 7
-$A input tap 540 1200
+$A input tap 540 1680
 sleep "$SECS"
 adb -s "$D" logcat -d -s flutter | grep PERF | sed 's/.*PERF//' > "$OUT/$LABEL.txt"
 python3 - "$OUT/$LABEL.txt" <<'PY'
