@@ -1,6 +1,7 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:games_services/games_services.dart';
+import 'package:one_bullet/debug/mock_leaderboard.dart';
 import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/services/play_games_service.dart';
 import 'package:one_bullet/theme/west.dart';
@@ -57,6 +58,16 @@ class _LeaderboardsOverlayState extends State<LeaderboardsOverlay>
   }
 
   Future<void> _checkConnectivityAndLoad() async {
+    if (mockLeaderboard) {
+      setState(() {
+        _scores
+          ..clear()
+          ..addAll(mockLeaderboardScores());
+        _isLoading = false;
+      });
+      return;
+    }
+
     final result = await _connectivity.checkConnectivity();
     final isConnected =
         result.contains(ConnectivityResult.wifi) ||

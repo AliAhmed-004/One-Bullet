@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:one_bullet/debug/mock_leaderboard.dart';
 import 'package:one_bullet/one_bullet_game.dart';
 import 'package:one_bullet/services/play_games_service.dart';
 import 'package:one_bullet/services/score_service.dart';
@@ -192,6 +193,11 @@ class _SystemMenuState extends State<_SystemMenu> {
     required String featureLabel,
     required VoidCallback onAuthorized,
   }) async {
+    if (mockLeaderboard) {
+      onAuthorized();
+      return;
+    }
+
     if (!PlayGamesService.isSupportedPlatform) {
       if (!mounted) {
         return;
