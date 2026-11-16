@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
+import 'package:one_bullet/components/player_sprite.dart';
 
 /// A fragment particle that flies outward when the player dies.
 /// Multiple of these are spawned to create a "shatter" effect.
@@ -126,10 +127,46 @@ class PlayerFragment extends PositionComponent {
   }
 }
 
+/// The gunslinger's hat, knocked off and spinning away on death.
+class HatFragment extends PositionComponent {
+  HatFragment({required Vector2 position, required this.velocity})
+    : super(position: position, anchor: Anchor.center);
+
+  final Vector2 velocity;
+  static const double _life = 1.5;
+  double _age = 0;
+  double _spin = 9;
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    _age += dt;
+    if (_age >= _life) {
+      removeFromParent();
+      return;
+    }
+    velocity.y += 260 * dt;
+    velocity.scale(0.985);
+    position.addScaled(velocity, dt);
+    angle += _spin * dt;
+    _spin *= 0.99;
+  }
+
+  @override
+  void render(Canvas canvas) {
+    final alpha = (1 - (_age / _life)).clamp(0.0, 1.0);
+    PlayerSprites.draw(
+      canvas,
+      PlayerSprites.hat,
+      paint: PlayerSprites.tinted(alpha),
+    );
+  }
+}
+
 /// Spawns player death fragments at the given position.
 class PlayerDeathEffect {
   /// Creates and returns a list of fragment components.
-  static List<PlayerFragment> createFragments({
+  static List<PositionComponent> createFragments({
     required Vector2 position,
     required Color color,
     int fragmentCount = 12,
@@ -137,7 +174,9 @@ class PlayerDeathEffect {
     double fragmentSize = 8.0,
   }) {
     final random = Random();
-    final fragments = <PlayerFragment>[];
+    final fragments = <PositionComponent>[
+      HatFragment(position: position.clone(), velocity: Vector2(40, -260)),
+    ];
 
     for (int i = 0; i < fragmentCount; i++) {
       // Random angle for each fragment

@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
+import 'package:one_bullet/components/player_sprite.dart';
 
 /// A small triangle that revolves around the player, indicating
 /// the direction the bullet will be fired.
@@ -38,30 +39,24 @@ class AimIndicator extends PositionComponent {
   Vector2 _orbitCenter = Vector2.zero();
 
   /// Cached paints/path to avoid render-loop allocations.
-  late final Paint _fillPaint;
-  late final Paint _borderPaint;
-  late final Path _trianglePath;
-
+  late final Paint _chevronPaint;
+  late final Path _chevronPath;
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
 
-    _fillPaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    _borderPaint = Paint()
-      ..color = Colors.white
+    _chevronPaint = Paint()
+      ..color = color.withValues(alpha: 0.85)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
 
-    final halfSize = triangleSize / 2;
-    _trianglePath = Path()
-      ..moveTo(halfSize, 0)
-      ..lineTo(-halfSize, -halfSize)
-      ..lineTo(-halfSize, halfSize)
-      ..close();
+    _chevronPath = Path()
+      ..moveTo(15, -4)
+      ..lineTo(20, 0)
+      ..lineTo(15, 4);
   }
 
   @override
@@ -114,7 +109,10 @@ class AimIndicator extends PositionComponent {
   void render(Canvas canvas) {
     super.render(canvas);
 
-    canvas.drawPath(_trianglePath, _fillPaint);
-    canvas.drawPath(_trianglePath, _borderPaint);
+    // Revolver at the orbit point, rotated with `angle` by the Flame transform.
+    PlayerSprites.draw(canvas, PlayerSprites.revolver);
+
+    // Small chevron further out so the shot direction stays readable.
+    canvas.drawPath(_chevronPath, _chevronPaint);
   }
 }

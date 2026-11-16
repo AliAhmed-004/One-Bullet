@@ -137,7 +137,7 @@ class _StartScreenOverlayState extends State<StartScreenOverlay> {
                               ? 'CONNECTING...'
                               : 'CONNECT PLAY GAMES',
                           icon: _isSigningIn ? null : Icons.emoji_events,
-                          color: West.rust,
+                          color: West.sandLight,
                           width: 280,
                           onTap: _isSigningIn ? null : _signInToPlayGames,
                         ),
